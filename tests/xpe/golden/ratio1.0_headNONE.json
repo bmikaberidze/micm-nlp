@@ -1,0 +1,94 @@
+{
+  "forward": {
+    "logits_norm": 0.028031,
+    "logits_row0": [
+      -0.006259,
+      -0.007869,
+      0.002411,
+      -0.016905
+    ],
+    "logits_shape": [
+      2,
+      4
+    ],
+    "loss": 1.386247
+  },
+  "full_state_dict_keys": [
+    "base_model.bert.embeddings.LayerNorm.bias",
+    "base_model.bert.embeddings.LayerNorm.weight",
+    "base_model.bert.embeddings.position_embeddings.weight",
+    "base_model.bert.embeddings.token_type_embeddings.weight",
+    "base_model.bert.embeddings.word_embeddings.weight",
+    "base_model.bert.encoder.layer.0.attention.output.LayerNorm.bias",
+    "base_model.bert.encoder.layer.0.attention.output.LayerNorm.weight",
+    "base_model.bert.encoder.layer.0.attention.output.dense.bias",
+    "base_model.bert.encoder.layer.0.attention.output.dense.weight",
+    "base_model.bert.encoder.layer.0.attention.self.key.bias",
+    "base_model.bert.encoder.layer.0.attention.self.key.weight",
+    "base_model.bert.encoder.layer.0.attention.self.query.bias",
+    "base_model.bert.encoder.layer.0.attention.self.query.weight",
+    "base_model.bert.encoder.layer.0.attention.self.value.bias",
+    "base_model.bert.encoder.layer.0.attention.self.value.weight",
+    "base_model.bert.encoder.layer.0.intermediate.dense.bias",
+    "base_model.bert.encoder.layer.0.intermediate.dense.weight",
+    "base_model.bert.encoder.layer.0.output.LayerNorm.bias",
+    "base_model.bert.encoder.layer.0.output.LayerNorm.weight",
+    "base_model.bert.encoder.layer.0.output.dense.bias",
+    "base_model.bert.encoder.layer.0.output.dense.weight",
+    "base_model.bert.encoder.layer.1.attention.output.LayerNorm.bias",
+    "base_model.bert.encoder.layer.1.attention.output.LayerNorm.weight",
+    "base_model.bert.encoder.layer.1.attention.output.dense.bias",
+    "base_model.bert.encoder.layer.1.attention.output.dense.weight",
+    "base_model.bert.encoder.layer.1.attention.self.key.bias",
+    "base_model.bert.encoder.layer.1.attention.self.key.weight",
+    "base_model.bert.encoder.layer.1.attention.self.query.bias",
+    "base_model.bert.encoder.layer.1.attention.self.query.weight",
+    "base_model.bert.encoder.layer.1.attention.self.value.bias",
+    "base_model.bert.encoder.layer.1.attention.self.value.weight",
+    "base_model.bert.encoder.layer.1.intermediate.dense.bias",
+    "base_model.bert.encoder.layer.1.intermediate.dense.weight",
+    "base_model.bert.encoder.layer.1.output.LayerNorm.bias",
+    "base_model.bert.encoder.layer.1.output.LayerNorm.weight",
+    "base_model.bert.encoder.layer.1.output.dense.bias",
+    "base_model.bert.encoder.layer.1.output.dense.weight",
+    "base_model.bert.pooler.dense.bias",
+    "base_model.bert.pooler.dense.weight",
+    "base_model.classifier.modules_to_save.default.bias",
+    "base_model.classifier.modules_to_save.default.weight",
+    "base_model.classifier.original_module.bias",
+    "base_model.classifier.original_module.weight",
+    "prompt_encoder.default.xpe_embedding.modules_to_save.default.weight",
+    "prompt_encoder.default.xpe_embedding.original_module.weight",
+    "word_embeddings.weight"
+  ],
+  "params": {
+    "total": 55912,
+    "trainable": 388
+  },
+  "peft_state_dict": {
+    "base_model.classifier.bias": {
+      "dtype": "torch.float32",
+      "norm": 0.0,
+      "shape": [
+        4
+      ]
+    },
+    "base_model.classifier.weight": {
+      "dtype": "torch.float32",
+      "norm": 0.207888,
+      "shape": [
+        4,
+        32
+      ]
+    },
+    "prompt_encoder.xpe_embedding.weight": {
+      "dtype": "torch.float32",
+      "norm": 17.120415,
+      "shape": [
+        8,
+        32
+      ]
+    }
+  },
+  "prompt_encoder_repr": "CrossPromptEncoder(\n  (xpe_embedding): ModulesToSaveWrapper(\n    (original_module): Embedding(8, 32)\n    (modules_to_save): ModuleDict(\n      (default): Embedding(8, 32)\n    )\n  )\n  (xpe_head): ModulesToSaveWrapper(\n    (original_module): Identity()\n    (modules_to_save): ModuleDict(\n      (default): Identity()\n    )\n  )\n)"
+}

@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "micm-nlp"
+version = "0.1.0"
+description = "NLP research toolkit built on HuggingFace Transformers"
+authors = [
+    { name = "Beso Mikaberidze", email = "beso.mikaberidze@gmail.com" },
+]
+license = { text = "MIT" }
+readme = "README.md"
+urls = { Homepage = "https://github.com/bmikaberidze/micm-nlp", Repository = "https://github.com/bmikaberidze/micm-nlp", Issues = "https://github.com/bmikaberidze/micm-nlp/issues" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "tqdm",
+    "nltk",
+    "aenum",
+    "peft==0.14.0",
+    "rich",
+    "wandb",
+    "numpy",
+    "spacy",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml",
+    "pandas",
+    "seqeval",
+    "opentsne",
+    "requests",
+    "datasets",
+    "evaluate",
+    "lightning",
+    "datasketch",
+    "matplotlib",
+    "transformers==4.49.0",
+    "scikit-learn",
+    "python-dotenv",
+    "sentencepiece",
+    "nvidia-ml-py3",
+    "accelerate",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "F",     # pyflakes
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "RUF",   # ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E741",  # ambiguous variable name
+]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/micm_nlp"]

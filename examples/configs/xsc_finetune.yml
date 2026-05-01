@@ -1,0 +1,191 @@
+mode: finetune
+
+task:
+    id: null
+    category: text_generation
+    name: mcqa_ftp
+    metric_groups:
+    - metrics:
+        - accuracy
+    preproc_rules:
+        flatten: true
+        filter_padded: true
+        label_id_to_name: false
+        filter_by_prefixes: false
+        decode: false
+        label_name_strip_lower: false
+        label_name_to_float: false
+        label_name_to_id: false
+        verify_labels_match: true
+        calc_confusion_matrix: false
+        prediction_axis: -1
+
+peft:
+    peft_type: XPE
+    task_type: CAUSAL_LM
+    num_virtual_tokens: 20
+    encoder_reparameterization_type: MLP
+    encoder_hidden_size: 256
+    encoder_num_layers: 2
+    encoder_dropout: 0.1
+    encoder_ratio: 1
+    encoder_input_size: null
+    encoder_init_state_dict_path: null
+    encoder_freeze: false
+    encoder_embedding_freeze: false
+    encoder_embedding_init_type: hf_default
+    encoder_embedding_normalize: null
+    encoder_embedding_normalize_max_norm: null
+
+model:
+    architecture: bloom
+    pretrained:
+        cls: AutoModelForCausalLM
+        args:
+        name: bigscience/bloom-560m
+        source: huggingface
+        checkpoint: null
+        adapter: null
+
+tokenizer:
+    source: huggingface
+    name: bigscience/bloom-560m
+    type: null
+    algorithm: null
+    adapt_to_lm: false
+    args:
+        padding_side: right
+
+ds:
+    descriptive_name: null
+    category: benchmarks
+    dirs: mikaberidze/xstory-cloze-ftp
+    name: ar
+    type: huggingface
+    comes_with_splits:
+        train: eval
+        test: false
+        validation: train
+    input:
+        key: text
+        standardize_key: true
+    label:
+        key: answer_label
+        standardize_key: true
+    task_id: null
+    preproc_rules:
+        subset:
+            run: false
+            use: 0.01
+            save_as: false
+        tokenize:
+            run: true
+            pre_rules:
+                label_name_to_id: false
+                split_sentences: false
+                append_eos_token: false
+                keep_target_texts_for_save: true
+                text_to_text_rules: false
+            rules:
+                max_length: 1024
+                padding: false
+                truncation: false
+                add_special_tokens: true
+                return_special_tokens_mask: false
+                return_token_type_ids: false
+                return_length: true
+                return_tensors: np
+                is_split_into_words: false
+            post_rules:
+                end_truncation_with_eos: false
+                concat_samples: false
+                sort_by_len: true
+            save_as: false
+
+eval:
+    before_training: true
+    before_training_on_test: false
+    during_training: null
+    after_training: true
+    after_training_on_test: false
+    per_task: null
+    downstream_tasks: false
+
+test:
+    run: false
+    zero_shot: true
+    zero_shot_only: true
+    save_predictions: false
+    report_to_wandb: true
+
+trainer:
+    cls: Trainer
+
+data_collator:
+    cls: DataCollatorForSeq2Seq
+    args:
+        max_length: 1024
+        padding: 'longest'
+        pad_to_multiple_of: 4
+        return_tensors: pt
+
+custom_training_args:
+    train_force_sequential: false
+    eval_force_sequential: true
+    test_force_sequential: true
+    early_stopping_after: 0.5
+    early_stopping_patience: 30
+    early_stopping_threshold: 0.0
+    save_final_model: true
+    keep_only_final_model: true
+    random_task_exclusion: false
+    usable_columns:
+    - task_ids
+    optimizer_grouped_parameters:
+    - param_name_parts:
+        - dedicated_embeddings
+      lr: 5.0e-5
+      weight_decay: 0.01
+
+training_args:
+    cls: TrainingArguments
+    args:
+        num_train_epochs: 10
+        per_device_train_batch_size: 16
+        gradient_accumulation_steps: 1
+        per_device_eval_batch_size: 32
+        eval_accumulation_steps: 1
+        logging_strategy: steps
+        logging_first_step: false
+        logging_steps: 50
+        report_to: wandb
+        eval_strategy: epoch
+        eval_steps: null
+        save_strategy: epoch
+        save_steps: null
+        save_total_limit: 1
+        save_safetensors: true
+        overwrite_output_dir: true
+        push_to_hub: false
+        load_best_model_at_end: true
+        metric_for_best_model: accuracy
+        greater_is_better: true
+        learning_rate: 5.0e-5
+        lr_scheduler_type: cosine_with_restarts
+        lr_scheduler_kwargs:
+            num_cycles: 2
+        warmup_ratio: 0.05
+        weight_decay: 0.01
+        max_grad_norm: 1.0
+        group_by_length: true
+        length_column_name: length
+        full_determinism: false
+        bf16: true
+        fp16: false
+
+cuda:
+    empty_cache_steps: null
+
+env:
+    PYTORCH_CUDA_ALLOC_CONF: null
+    TOKENIZERS_PARALLELISM: 'true'

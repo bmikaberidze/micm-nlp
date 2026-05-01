@@ -1,0 +1,65 @@
+mode: preprocess
+
+task:
+    id: null
+    category: text_generation
+    name: mcqa_ftp
+
+tokenizer:
+    source: huggingface
+    name: bigscience/bloom-560m
+    type: null
+    algorithm: null
+    adapt_to_lm: false
+    args:
+        padding_side: right
+
+ds:
+    descriptive_name: null
+    category: benchmarks
+    dirs: mikaberidze/xstory-cloze-ftp
+    name: en
+    type: huggingface
+    comes_with_splits:
+        train: eval
+        test: false
+        validation: train
+    input:
+        key: text
+        standardize_key: true
+    label:
+        key: answer_label
+        standardize_key: true
+    task_id: null
+    preproc_rules:
+        subset:
+            run: false
+            use: 0.1
+            save_as: false
+        tokenize:
+            run: true
+            pre_rules:
+                label_name_to_id: false
+                split_sentences: false
+                append_eos_token: false
+                keep_target_texts_for_save: true
+                text_to_text_rules: false
+            rules:
+                max_length: 1024
+                padding: false
+                truncation: false
+                add_special_tokens: true
+                return_special_tokens_mask: false
+                return_token_type_ids: false
+                return_length: true
+                return_tensors: np
+                is_split_into_words: false
+            post_rules:
+                end_truncation_with_eos: false
+                concat_samples: false
+                sort_by_len: true
+            save_as: huggingface
+
+env:
+    PYTORCH_CUDA_ALLOC_CONF: null
+    TOKENIZERS_PARALLELISM: 'true'
