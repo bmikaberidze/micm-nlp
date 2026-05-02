@@ -8,11 +8,12 @@ NLP research toolkit for tokenization, pretraining, fine-tuning, and PEFT across
 
 ## About
 
-`micm-nlp` is a config-driven research toolkit for multilingual NLP work. It wraps the HuggingFace stack with a small set of high-level building blocks — `CONFIG`, `TOKENIZER`, `DATASET`, `MODEL`, and a unified `TRAINER` — that compose into reproducible training, fine-tuning, and evaluation pipelines. PEFT methods (LoRA, Prefix Tuning, P-Tuning / SPT, and Cross-Prompt Encoder / XPE) are first-class. Datasets load from local paths, local HuggingFace-saved snapshots, or directly from the HuggingFace Hub by repo ID. The toolkit was used in the *Cross-Prompt Encoder for Low-Performing Languages* paper (Findings of IJCNLP–AACL 2025; [arXiv:2508.10352](https://arxiv.org/abs/2508.10352)).
+`micm-nlp` is a config-driven research toolkit for multilingual NLP work. It wraps the HuggingFace stack with a small set of high-level building blocks — `CONFIG`, `TOKENIZER`, `DATASET`, `MODEL`, and a unified `TRAINER` — that compose into reproducible training, fine-tuning, and evaluation pipelines. 
+The toolkit was used in the *Cross-Prompt Encoder for Low-Performing Languages* paper (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)) and in *A Comparison of Different Tokenization Methods for the Georgian Language* (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/))
 
 This v0.1.0 release ships **two examples** that exercise a single use case end-to-end: preprocessing and decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub. The toolkit's underlying surface is broader than these two examples demonstrate.
 
-Additional examples covering encoder-only text classification, encoder-decoder seq2seq, MLM pretraining, and other PEFT methods will land in subsequent releases. Contributions and issue reports are welcome.
+Additional examples covering encoder-only text classification, encoder-decoder seq2seq, and MLM pretraining will land in subsequent releases. Contributions and issue reports are welcome.
 
 ## Install
 
