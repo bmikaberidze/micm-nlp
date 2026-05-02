@@ -2,6 +2,7 @@
 .cursorignore
 .venv/
 .vscode/
+.claude/
 
 .DS_Store
 *.DS_Store
@@ -18,6 +19,9 @@ artefacts/
 runtime/
 exp/
 
+dist/
+build/
+*.egg-info/
 wandb/
 logs/
 docs/internal/
