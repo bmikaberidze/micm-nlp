@@ -47,8 +47,31 @@ def init(config: MicmNlpConfig | dict) -> None:
     if isinstance(config, dict):
         config = MicmNlpConfig(**config)
     set_root(config.root_path)
+    _disable_distributed_if_single_process()
     if config.pretty_output:
         init_rich(config.pretty_output)
+
+
+# Env vars that, when present, push HuggingFace `accelerate` into MULTI_GPU mode
+# and trigger a NCCL allgather during DistributedDataParallel construction —
+# even for a single-process run. Stripping them when WORLD_SIZE=1 forces the
+# single-process path and avoids NCCL entirely. This matters on hardware where
+# the installed PyTorch's NCCL can't initialize (e.g. Blackwell sm_120 with
+# pre-2.6 PyTorch), and is harmless otherwise.
+_DISTRIBUTED_TRIGGER_VARS = (
+    'MASTER_ADDR', 'MASTER_PORT', 'RANK', 'LOCAL_RANK',
+    'WORLD_SIZE', 'LOCAL_WORLD_SIZE',
+    'SLURM_PROCID', 'SLURM_NTASKS', 'SLURM_NPROCS',
+    'SLURM_LOCALID', 'SLURM_NTASKS_PER_NODE',
+)
+
+
+def _disable_distributed_if_single_process() -> None:
+    if os.environ.get('WORLD_SIZE', '1') != '1':
+        return  # genuine multi-process job — leave the env alone
+    stripped = [v for v in _DISTRIBUTED_TRIGGER_VARS if os.environ.pop(v, None) is not None]
+    if stripped:
+        print(f'[micm_nlp] single-process mode: stripped {stripped}')
 
 
 def init_rich(rich_config: RichConfig | dict | bool) -> None:
