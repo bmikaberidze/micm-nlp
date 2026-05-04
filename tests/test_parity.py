@@ -10,8 +10,8 @@ behavior. The harness does NOT require network, GPU, or real weights — it
 uses a small randomly-initialized BERT with fixed seed.
 
 Usage:
-    pytest tests/xpe/test_parity.py -v                 # compare to golden
-    REWRITE_GOLDEN=1 pytest tests/xpe/test_parity.py   # regenerate golden
+    pytest tests/test_parity.py -v                 # compare to golden
+    REWRITE_GOLDEN=1 pytest tests/test_parity.py   # regenerate golden
 """
 
 import io

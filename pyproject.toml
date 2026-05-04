@@ -11,7 +11,6 @@ authors = [
 ]
 license = { text = "MIT" }
 readme = "README.md"
-urls = { Homepage = "https://github.com/bmikaberidze/micm-nlp", Repository = "https://github.com/bmikaberidze/micm-nlp", Issues = "https://github.com/bmikaberidze/micm-nlp/issues" }
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -51,6 +50,11 @@ dependencies = [
     "nvidia-ml-py3",
     "accelerate",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bmikaberidze/micm-nlp"
+Repository = "https://github.com/bmikaberidze/micm-nlp"
+Issues = "https://github.com/bmikaberidze/micm-nlp/issues"
 
 [project.optional-dependencies]
 dev = [
