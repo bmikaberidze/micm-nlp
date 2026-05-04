@@ -38,11 +38,12 @@ docker build -t micm-nlp .
 docker run --gpus all -it --rm -v $(pwd):/app -w /app micm-nlp bash
 ```
 
-You will also want a `.env` file for HuggingFace and Weights & Biases credentials:
+You will also want a `.env` file for credentials and the workspace root:
 
 ```bash
 cp .env.example .env
-# Then add WANDB_API_KEY and (if needed) HF_TOKEN.
+# Then set PROJECT_ROOT_PATH (workspace dir for artefacts) and
+# WANDB_API_KEY / HF_TOKEN if you'll log to W&B or pull gated HF models.
 ```
 
 ## Quickstart
@@ -52,11 +53,17 @@ import micm_nlp
 from micm_nlp.config import CONFIG
 from micm_nlp.pipeline import run
 
-micm_nlp.init()  # Rich pretty-printing + traceback formatting
+# Sets the workspace root (where artefacts/ goes) and, optionally,
+# enables Rich pretty-printing + traceback formatting.
+micm_nlp.init({'root_path': '/path/to/your/workspace', 'pretty_output': True})
+# Or, if PROJECT_ROOT_PATH is set in .env / the environment:
+# micm_nlp.init()
 
 config = CONFIG.from_yaml("examples/configs/xsc_finetune.yml")
 model, test_output = run(config)
 ```
+
+`init()` resolves the workspace root from its `root_path` argument, falling back to `PROJECT_ROOT_PATH` from the environment when called without one. It must be called once before any pipeline call so `artefacts/` (datasets, models, evals, wandb) lands in the right place.
 
 `run(config)` chains: load tokenizer → load and preprocess dataset → load model (with PEFT if configured) → train → evaluate. Every stage is configured by YAML; no plumbing code required.
 
