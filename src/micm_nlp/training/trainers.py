@@ -20,6 +20,47 @@ if is_datasets_available():
     import datasets
 
 
+def build_inference_dataloader_kwargs(
+    *,
+    dataset,
+    stage: str,           # 'eval' or 'test'
+    args,                 # HF TrainingArguments-like
+    custom_args,          # CustomTrainingArgsConfig-like
+    data_collator,
+    token_budget: int | None,
+):
+    """Construct DataLoader kwargs for eval/test.
+
+    When ``token_budget`` is None, returns the legacy fixed-batch kwargs
+    (caller still needs to add ``sampler``). When ``token_budget`` is an
+    int, returns kwargs using a ``TokenBudgetBatchSampler`` instead of
+    ``batch_size`` + ``sampler`` (those keys are omitted because PyTorch
+    rejects them alongside ``batch_sampler``).
+    """
+    from micm_nlp.training.batching import TokenBudgetBatchSampler
+
+    base = {
+        'collate_fn': data_collator,
+        'num_workers': args.dataloader_num_workers,
+        'pin_memory': args.dataloader_pin_memory,
+        'persistent_workers': args.dataloader_persistent_workers,
+    }
+
+    if token_budget is None:
+        # Legacy path: caller adds sampler + drop_last + prefetch_factor
+        base['batch_size'] = args.eval_batch_size
+        return base
+
+    # Token-budget path: batch_sampler is XOR with batch_size/sampler.
+    lengths = dataset[args.length_column_name]
+    base['batch_sampler'] = TokenBudgetBatchSampler(
+        lengths=lengths,
+        token_budget=token_budget,
+        pad_multiple=args.pad_to_multiple_of or 1,
+    )
+    return base
+
+
 # Build a custom trainer class that inherits from the base trainer class and adds custom functionality
 def custom_trainer_class_factory(BaseTrainer: Trainer | Seq2SeqTrainer):
     class CustomTrainer(CustomTrainerMixin, BaseTrainer):
