@@ -4,6 +4,8 @@ Verifies length-sorted batching with a max-tokens-per-batch cap, where
 "tokens per batch" = (batch_size) * (padded_max_length_in_batch). No PyTorch
 dependency beyond the Sampler protocol; pure-Python tests."""
 
+import random
+
 import pytest
 
 from micm_nlp.training.batching import TokenBudgetBatchSampler
@@ -51,7 +53,6 @@ def test_variable_lengths_sorted_ascending():
 
 
 def test_no_batch_exceeds_budget():
-    import random
     random.seed(0)
     lengths = [random.randint(50, 800) for _ in range(50)]
     sampler = TokenBudgetBatchSampler(
@@ -75,7 +76,6 @@ def test_all_samples_covered_exactly_once():
 
 
 def test_len_matches_actual_iteration():
-    import random
     random.seed(1)
     lengths = [random.randint(50, 1000) for _ in range(100)]
     sampler = TokenBudgetBatchSampler(
@@ -94,7 +94,11 @@ def test_oversized_sample_yielded_as_singleton():
     )
     batches = list(sampler)
     # Sorted ascending: [100, 100, 5000]. First two fit together; the 5000 sits alone.
-    assert [5000] in [[lengths[i] for i in b] for b in batches]
+    batches_by_lengths = [[lengths[i] for i in b] for b in batches]
+    # Oversized sample is alone:
+    assert [5000] in batches_by_lengths
+    # Two same-length 100s share a batch:
+    assert [100, 100] in batches_by_lengths
 
 
 def test_pad_multiple_one_no_rounding():
@@ -104,3 +108,17 @@ def test_pad_multiple_one_no_rounding():
     batches = list(sampler)
     # Exactly 3 fit (3*100 = 300), so one batch.
     assert batches == [[0, 1, 2]]
+
+
+def test_rejects_non_positive_token_budget():
+    with pytest.raises(ValueError, match='token_budget'):
+        TokenBudgetBatchSampler(lengths=[100], token_budget=0, pad_multiple=8)
+    with pytest.raises(ValueError, match='token_budget'):
+        TokenBudgetBatchSampler(lengths=[100], token_budget=-1, pad_multiple=8)
+
+
+def test_rejects_pad_multiple_below_one():
+    with pytest.raises(ValueError, match='pad_multiple'):
+        TokenBudgetBatchSampler(lengths=[100], token_budget=1024, pad_multiple=0)
+    with pytest.raises(ValueError, match='pad_multiple'):
+        TokenBudgetBatchSampler(lengths=[100], token_budget=1024, pad_multiple=-2)
