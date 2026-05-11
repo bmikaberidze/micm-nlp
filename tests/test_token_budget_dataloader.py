@@ -11,6 +11,19 @@ from micm_nlp.training.trainers import build_inference_dataloader_kwargs
 from micm_nlp.training.batching import TokenBudgetBatchSampler
 
 
+class _StubCollator:
+    """Stand-in for DataCollatorForSeq2Seq exposing only what the helper reads."""
+    def __init__(self, *, pad_to_multiple_of=None):
+        self.pad_to_multiple_of = pad_to_multiple_of
+
+    def __call__(self, batch):
+        return batch
+
+
+def _make_collator(*, pad_to_multiple_of=None):
+    return _StubCollator(pad_to_multiple_of=pad_to_multiple_of)
+
+
 class _TinyDataset(Dataset):
     """Minimal stand-in supporting both integer indexing (DataLoader protocol)
     and string indexing (HF datasets-style column access)."""
@@ -50,25 +63,12 @@ def _args(**overrides):
     return SimpleNamespace(**defaults)
 
 
-def _custom(**overrides):
-    defaults = dict(
-        eval_force_sequential=False,
-        test_force_sequential=False,
-        eval_max_tokens_per_batch=None,
-        test_max_tokens_per_batch=None,
-    )
-    defaults.update(overrides)
-    return SimpleNamespace(**defaults)
-
-
 def test_legacy_path_when_token_budget_is_none():
     ds = _TinyDataset([100, 200, 300])
     kwargs = build_inference_dataloader_kwargs(
         dataset=ds,
-        stage='test',
         args=_args(),
-        custom_args=_custom(),
-        data_collator=lambda x: x,
+        data_collator=_make_collator(),
         token_budget=None,
     )
     assert kwargs['batch_size'] == 4
@@ -79,10 +79,8 @@ def test_token_budget_path_replaces_batch_size_with_batch_sampler():
     ds = _TinyDataset([100, 200, 300, 100])
     kwargs = build_inference_dataloader_kwargs(
         dataset=ds,
-        stage='test',
         args=_args(),
-        custom_args=_custom(test_max_tokens_per_batch=1024),
-        data_collator=lambda x: x,
+        data_collator=_make_collator(pad_to_multiple_of=8),
         token_budget=1024,
     )
     assert 'batch_size' not in kwargs
@@ -94,25 +92,50 @@ def test_token_budget_reads_lengths_from_length_column():
     ds = _TinyDataset([10, 20, 30])
     kwargs = build_inference_dataloader_kwargs(
         dataset=ds,
-        stage='test',
         args=_args(length_column_name='length'),
-        custom_args=_custom(test_max_tokens_per_batch=64),
-        data_collator=lambda x: x,
+        data_collator=_make_collator(pad_to_multiple_of=8),
         token_budget=64,
     )
     sampler = kwargs['batch_sampler']
-    # Should have used the 'length' column values
     assert sampler._lengths == [10, 20, 30]
 
 
-def test_eval_stage_reads_eval_field():
+def test_token_budget_path_accepts_arbitrary_positive_int():
+    # No longer about "stage" — the helper doesn't see stage. This test now
+    # just confirms a budget=int is accepted (renamed for clarity).
     ds = _TinyDataset([10])
     kwargs = build_inference_dataloader_kwargs(
         dataset=ds,
-        stage='eval',
         args=_args(),
-        custom_args=_custom(eval_max_tokens_per_batch=128),
-        data_collator=lambda x: x,
+        data_collator=_make_collator(pad_to_multiple_of=8),
         token_budget=128,
     )
     assert isinstance(kwargs['batch_sampler'], TokenBudgetBatchSampler)
+
+
+def test_pad_multiple_read_from_data_collator():
+    """pad_to_multiple_of is sourced from data_collator (not args).
+    Regression for an earlier bug where the helper tried to read it from args."""
+    ds = _TinyDataset([100, 200])
+    kwargs = build_inference_dataloader_kwargs(
+        dataset=ds,
+        args=_args(),
+        data_collator=_make_collator(pad_to_multiple_of=16),
+        token_budget=512,
+    )
+    sampler = kwargs['batch_sampler']
+    assert sampler._pad_multiple == 16
+
+
+def test_pad_multiple_defaults_to_one_when_collator_lacks_attribute():
+    """If the collator doesn't expose pad_to_multiple_of, fall back to 1."""
+    ds = _TinyDataset([100, 200])
+    plain_callable = lambda batch: batch   # no pad_to_multiple_of attribute
+    kwargs = build_inference_dataloader_kwargs(
+        dataset=ds,
+        args=_args(),
+        data_collator=plain_callable,
+        token_budget=512,
+    )
+    sampler = kwargs['batch_sampler']
+    assert sampler._pad_multiple == 1

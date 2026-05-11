@@ -11,6 +11,7 @@ from transformers.trainer_utils import seed_worker
 from transformers.utils import is_datasets_available, is_sagemaker_mp_enabled, logging, version
 
 import micm_nlp.utils as utils
+from micm_nlp.training.batching import TokenBudgetBatchSampler
 from micm_nlp.training.logits_processors import ConstrainedPrefixLogitsProcessor
 
 logger = logging.get_logger(__name__)
@@ -23,12 +24,10 @@ if is_datasets_available():
 def build_inference_dataloader_kwargs(
     *,
     dataset,
-    stage: str,           # 'eval' or 'test'
     args,                 # HF TrainingArguments-like
-    custom_args,          # CustomTrainingArgsConfig-like
-    data_collator,
+    data_collator,        # the collator instance, used both for collate_fn and (token-budget path) pad_to_multiple_of
     token_budget: int | None,
-):
+) -> dict:
     """Construct DataLoader kwargs for eval/test.
 
     When ``token_budget`` is None, returns the legacy fixed-batch kwargs
@@ -37,8 +36,6 @@ def build_inference_dataloader_kwargs(
     ``batch_size`` + ``sampler`` (those keys are omitted because PyTorch
     rejects them alongside ``batch_sampler``).
     """
-    from micm_nlp.training.batching import TokenBudgetBatchSampler
-
     base = {
         'collate_fn': data_collator,
         'num_workers': args.dataloader_num_workers,
@@ -52,11 +49,14 @@ def build_inference_dataloader_kwargs(
         return base
 
     # Token-budget path: batch_sampler is XOR with batch_size/sampler.
+    # pad_to_multiple_of lives on the data collator (DataCollatorForSeq2Seq),
+    # not on HF TrainingArguments — read it from there with a fallback to 1.
     lengths = dataset[args.length_column_name]
+    pad_multiple = getattr(data_collator, 'pad_to_multiple_of', None) or 1
     base['batch_sampler'] = TokenBudgetBatchSampler(
         lengths=lengths,
         token_budget=token_budget,
-        pad_multiple=args.pad_to_multiple_of or 1,
+        pad_multiple=pad_multiple,
     )
     return base
 
