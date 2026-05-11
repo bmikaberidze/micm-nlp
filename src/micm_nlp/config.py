@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 import yaml
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from micm_nlp.enums import ModeSE
@@ -367,6 +368,14 @@ class CustomTrainingArgsConfig(_Flex):
     train_force_sequential: bool = False
     eval_force_sequential: bool = False
     test_force_sequential: bool = False
+    # Token-budget batching: null = use fixed per_device_*_batch_size (legacy);
+    # 'auto' = probe the GPU at runtime to find the largest tokens/batch that
+    # doesn't OOM; int = skip the probe and use this exact budget.
+    # Mutually exclusive with the corresponding *_force_sequential flag.
+    # Mutually exclusive with HF's LengthGroupedSampler — when set, the
+    # token-budget sampler is used instead (it already sorts by length).
+    eval_max_tokens_per_batch: int | Literal['auto'] | None = None
+    test_max_tokens_per_batch: int | Literal['auto'] | None = None
     early_stopping_after: float | None = None
     early_stopping_patience: int | None = None
     early_stopping_threshold: float | None = None
@@ -376,6 +385,26 @@ class CustomTrainingArgsConfig(_Flex):
     usable_columns: list[str] | None = None
     optimizer_grouped_parameters: list[_Flex] | None = None
     generation_whitelist: list[str] | None = None
+
+    @model_validator(mode='after')
+    def _validate_token_budget(self) -> 'CustomTrainingArgsConfig':
+        for stage in ('eval', 'test'):
+            budget = getattr(self, f'{stage}_max_tokens_per_batch')
+            force_seq = getattr(self, f'{stage}_force_sequential')
+            if budget is not None and force_seq:
+                raise ValueError(
+                    f'{stage}_max_tokens_per_batch={budget!r} is incompatible '
+                    f'with {stage}_force_sequential=True — token-budget mode '
+                    f'requires length-sorted batching, which the sequential '
+                    f'sampler overrides. Set {stage}_force_sequential=False or '
+                    f'unset {stage}_max_tokens_per_batch.'
+                )
+            if isinstance(budget, int) and budget <= 0:
+                raise ValueError(
+                    f'{stage}_max_tokens_per_batch={budget!r} must be a positive '
+                    f"integer, 'auto', or null."
+                )
+        return self
 
 
 class CudaConfig(_Flex):
