@@ -3,10 +3,10 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
+from typing import Literal
 
 import yaml
-from typing import Literal
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from micm_nlp.enums import ModeSE
 
@@ -385,6 +385,16 @@ class CustomTrainingArgsConfig(_Flex):
     usable_columns: list[str] | None = None
     optimizer_grouped_parameters: list[_Flex] | None = None
     generation_whitelist: list[str] | None = None
+
+    @field_validator('eval_max_tokens_per_batch', 'test_max_tokens_per_batch', mode='before')
+    @classmethod
+    def _reject_bool_tokens_per_batch(cls, v):
+        if isinstance(v, bool):
+            raise ValueError(
+                f'Token budget must be a positive integer, \'auto\', or null; '
+                f'bool is not allowed.'
+            )
+        return v
 
     @model_validator(mode='after')
     def _validate_token_budget(self) -> 'CustomTrainingArgsConfig':

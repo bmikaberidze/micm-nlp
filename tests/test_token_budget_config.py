@@ -23,8 +23,12 @@ def test_accepts_auto_string():
 
 
 def test_accepts_positive_int():
-    cfg = CustomTrainingArgsConfig(test_max_tokens_per_batch=8192)
+    cfg = CustomTrainingArgsConfig(
+        test_max_tokens_per_batch=8192,
+        eval_max_tokens_per_batch=4096,
+    )
     assert cfg.test_max_tokens_per_batch == 8192
+    assert cfg.eval_max_tokens_per_batch == 4096
 
 
 def test_rejects_non_positive_int():
@@ -32,6 +36,18 @@ def test_rejects_non_positive_int():
         CustomTrainingArgsConfig(test_max_tokens_per_batch=0)
     with pytest.raises(ValidationError):
         CustomTrainingArgsConfig(test_max_tokens_per_batch=-1)
+
+
+def test_rejects_bool_true_and_false():
+    # bool is a subclass of int in Python; without an explicit guard, pydantic
+    # would coerce True→1 (passing the positive-int check) and False→0 (caught
+    # but with a misleading "must be positive" message). Both should be rejected.
+    with pytest.raises(ValidationError):
+        CustomTrainingArgsConfig(test_max_tokens_per_batch=True)
+    with pytest.raises(ValidationError):
+        CustomTrainingArgsConfig(test_max_tokens_per_batch=False)
+    with pytest.raises(ValidationError):
+        CustomTrainingArgsConfig(eval_max_tokens_per_batch=True)
 
 
 def test_rejects_arbitrary_string():
