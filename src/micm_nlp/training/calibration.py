@@ -47,7 +47,10 @@ def calibrate_token_budget(
         floor: minimum acceptable budget; raise if no budget at or above
             this fits.
         hard_cap: ceiling on Phase 1b ramp-up. If the model never OOMs
-            even at this budget, return ``hard_cap × _HEADROOM``.
+            even at ``hard_cap``, the function returns ``hard_cap × _HEADROOM``.
+            (Phase 1b ramps by doubling; the cap itself is then probed once
+            so non-power-of-two hard_caps still get refined to the true
+            ceiling.)
         tolerance: Phase 2 stops when (failed - fitted) ≤ this many tokens.
             Smaller → more probes, tighter result.
 
@@ -57,7 +60,19 @@ def calibrate_token_budget(
 
     Raises:
         RuntimeError: if no budget >= ``floor`` fits.
+        ValueError: if ``start < floor`` or ``hard_cap < start``.
     """
+    if start < floor:
+        raise ValueError(
+            f'start={start} is below floor={floor}; the probe loop would '
+            f'never execute. Configuration error.'
+        )
+    if hard_cap < start:
+        raise ValueError(
+            f'hard_cap={hard_cap} is below start={start}; Phase 1b ramp-up '
+            f'would never execute. Configuration error.'
+        )
+
     device = next(model.parameters()).device
 
     def _probe(budget: int) -> bool:
@@ -87,11 +102,11 @@ def calibrate_token_budget(
         budget //= 2
 
     if fitted is None:
-        probe_len = max(1, min(int(max_sample_len) or 1, start))
+        first_probe_len = max(1, min(int(max_sample_len) or 1, start))
         raise RuntimeError(
             f'no token budget >= floor={floor} fits on {device} '
-            f'(start={start}, probe_len={probe_len}). GPU may be heavily '
-            f'contended or {probe_len}-token forward is impossible.'
+            f'(start={start}, first_probe_len={first_probe_len}). GPU may be '
+            f'heavily contended or {first_probe_len}-token forward is impossible.'
         )
 
     # Phase 1b: if ``start`` fit immediately, double until OOM or hard_cap.
@@ -105,8 +120,16 @@ def calibrate_token_budget(
                 failed = budget
                 break
         if failed is None:
-            # Ramped to hard_cap without OOM — accept hard_cap as the ceiling.
-            return int(fitted * _HEADROOM)
+            # Ramp exited because budget*2 would exceed hard_cap, but we may
+            # not have actually probed hard_cap itself (only powers of two of
+            # start). Probe it directly so Phase 2 has a real bracket if it
+            # doesn't fit, or so we return the true ceiling if it does.
+            if fitted >= hard_cap:
+                return int(fitted * _HEADROOM)
+            if _probe(hard_cap):
+                return int(hard_cap * _HEADROOM)
+            failed = hard_cap
+            # Fall through to Phase 2 binary refine in [fitted, hard_cap].
 
     # Phase 2: binary refine within [fitted, failed].
     lo, hi = fitted, failed

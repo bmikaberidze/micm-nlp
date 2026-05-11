@@ -135,11 +135,65 @@ def test_tolerance_controls_refinement_precision():
         model=model_tight, max_sample_len=16384,
         start=1024, floor=64, hard_cap=65536, tolerance=64,
     )
-    # Tight refinement must use at least as many probes as loose.
-    assert len(model_tight.calls) >= len(model_loose.calls)
+    # Tight refinement must use strictly MORE probes than loose. (>=) would
+    # silently pass if a future change made both paths take the same count.
+    assert len(model_tight.calls) > len(model_loose.calls)
     # Both must be ≤ true ceiling × headroom.
     assert loose <= int(10000 * 0.85)
     assert tight <= int(10000 * 0.85)
+
+
+def test_hard_cap_probed_when_not_power_of_two_multiple_of_start():
+    """When hard_cap isn't a clean power-of-two multiple of start, Phase 1b
+    must probe hard_cap directly so the result reflects the true ceiling.
+
+    With start=1024, hard_cap=5000, model fits everything (threshold huge):
+    ramp probes 1024, 2048, 4096 (all fit). 8192 > hard_cap so ramp exits.
+    Without the hard_cap probe fix, fitted=4096 and budget would be int(4096*0.85)=3481.
+    With the fix, hard_cap=5000 is probed, fits, and budget = int(5000*0.85)=4250."""
+    model = _OOMAbove(threshold=10**9)
+    budget = calibrate_token_budget(
+        model=model, max_sample_len=16384,
+        start=1024, floor=64, hard_cap=5000, tolerance=64,
+    )
+    assert budget == int(5000 * 0.85), (
+        f'expected {int(5000 * 0.85)}, got {budget} — hard_cap probably not probed'
+    )
+
+
+def test_hard_cap_probed_when_it_ooms_falls_through_to_refine():
+    """If hard_cap itself OOMs, Phase 2 refines in [fitted_so_far, hard_cap]."""
+    model = _OOMAbove(threshold=4500)
+    budget = calibrate_token_budget(
+        model=model, max_sample_len=16384,
+        start=1024, floor=64, hard_cap=5000, tolerance=64,
+    )
+    # Ramp: 1024(fit), 2048(fit), 4096(fit), 8192>cap → probe hard_cap=5000.
+    # 5000 OOMs (>= 4500). Phase 2 refines [4096, 5000] toward 4500.
+    # Final result is just below 4500, × 0.85.
+    expected_upper = int(4500 * 0.85)
+    expected_lower = int((4500 - 256) * 0.85)
+    assert expected_lower <= budget <= expected_upper
+
+
+def test_rejects_start_below_floor():
+    """start < floor is a configuration error, not an OOM."""
+    model = _OOMAbove(threshold=10**9)
+    with pytest.raises(ValueError, match='start.*below.*floor'):
+        calibrate_token_budget(
+            model=model, max_sample_len=128,
+            start=64, floor=256, hard_cap=1024, tolerance=64,
+        )
+
+
+def test_rejects_hard_cap_below_start():
+    """hard_cap < start is a configuration error."""
+    model = _OOMAbove(threshold=10**9)
+    with pytest.raises(ValueError, match='hard_cap.*below.*start'):
+        calibrate_token_budget(
+            model=model, max_sample_len=128,
+            start=1024, floor=64, hard_cap=512, tolerance=64,
+        )
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='needs CUDA')
