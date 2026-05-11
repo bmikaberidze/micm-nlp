@@ -193,18 +193,18 @@ class TaskConfig(_Flex):
 
 class AdapterConfig(_Flex):
     name: str | None = None
+    uuid4: str | None = None
     source: str | None = None
     checkpoint: str | None = None
-    uuid4: str | None = None
 
 
 class PretrainedConfig(_Flex):
     cls: str | None = None
     args: _Flex | None = None
     name: str | None = None
+    uuid4: str | None = None
     source: str | None = None
     checkpoint: str | None = None
-    time_id: str | None = None
     adapter: AdapterConfig | None = None
 
 
