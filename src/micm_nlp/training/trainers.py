@@ -12,6 +12,7 @@ from transformers.utils import is_datasets_available, is_sagemaker_mp_enabled, l
 
 import micm_nlp.utils as utils
 from micm_nlp.training.batching import TokenBudgetBatchSampler
+from micm_nlp.training.calibration import calibrate_token_budget
 from micm_nlp.training.logits_processors import ConstrainedPrefixLogitsProcessor
 
 logger = logging.get_logger(__name__)
@@ -269,6 +270,15 @@ class CustomTrainerMixin:
 
         return self.accelerator.prepare(DataLoader(train_dataset, **dataloader_params))
 
+    def _set_signature_columns_if_needed(self):
+        super()._set_signature_columns_if_needed()
+        # Preserve the length column so downstream samplers (LengthGroupedSampler,
+        # TokenBudgetBatchSampler) and the token-budget calibration probe can
+        # read sample lengths after _remove_unused_columns has stripped the dataset.
+        length_col = getattr(self.args, 'length_column_name', None)
+        if length_col and length_col not in self._signature_columns:
+            self._signature_columns.append(length_col)
+
     def _resolve_token_budget(self, stage: str, dataset) -> int | None:
         """Resolve the configured token budget for 'eval' or 'test'.
 
@@ -277,8 +287,6 @@ class CustomTrainerMixin:
             int — the token budget to apply (either user-supplied or
                   freshly calibrated and cached on the trainer instance).
         """
-        from micm_nlp.training.calibration import calibrate_token_budget
-
         field = f'{stage}_max_tokens_per_batch'
         configured = getattr(self.custom_args, field, None)
         if configured is None:
@@ -290,7 +298,7 @@ class CustomTrainerMixin:
         if getattr(self, cache_attr, None) is None:
             length_col = self.args.length_column_name
             lengths = dataset[length_col]
-            max_len = max(lengths) if lengths else 1
+            max_len = max(lengths) if len(lengths) > 0 else 1
             budget = calibrate_token_budget(
                 model=self.model,
                 max_sample_len=max_len,
