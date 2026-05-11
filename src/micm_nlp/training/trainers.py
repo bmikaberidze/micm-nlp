@@ -269,6 +269,36 @@ class CustomTrainerMixin:
 
         return self.accelerator.prepare(DataLoader(train_dataset, **dataloader_params))
 
+    def _resolve_token_budget(self, stage: str, dataset) -> int | None:
+        """Resolve the configured token budget for 'eval' or 'test'.
+
+        Returns:
+            None — token-budget mode disabled, use legacy fixed batch size.
+            int — the token budget to apply (either user-supplied or
+                  freshly calibrated and cached on the trainer instance).
+        """
+        from micm_nlp.training.calibration import calibrate_token_budget
+
+        field = f'{stage}_max_tokens_per_batch'
+        configured = getattr(self.custom_args, field, None)
+        if configured is None:
+            return None
+        if isinstance(configured, int):
+            return configured
+        # 'auto': calibrate once, cache on the trainer.
+        cache_attr = f'_token_budget_{stage}'
+        if getattr(self, cache_attr, None) is None:
+            length_col = self.args.length_column_name
+            lengths = dataset[length_col]
+            max_len = max(lengths) if lengths else 1
+            budget = calibrate_token_budget(
+                model=self.model,
+                max_sample_len=max_len,
+            )
+            setattr(self, cache_attr, budget)
+            print(f'[trainer] {stage} token budget calibrated: {budget}')
+        return getattr(self, cache_attr)
+
     def get_eval_dataloader(self, eval_dataset: Dataset | None = None) -> DataLoader:
         """
         Returns the evaluation [`~torch.utils.data.DataLoader`].
@@ -295,15 +325,15 @@ class CustomTrainerMixin:
         else:
             data_collator = self._get_collator_with_removed_columns(data_collator, description='evaluation')
 
-        dataloader_params = {
-            'batch_size': self.args.eval_batch_size,
-            'collate_fn': data_collator,
-            'num_workers': self.args.dataloader_num_workers,
-            'pin_memory': self.args.dataloader_pin_memory,
-            'persistent_workers': self.args.dataloader_persistent_workers,
-        }
+        budget = self._resolve_token_budget('eval', eval_dataset)
+        dataloader_params = build_inference_dataloader_kwargs(
+            dataset=eval_dataset,
+            args=self.args,
+            data_collator=data_collator,
+            token_budget=budget,
+        )
 
-        if not isinstance(eval_dataset, torch.utils.data.IterableDataset):
+        if budget is None and not isinstance(eval_dataset, torch.utils.data.IterableDataset):
             dataloader_params['sampler'] = (
                 SequentialSampler(eval_dataset)
                 if self.custom_args.eval_force_sequential
@@ -322,14 +352,9 @@ class CustomTrainerMixin:
 
     def get_test_dataloader(self, test_dataset: Dataset) -> DataLoader:
         """
-        Returns the test [`~torch.utils.data.DataLoader`].
-
-        Subclass and override this method if you want to inject some custom behavior.
-
-        Args:
-            test_dataset (`torch.utils.data.Dataset`, *optional*):
-                The test dataset to use. If it is a [`~datasets.Dataset`], columns not accepted by the
-                `model.forward()` method are automatically removed. It must implement `__len__`.
+        Returns the test DataLoader. When ``test_max_tokens_per_batch`` is
+        set, uses TokenBudgetBatchSampler; otherwise falls back to the
+        legacy fixed-batch path with SequentialSampler / LengthGroupedSampler.
         """
         data_collator = self.data_collator
 
@@ -338,15 +363,15 @@ class CustomTrainerMixin:
         else:
             data_collator = self._get_collator_with_removed_columns(data_collator, description='test')
 
-        dataloader_params = {
-            'batch_size': self.args.eval_batch_size,
-            'collate_fn': data_collator,
-            'num_workers': self.args.dataloader_num_workers,
-            'pin_memory': self.args.dataloader_pin_memory,
-            'persistent_workers': self.args.dataloader_persistent_workers,
-        }
+        budget = self._resolve_token_budget('test', test_dataset)
+        dataloader_params = build_inference_dataloader_kwargs(
+            dataset=test_dataset,
+            args=self.args,
+            data_collator=data_collator,
+            token_budget=budget,
+        )
 
-        if not isinstance(test_dataset, torch.utils.data.IterableDataset):
+        if budget is None and not isinstance(test_dataset, torch.utils.data.IterableDataset):
             dataloader_params['sampler'] = (
                 SequentialSampler(test_dataset)
                 if self.custom_args.test_force_sequential
@@ -355,7 +380,6 @@ class CustomTrainerMixin:
             dataloader_params['drop_last'] = self.args.dataloader_drop_last
             dataloader_params['prefetch_factor'] = self.args.dataloader_prefetch_factor
 
-        # We use the same batch_size as for eval.
         return self.accelerator.prepare(DataLoader(test_dataset, **dataloader_params))
 
     def _load_best_model(self):
