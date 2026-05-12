@@ -24,7 +24,7 @@ def test_token_budget_yields_variable_batch_sizes():
     from types import SimpleNamespace
 
     from micm_nlp.training.trainers import build_inference_dataloader_kwargs
-    from micm_nlp.training.calibration import calibrate_token_budget
+    from micm_nlp.training.batching import calibrate_token_budget
 
     # Tiny model on GPU
     cfg = GPT2Config(

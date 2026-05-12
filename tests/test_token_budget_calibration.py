@@ -8,7 +8,7 @@ import os
 import pytest
 import torch
 
-from micm_nlp.training.calibration import calibrate_token_budget
+from micm_nlp.training.batching import calibrate_token_budget
 
 
 class _OOMAbove:

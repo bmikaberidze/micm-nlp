@@ -11,8 +11,7 @@ from transformers.trainer_utils import seed_worker
 from transformers.utils import is_datasets_available, is_sagemaker_mp_enabled, logging, version
 
 import micm_nlp.utils as utils
-from micm_nlp.training.batching import TokenBudgetBatchSampler
-from micm_nlp.training.calibration import calibrate_token_budget
+from micm_nlp.training.batching import TokenBudgetBatchSampler, calibrate_token_budget
 from micm_nlp.training.logits_processors import ConstrainedPrefixLogitsProcessor
 
 logger = logging.get_logger(__name__)
