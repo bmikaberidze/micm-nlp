@@ -21,6 +21,20 @@ if is_datasets_available():
     import datasets
 
 
+def _get_lengths(dataset, length_column_name: str) -> list[int]:
+    """Read per-sample sequence lengths, falling back to deriving from
+    ``input_ids`` when the named column has been stripped by
+    ``_remove_unused_columns``.
+
+    Mirrors the fallback in HF Trainer's ``_get_eval_sampler`` so the
+    token-budget sampler/calibrator works whether or not the user has
+    listed the length column in ``custom_args.usable_columns``.
+    """
+    if length_column_name in dataset.column_names:
+        return dataset[length_column_name]
+    return [len(f['input_ids']) for f in dataset]
+
+
 def build_inference_dataloader_kwargs(
     *,
     dataset,
@@ -51,7 +65,7 @@ def build_inference_dataloader_kwargs(
     # Token-budget path: batch_sampler is XOR with batch_size/sampler.
     # pad_to_multiple_of lives on the data collator (DataCollatorForSeq2Seq),
     # not on HF TrainingArguments — read it from there with a fallback to 1.
-    lengths = dataset[args.length_column_name]
+    lengths = _get_lengths(dataset, args.length_column_name)
     pad_multiple = getattr(data_collator, 'pad_to_multiple_of', None) or 1
     base['batch_sampler'] = TokenBudgetBatchSampler(
         lengths=lengths,
@@ -269,15 +283,6 @@ class CustomTrainerMixin:
 
         return self.accelerator.prepare(DataLoader(train_dataset, **dataloader_params))
 
-    def _set_signature_columns_if_needed(self):
-        super()._set_signature_columns_if_needed()
-        # Preserve the length column so downstream samplers (LengthGroupedSampler,
-        # TokenBudgetBatchSampler) and the token-budget calibration probe can
-        # read sample lengths after _remove_unused_columns has stripped the dataset.
-        length_col = getattr(self.args, 'length_column_name', None)
-        if length_col and length_col not in self._signature_columns:
-            self._signature_columns.append(length_col)
-
     def _resolve_token_budget(self, stage: str, dataset) -> int | None:
         """Resolve the configured token budget for 'eval' or 'test'.
 
@@ -295,8 +300,7 @@ class CustomTrainerMixin:
         # 'auto': calibrate once, cache on the trainer.
         cache_attr = f'_token_budget_{stage}'
         if getattr(self, cache_attr, None) is None:
-            length_col = self.args.length_column_name
-            lengths = dataset[length_col]
+            lengths = _get_lengths(dataset, self.args.length_column_name)
             max_len = max(lengths) if len(lengths) > 0 else 1
             budget = calibrate_token_budget(
                 model=self.model,
