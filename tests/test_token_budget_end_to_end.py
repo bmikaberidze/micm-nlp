@@ -49,7 +49,7 @@ def test_token_budget_yields_variable_batch_sizes():
 
     # Calibrate against the real GPU.
     budget = calibrate_token_budget(
-        model=model, max_sample_len=max(lengths), start=2048, floor=64,
+        model=model, lengths=lengths, pad_multiple=8, floor=64,
     )
     assert budget >= 64
 

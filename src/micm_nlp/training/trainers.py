@@ -301,10 +301,11 @@ class CustomTrainerMixin:
         cache_attr = f'_token_budget_{stage}'
         if getattr(self, cache_attr, None) is None:
             lengths = _get_lengths(dataset, self.args.length_column_name)
-            max_len = max(lengths) if len(lengths) > 0 else 1
+            pad_multiple = getattr(self.data_collator, 'pad_to_multiple_of', None) or 1
             budget = calibrate_token_budget(
                 model=self.model,
-                max_sample_len=max_len,
+                lengths=lengths,
+                pad_multiple=pad_multiple,
             )
             setattr(self, cache_attr, budget)
             print(f'[trainer] {stage} token budget calibrated: {budget}')
