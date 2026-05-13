@@ -54,39 +54,48 @@ def test_smallest_shape_doesnt_fit_raises_runtime_error():
 
 
 def test_binary_search_finds_largest_fitting():
-    """threshold=5000, lengths: 200x50 then 1x100, pad_multiple=8.
-    Sorted: [50]*200 + [100]. padded(50)=56, padded(100)=104.
-    Fits when k*56 < 5000 => k < 89.28 => k<=89 (numel=4984 < 5000).
-    k=90: 90*56=5040 >= 5000 OOM.
-    Binary search with tolerance=64 on n=201 samples:
-    lo=1, hi=201. Loop runs while hi-lo > 64.
-    After convergence lo will be the largest k that fits.
-    We verify returned budget equals int(lo * padded(sorted_lens[lo-1]) * 0.85).
+    """Hand-traced: 200 samples of length 50, then 1 of length 100.
+    Sorted: [50]*200 + [100]. padded(50)=56, padded(100)=104, pad_multiple=8.
+
+    At threshold=5000 (mock OOMs when k * L >= threshold):
+      k=89: 89 * 56 = 4984 (fits)
+      k=90: 90 * 56 = 5040 (OOM)
+    True max_k = 89. With tolerance=64, returned lo is in [25, 89].
+    Expected budget range: [int((89-64) * 56 * 0.85), int(89 * 56 * 0.85)]
+                         = [1190, 4236].
     """
-    lengths = [50] * 200 + [100]
     threshold = 5000
-    pad_multiple = 8
+    lengths = [50] * 200 + [100]
     model = _OOMAbove(threshold=threshold)
     budget = calibrate_token_budget(
-        model=model, lengths=lengths, pad_multiple=pad_multiple,
+        model=model, lengths=lengths, pad_multiple=8, floor=1, tolerance=64,
     )
+    # Hand-traced bounds:
+    assert 1190 <= budget <= 4236, f'got {budget}'
 
-    # Determine expected: largest k in [1,201] where k * padded(sorted_lens[k-1]) < 5000
-    sorted_lens = sorted(lengths)
-    def _padded(L):
-        return ((L + pad_multiple - 1) // pad_multiple) * pad_multiple
+    # Also verify by tightening tolerance: smaller tolerance must give a
+    # tighter (higher) result.
+    model2 = _OOMAbove(threshold=threshold)
+    tight = calibrate_token_budget(
+        model=model2, lengths=lengths, pad_multiple=8, floor=1, tolerance=4,
+    )
+    assert tight >= budget, f'tighter tolerance should not give a smaller budget; tight={tight}, loose={budget}'
+    assert tight >= int(85 * 56 * 0.85)  # within tolerance=4 of optimum 89
 
-    # Simulate the binary search to find lo
-    lo, hi = 1, 201
-    while hi - lo > 64:
-        mid = (lo + hi + 1) // 2
-        if mid * _padded(sorted_lens[mid - 1]) < threshold:
-            lo = mid
-        else:
-            hi = mid - 1
 
-    expected = int(lo * _padded(sorted_lens[lo - 1]) * _HEADROOM)
-    assert budget == expected
+def test_handles_small_dataset_below_tolerance():
+    """Critical regression: when n <= tolerance, the binary search loop
+    doesn't execute. Without the post-loop hi-probe, lo stays at 1 and
+    the function under-reports budget by orders of magnitude."""
+    model = _OOMAbove(threshold=10**9)  # never OOM
+    n = 10  # well below default tolerance=64
+    lengths = [50] * n
+    budget = calibrate_token_budget(
+        model=model, lengths=lengths, pad_multiple=8, floor=1, tolerance=64,
+    )
+    # All shapes fit, so largest k = n = 10. padded(50)=56.
+    # Expected: int(10 * 56 * 0.85) = 476.
+    assert budget == int(10 * 56 * _HEADROOM)
 
 
 def test_pad_multiple_respected():

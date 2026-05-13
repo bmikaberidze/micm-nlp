@@ -46,7 +46,10 @@ def calibrate_token_budget(
     Because the sampler's batches all have total_tokens ≤ B, and Aya's
     sdpa→flash attention is linear in seq_len (not quadratic), and the
     LayerNorm-fp32-cast is linear in total_tokens, every batch at this
-    budget will fit if the calibration shape fits. Guaranteed.
+    budget will fit if the calibration shape fits — assuming linear-cost
+    attention (sdpa/flash) and a LayerNorm-style activation cost that scales
+    with total tokens. Quadratic-attention models (eager) may violate this
+    for narrow-tall batches.
 
     Args:
         model: callable model on its target device.
@@ -69,9 +72,9 @@ def calibrate_token_budget(
         raise ValueError(f'pad_multiple must be >= 1, got {pad_multiple}')
 
     def _padded(L: int) -> int:
-        return ((L + pad_multiple - 1) // pad_multiple) * pad_multiple
+        return max(pad_multiple, ((L + pad_multiple - 1) // pad_multiple) * pad_multiple)
 
-    sorted_lens = sorted(lengths)
+    sorted_lens = sorted(int(L) for L in lengths)
     n = len(sorted_lens)
     device = next(model.parameters()).device
 
@@ -107,6 +110,12 @@ def calibrate_token_budget(
             lo = mid
         else:
             hi = mid - 1
+
+    # Handle small-dataset case: when n <= tolerance, the loop above
+    # doesn't execute, leaving lo=1. Probe hi directly to determine the
+    # true largest fitting k.
+    if lo < hi and _probe(hi):
+        lo = hi
 
     budget_raw = lo * _padded(sorted_lens[lo - 1])
     if budget_raw < floor:
