@@ -22,7 +22,7 @@ class _OOMAbove:
         self.threshold = threshold
         self.calls = []   # list of (k, L) shape tuples
 
-    def __call__(self, input_ids, attention_mask):
+    def __call__(self, input_ids, attention_mask, labels=None):
         k, L = input_ids.shape
         self.calls.append((k, L))
         if input_ids.numel() >= self.threshold:

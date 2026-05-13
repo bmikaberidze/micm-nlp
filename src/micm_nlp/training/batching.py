@@ -86,7 +86,10 @@ def calibrate_token_budget(
             ids = torch.zeros(k, L, dtype=torch.long, device=device)
             attn = torch.ones_like(ids)
             with torch.no_grad():
-                model(input_ids=ids, attention_mask=attn)
+                # Pass labels to trigger the cross-entropy loss path — for
+                # large-vocab models the fp32 logits tensor dwarfs everything
+                # else, and the probe must see that cost to be safe.
+                model(input_ids=ids, attention_mask=attn, labels=ids)
             if device.type == 'cuda':
                 torch.cuda.empty_cache()
             return True
