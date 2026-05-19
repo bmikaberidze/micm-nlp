@@ -160,6 +160,12 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
         self._order = sorted(range(len(self._lengths)), key=lambda i: self._lengths[i])
         self._cached_len: int | None = None
 
+    @property
+    def order(self) -> list[int]:
+        # Per-sample emission order (length-ascending). Public so downstream
+        # consumers can align dataset-order rows to predictions-yield order.
+        return list(self._order)
+
     def _padded(self, length: int) -> int:
         pm = self._pad_multiple
         return ((length + pm - 1) // pm) * pm
