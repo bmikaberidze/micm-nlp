@@ -24,7 +24,7 @@ import torch
 from torch.utils.data import Sampler
 
 
-_HEADROOM = 0.85   # 15% safety margin for batch-shape / activation jitter
+_HEADROOM = 0.80   # 20% safety margin for batch-shape / activation jitter
 
 
 def calibrate_token_budget(
