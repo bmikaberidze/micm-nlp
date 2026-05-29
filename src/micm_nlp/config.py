@@ -177,6 +177,10 @@ class PostprocConfig(_Flex):
     verify_labels_match: bool = False
     calc_confusion_matrix: bool = False
     prediction_axis: int = -1
+    # mcqa_ftp opt-in: restrict the answer-token argmax to the candidate label
+    # tokens in ds.label.names (lm-eval-harness multiple_choice style) instead of
+    # full-vocab argmax. Off keeps the default behaviour unchanged.
+    label_restricted_likelihood: bool = False
 
 
 class TaskConfig(_Flex):

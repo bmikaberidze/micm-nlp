@@ -1,5 +1,6 @@
 import evaluate
 import numpy as np
+import torch
 
 from micm_nlp.enums import TaskCatSE
 from micm_nlp.evals.metrics.log_likelihood import compute_log_likelihood_accurac
@@ -345,3 +346,113 @@ def count_decoded_unknown_label_predictions(predictions, label_classes):
     pred_unk_percentage = (len(pred_unk_labels) / total_preds) * 100 if total_preds > 0 else 0
     print(f'\nLabel Classes: {label_classes}')
     print(f'Predictions > \n Total: {total_preds} \n Unknown: {len(pred_unk_labels)} ({pred_unk_percentage:.4f})%')
+
+
+# =============================================
+
+
+
+def _label_candidate_token_ids(config, tokenizer):
+    """Resolve the candidate answer-label token ids from ``config.ds.label.names``.
+
+    ``config.ds.label.names`` is the single source of truth for the label set
+    (e.g. ``[A, B, C, D]``); a missing/empty list is an error. Each name must
+    tokenize to exactly one token — the bare-letter token the FTP data stores
+    as the gold answer (template ends ``Answer：A`` with no leading space, so we
+    encode without a space prefix). Returns ``(names, candidate_ids)``.
+    """
+    label_cfg = getattr(config.ds, 'label', None)
+    names = getattr(label_cfg, 'names', None) if label_cfg is not None else None
+    if not names:
+        raise ValueError('label_restricted_likelihood requires config.ds.label.names to be set')
+
+    candidate_ids = []
+    for name in names:
+        enc = tokenizer.encode(name, add_special_tokens=False)
+        if len(enc) != 1:
+            raise ValueError(f'label name {name!r} must encode to a single token, got {enc}')
+        candidate_ids.append(enc[0])
+    return list(names), candidate_ids
+
+
+def get_preprocess_logits_for_metrics(config, num_virtual_tokens=None, tokenizer=None):
+    """Build the HF Trainer ``preprocess_logits_for_metrics`` hook.
+
+    Reduces raw logits to the prediction shape ``get_compute_metrics`` consumes,
+    BEFORE they are cached for the eval loop. The two form a pair: whatever shape
+    this emits is exactly what compute_metrics expects to receive.
+    """
+    print('Get preprocess_logits_for_metrics function...')
+    pred_axis = config.task.preproc_rules.prediction_axis
+    is_log_likelihood = 'log_likelihood' in config.task.metric_groups[0].metrics[0]
+    is_causal_lm = config.task.category == TaskCatSE.TEXT_GENERATION
+    # Opt-in (mcqa_ftp): restrict the answer-position argmax to the candidate
+    # label tokens (resolved from ds.label.names). The argmax happens here so
+    # the eval pipeline never sees vocab-dim or per-candidate intermediates —
+    # the returned shape matches the regular causal-LM path.
+    label_restricted = getattr(config.task.preproc_rules, 'label_restricted_likelihood', False)
+    candidate_ids = _label_candidate_token_ids(config, tokenizer)[1] if label_restricted else None
+    # Symmetric half of the runner's shift_labels_by auto-inject: when peft's
+    # CausalLM/Seq2SeqLM forward prepends virtual-token labels internally, logits
+    # come out at L+n while batch labels stay at L. Trim the prefix here. The
+    # shape guard below keeps this a no-op for every other wiring (TokenCls with
+    # a shift-labels collator, non-peft, LoRA, etc.) — no task-category branch needed.
+    trim_prefix = int(num_virtual_tokens) if num_virtual_tokens else 0
+
+    def preprocess_logits_for_metrics(logits, labels):
+        # Handle models like T5 returning multiple outputs
+        if isinstance(logits, tuple):
+            logits = logits[0]
+
+        if trim_prefix and labels is not None and logits.shape[-2] == labels.shape[-1] + trim_prefix:
+            logits = logits[..., trim_prefix:, :]
+
+        if torch.isnan(logits).any():
+            print('⚠️ NAN detected in logits!')
+        if labels is not None and torch.isnan(labels).any():
+            print('⚠️ NAN detected in labels!')
+
+        # Causal shift: logits at position t predict token t+1, so for label at
+        # position t we use logits at t-1. All causal-LM branches below operate
+        # on this shifted view; the non-causal fallback uses logits as-is.
+        if is_causal_lm:
+            shift_logits = logits[..., :-1, :]  # (batch, seq-1, vocab)
+            shift_labels = labels[..., 1:]      # (batch, seq-1)
+        else:
+            shift_logits, shift_labels = logits, labels
+
+        if label_restricted:
+            # FTP places exactly one answer token per row; argmax over the mask
+            # finds it. Restrict the answer-slot argmax to candidate label tokens
+            # and return (batch, seq) aligned with the original labels so the
+            # regular filter_padded path picks up (pred, label) at the answer slot.
+            answer_slot = torch.argmax((shift_labels != -100).to(torch.int), dim=1)  # (batch,)
+            rows = torch.arange(shift_logits.shape[0], device=shift_logits.device)
+            answer_logits = shift_logits[rows, answer_slot]  # (batch, vocab)
+            cand = torch.as_tensor(candidate_ids, device=answer_logits.device)
+            best_cand_token = cand[torch.argmax(answer_logits[:, cand], dim=-1)]  # (batch,)
+            predictions = torch.zeros_like(labels)
+            predictions[rows, answer_slot + 1] = best_cand_token
+            return predictions
+
+        if is_log_likelihood:
+            # Gather the gold-token log-prob at each non -100 position, then
+            # aggregate to (batch, 2) = [sequence_ll, sequence_length].
+            log_probs = torch.nn.functional.log_softmax(shift_logits, dim=-1)
+            gather_idx = shift_labels.clone()
+            gather_idx[gather_idx == -100] = 0  # safe index; masked out below
+            label_log_probs = log_probs.gather(-1, gather_idx.unsqueeze(-1)).squeeze(-1)
+            mask = (shift_labels != -100).float()
+            label_log_probs = label_log_probs * mask
+            return torch.stack([label_log_probs.sum(dim=-1), mask.sum(dim=-1)], dim=-1)
+
+        if is_causal_lm:
+            predictions = torch.argmax(shift_logits, dim=pred_axis).to(torch.long)
+            pad = torch.zeros_like(predictions[..., :1])
+            return torch.cat([pad, predictions], dim=-1)
+
+        predictions = torch.argmax(logits, dim=pred_axis)
+        return predictions.to(torch.long)
+
+    return preprocess_logits_for_metrics
+

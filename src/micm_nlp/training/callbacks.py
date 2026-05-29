@@ -2,82 +2,10 @@ import torch
 import wandb
 from transformers import EarlyStoppingCallback, TrainerCallback, TrainerControl, TrainerState, TrainingArguments
 
-from micm_nlp.enums import PretSourceSE, TaskCatSE
+from micm_nlp.enums import PretSourceSE
 from micm_nlp.models.xpe import CrossPromptEncoder
 
 # from transformers.trainer_utils import get_last_checkpoint
-
-
-def get_preprocess_logits_for_metrics(config, num_virtual_tokens=None):
-    print('Get preprocess_logits_for_metrics function...')
-    pred_axis = config.task.preproc_rules.prediction_axis
-    is_log_likelihood = 'log_likelihood' in config.task.metric_groups[0].metrics[0]
-    is_causal_lm = config.task.category == TaskCatSE.TEXT_GENERATION
-    # Symmetric half of the runner's shift_labels_by auto-inject: when peft's
-    # CausalLM/Seq2SeqLM forward prepends virtual-token labels internally, logits
-    # come out at L+n while batch labels stay at L. Trim the prefix here. The
-    # shape guard below keeps this a no-op for every other wiring (TokenCls with
-    # a shift-labels collator, non-peft, LoRA, etc.) — no task-category branch needed.
-    trim_prefix = int(num_virtual_tokens) if num_virtual_tokens else 0
-
-    def preprocess_logits_for_metrics(logits, labels):
-        # Handle models like T5 returning multiple outputs
-        # Extract the first element, which contains the logits tensor
-        if isinstance(logits, tuple):
-            logits = logits[0]
-
-        if trim_prefix and labels is not None and logits.shape[-2] == labels.shape[-1] + trim_prefix:
-            logits = logits[..., trim_prefix:, :]
-
-        if torch.isnan(logits).any():
-            print('⚠️ NAN detected in logits!')
-        if labels is not None and torch.isnan(labels).any():
-            print('⚠️ NAN detected in labels!')
-
-        if is_log_likelihood:
-            # Shift for causal LM: position t predicts token t+1
-            shift_logits = logits[..., :-1, :].contiguous()  # (batch, seq-1, vocab)
-            shift_labels = labels[..., 1:].contiguous()  # (batch, seq-1)
-
-            # Compute log softmax over vocabulary
-            log_probs = torch.nn.functional.log_softmax(shift_logits, dim=-1)
-
-            # Gather log-probs for actual label tokens
-            # Replace -100 with 0 temporarily for gather (will mask out later)
-            labels_for_gather = shift_labels.clone()
-            labels_for_gather[labels_for_gather == -100] = 0
-
-            # Gather log-prob of the label token at each position
-            label_log_probs = log_probs.gather(-1, labels_for_gather.unsqueeze(-1)).squeeze(-1)
-
-            # Create mask for valid (non -100) positions
-            mask = (shift_labels != -100).float()
-
-            # Zero out log-probs at masked positions
-            label_log_probs = label_log_probs * mask
-
-            # # Stack for compute_metrics
-            # return torch.stack([label_log_probs, mask], dim=-1)
-
-            # Aggregate
-            sequence_ll = label_log_probs.sum(dim=-1)  # (batch,) - total LL per sample
-            sequence_lengths = mask.sum(dim=-1)  # (batch,) - target length per sample
-
-            # Return shape (batch, 2)
-            return torch.stack([sequence_ll, sequence_lengths], dim=-1)
-
-        else:
-            if is_causal_lm:
-                # Causal-LM shift: logits at position t predict token t+1,
-                # so the prediction for label at position t comes from logits at t-1.
-                shift_logits = logits[..., :-1, :]
-                predictions = torch.argmax(shift_logits, dim=pred_axis).to(torch.long)
-                pad = torch.zeros_like(predictions[..., :1])
-                return torch.cat([pad, predictions], dim=-1)
-            predictions = torch.argmax(logits, dim=pred_axis)
-            return predictions.to(torch.long)
-
-    return preprocess_logits_for_metrics
 
 
 class EmptyCudaCacheCallback(TrainerCallback):

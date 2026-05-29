@@ -20,7 +20,7 @@ from wandb.sdk.wandb_settings import Settings
 import micm_nlp.path as nlpka_path
 import micm_nlp.utils as utils
 from micm_nlp.enums import DeviceSE, DsSplitSE, ModelArchSE, ModeSE, TaskCatSE
-from micm_nlp.evals.eval import get_compute_metrics
+from micm_nlp.evals.eval import get_compute_metrics, get_preprocess_logits_for_metrics
 from micm_nlp.models.peft import PEFT
 from micm_nlp.models.xpe import is_xpe_config
 from micm_nlp.training.callbacks import (
@@ -29,7 +29,6 @@ from micm_nlp.training.callbacks import (
     LossEarlyStoppingCallback,
     NormalizePromptEncoderEmbeddings,
     ParamNormLogger,
-    get_preprocess_logits_for_metrics,
 )
 from micm_nlp.training.trainers import custom_trainer_class_factory
 
@@ -343,7 +342,9 @@ class TRAINER:
             self._dataset.validation,
         )
         self.preprocess_logits_for_metrics = get_preprocess_logits_for_metrics(
-            self._config, num_virtual_tokens=PEFT.get_total_virtual_tokens(self._model)
+            self._config,
+            num_virtual_tokens=PEFT.get_total_virtual_tokens(self._model),
+            tokenizer=self._tokenizer,
         )
 
     # -- W&B ---------------------------------------------------------------
