@@ -95,16 +95,30 @@ class TRAINER:
 
     # -- Train / Evaluate / Test -------------------------------------------
 
+    def _aligned_ds_split(self, ds_split, sampler_attr: str):
+        """Reorder ``ds_split`` to match the most recent dataloader's emit order.
+
+        Reads ``self.trainer.<sampler_attr>``; if that batch sampler exposes
+        an ``order`` (e.g. ``TokenBudgetBatchSampler``), returns a permuted
+        view such that ``ds_split[i]`` lines up with ``predictions[i]``.
+        Returns the dataset unchanged on the SequentialSampler path.
+        """
+        sampler = getattr(self.trainer, sampler_attr, None)
+        order = getattr(sampler, 'order', None) if sampler is not None else None
+        return ds_split.select(order) if order is not None else ds_split
+
     def _train(self):
         utils.p('\n[green]Train Model...[/green]')
         print(f'Task name:  {self._config.task.name}')
+        # Thunk: resolved at compute_metrics call time, after the eval
+        # dataloader has been built and the sampler stashed on the trainer.
         self.trainer.compute_metrics = get_compute_metrics(
             self._config,
             self._model.label_pad_id,
             self._metric_prefix,
             self._model.eval_path,
             self._tokenizer,
-            self._dataset.validation,
+            lambda: self._aligned_ds_split(self._dataset.validation, '_last_eval_batch_sampler'),
         )
         self.trainer.train()
         self._load_best_model()
@@ -133,7 +147,7 @@ class TRAINER:
                 self._metric_prefix,
                 self._model.eval_path,
                 self._tokenizer,
-                ds_split,
+                lambda: self._aligned_ds_split(ds_split, '_last_eval_batch_sampler'),
             )
             eval_res = self.trainer.evaluate(ds_split, metric_key_prefix=metric_key_prefix)
             utils.p(eval_res)
@@ -151,7 +165,7 @@ class TRAINER:
                 self._metric_prefix,
                 self._model.eval_path,
                 self._tokenizer,
-                self._dataset.test,
+                lambda: self._aligned_ds_split(self._dataset.test, '_last_test_batch_sampler'),
             )
 
             test_res = self.trainer.predict(self._dataset.test, metric_key_prefix=metric_key_prefix)
@@ -183,8 +197,12 @@ class TRAINER:
                 named_labs.append(label_names[labs])
             predictions, labels = named_preds, named_labs
 
+        # predictions/labels arrived in the test dataloader's emit order;
+        # align ds_split to match so per-sample zips don't cross wires.
+        aligned_test = self._aligned_ds_split(self._dataset.test, '_last_test_batch_sampler')
+
         print_num = 5
-        for prediction, label, sample in zip(predictions, labels, self._dataset.test, strict=True):
+        for prediction, label, sample in zip(predictions, labels, aligned_test, strict=True):
             input_ids = sample[self._dataset.keys.input_ids]
             readable_tokens = [self._tokenizer.decode(tok_id) for tok_id in input_ids]
 

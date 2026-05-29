@@ -24,7 +24,7 @@ import torch
 from torch.utils.data import Sampler
 
 
-_HEADROOM = 0.85   # 15% safety margin for batch-shape / activation jitter
+_HEADROOM = 0.80   # 20% safety margin for batch-shape / activation jitter
 
 
 def calibrate_token_budget(
@@ -33,7 +33,7 @@ def calibrate_token_budget(
     lengths: Sequence[int],
     pad_multiple: int = 1,
     floor: int = 256,
-    tolerance: int = 64,
+    tolerance: int | None = None,
 ) -> int:
     """Find the largest token budget such that the sampler's widest batch
     fits in VRAM.
@@ -56,7 +56,9 @@ def calibrate_token_budget(
         lengths: per-sample sequence lengths (the dataset's length column).
         pad_multiple: collator's pad_to_multiple_of (1 = no rounding).
         floor: raise if no fitting shape produces a budget at or above this.
-        tolerance: binary search stops when (hi - lo) <= this many samples.
+        tolerance: deprecated and ignored. The search now always runs to
+            convergence (exact largest fitting k). Kept for call-site
+            compatibility.
 
     Returns:
         int: token budget = (largest fitting k) × padded(L_k) × _HEADROOM.
@@ -106,19 +108,22 @@ def calibrate_token_budget(
         )
 
     # Binary search: largest k in [1, n] where (k, padded(sorted_lens[k-1])) fits.
+    # Invariant: _probe(lo) is True; _probe(hi + 1) is False (or hi == n).
+    # Run to convergence (lo == hi) to find the exact largest fitting k.
+    #
+    # Do NOT early-exit on a coarse window (e.g. while hi - lo > tolerance):
+    # when the true k lies inside a window the coarse halving steps jump over,
+    # the loop leaves lo=1 and a single top-edge probe can't recover it, so the
+    # budget collapses to one shortest sequence. That silently mis-batched every
+    # heavily-tokenised language (small fitting k) at batch size 1 — and tripped
+    # the floor entirely when the shortest sequence was below it.
     lo, hi = 1, n
-    while hi - lo > tolerance:
+    while lo < hi:
         mid = (lo + hi + 1) // 2
         if _probe(mid):
             lo = mid
         else:
             hi = mid - 1
-
-    # Handle small-dataset case: when n <= tolerance, the loop above
-    # doesn't execute, leaving lo=1. Probe hi directly to determine the
-    # true largest fitting k.
-    if lo < hi and _probe(hi):
-        lo = hi
 
     budget_raw = lo * _padded(sorted_lens[lo - 1])
     if budget_raw < floor:
@@ -159,6 +164,12 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
         self._pad_multiple = pad_multiple
         self._order = sorted(range(len(self._lengths)), key=lambda i: self._lengths[i])
         self._cached_len: int | None = None
+
+    @property
+    def order(self) -> list[int]:
+        # Per-sample emission order (length-ascending). Public so downstream
+        # consumers can align dataset-order rows to predictions-yield order.
+        return list(self._order)
 
     def _padded(self, length: int) -> int:
         pm = self._pad_multiple

@@ -33,8 +33,13 @@ def get_compute_metrics(config, label_pad_id, metric_prefix, eval_path, tokenize
         if predictions is None or labels is None:
             raise ValueError('predictions or labels are None')
 
+        # ds_split may be a thunk that defers ordering decisions until after
+        # the dataloader has been built (e.g. to align with a length-sorted
+        # batch sampler). Resolve once here so verify/preproc see one snapshot.
+        resolved_ds_split = ds_split() if callable(ds_split) else ds_split
+
         # Verify that the labels match the predictions
-        verify_labels_match(ds_split, labels, config) if getattr(
+        verify_labels_match(resolved_ds_split, labels, config) if getattr(
             config.task.preproc_rules, 'verify_labels_match', False
         ) else None
 
@@ -44,7 +49,7 @@ def get_compute_metrics(config, label_pad_id, metric_prefix, eval_path, tokenize
         ) else None
 
         # Preprocess predictions and labels if necessary
-        predictions, labels = preproc_preds_labels(predictions, labels, config, label_pad_id, tokenizer, ds_split)
+        predictions, labels = preproc_preds_labels(predictions, labels, config, label_pad_id, tokenizer, resolved_ds_split)
 
         # DEBUG: show first N preds/labels (decoded if they look like token ids)
         try:

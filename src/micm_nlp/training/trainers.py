@@ -354,6 +354,11 @@ class CustomTrainerMixin:
             dataloader_params['drop_last'] = self.args.dataloader_drop_last
             dataloader_params['prefetch_factor'] = self.args.dataloader_prefetch_factor
 
+        # Stash the active batch_sampler so compute_metrics can read its
+        # `order` to align ds_split → predictions-yield order. None when the
+        # SequentialSampler path is used (dataset order already matches).
+        self._last_eval_batch_sampler = dataloader_params.get('batch_sampler')
+
         # accelerator.free_memory() will destroy the references, so
         # we need to store the non-prepared version
         eval_dataloader = DataLoader(eval_dataset, **dataloader_params)
@@ -391,6 +396,11 @@ class CustomTrainerMixin:
             )
             dataloader_params['drop_last'] = self.args.dataloader_drop_last
             dataloader_params['prefetch_factor'] = self.args.dataloader_prefetch_factor
+
+        # Stash the active batch_sampler so compute_metrics can read its
+        # `order` to align ds_split → predictions-yield order. None on the
+        # SequentialSampler path (dataset order already matches).
+        self._last_test_batch_sampler = dataloader_params.get('batch_sampler')
 
         return self.accelerator.prepare(DataLoader(test_dataset, **dataloader_params))
 
