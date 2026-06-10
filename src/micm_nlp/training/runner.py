@@ -468,7 +468,11 @@ class TRAINER:
         targs.fp16 = getattr(targs, 'fp16', False) and self._model.device == torch.device(DeviceSE.CUDA)
 
         reproducibility = getattr(targs, 'full_determinism', False)
-        if not reproducibility:
+        # Randomize per run only when no seed was pinned in the config. An
+        # explicitly configured seed is honored without forcing full
+        # determinism, so callers can share fixed seeds across methods (paired
+        # comparison) at no deterministic-algorithm overhead.
+        if not reproducibility and getattr(targs, 'seed', None) is None:
             targs.seed = random.randint(0, 2**32 - 1)
 
         if getattr(targs, 'metric_for_best_model', None) is not None:
