@@ -402,6 +402,9 @@ class TRAINER:
                     early_stopping_patience=self._config.custom_training_args.early_stopping_patience,
                     early_stopping_threshold=self._config.custom_training_args.early_stopping_threshold,
                     early_stopping_after=self._config.custom_training_args.early_stopping_after,
+                    early_stopping_metric=getattr(
+                        self._config.custom_training_args, 'early_stopping_metric', None
+                    ) or 'eval_loss',
                 )
             )
 

@@ -383,6 +383,12 @@ class CustomTrainingArgsConfig(_Flex):
     early_stopping_after: float | None = None
     early_stopping_patience: int | None = None
     early_stopping_threshold: float | None = None
+    # Metric the early-stopping callback monitors — DECOUPLED from selection.
+    # 'metric_for_best_model' = delegate to training_args (same metric used to
+    # pick the best checkpoint, with its greater_is_better). Any literal key
+    # (e.g. 'eval_loss') = monitor that directly ('loss' in name -> lower better).
+    # None defaults to 'eval_loss' (legacy behavior).
+    early_stopping_metric: str | None = None
     save_final_model: bool = True
     keep_only_final_model: bool = False
     random_task_exclusion: bool = False

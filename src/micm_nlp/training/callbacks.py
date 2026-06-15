@@ -149,16 +149,34 @@ class NormalizePromptEncoderEmbeddings(TrainerCallback):
 
 
 class LossEarlyStoppingCallback(EarlyStoppingCallback):
-    def __init__(self, early_stopping_patience=5, early_stopping_threshold=0.0, early_stopping_after=0.5):
+    """Early stopping decoupled from model selection, gated by an
+    ``early_stopping_after`` floor (fraction of max_steps before stopping is
+    allowed).
+
+    The monitored signal is chosen by ``early_stopping_metric``:
+      - ``'metric_for_best_model'`` (sentinel): delegate to the Trainer's
+        ``args.metric_for_best_model`` + ``args.greater_is_better`` — i.e. stop
+        on the same metric used to pick the best checkpoint.
+      - any other string (e.g. ``'eval_loss'``): treat it as a literal metric
+        key; direction inferred (``'loss'`` in the name → lower-is-better, else
+        greater-is-better). This preserves the original eval_loss behavior and
+        keeps early stopping SEPARABLE from selection.
+    Default ``'eval_loss'`` reproduces the pre-existing behavior.
+    """
+
+    SENTINEL_BEST = 'metric_for_best_model'
+
+    def __init__(self, early_stopping_patience=5, early_stopping_threshold=0.0,
+                 early_stopping_after=0.5, early_stopping_metric='eval_loss'):
         super().__init__(
             early_stopping_patience=early_stopping_patience, early_stopping_threshold=early_stopping_threshold
         )
         self.best_metric = None
         self.patience_counter = 0
         self.early_stopping_after = early_stopping_after
+        self.early_stopping_metric = early_stopping_metric or 'eval_loss'
 
     def on_evaluate(self, args, state, control, metrics, **kwargs):
-        metric_to_check = 'eval_loss'
         current_step = state.global_step
         required_min_step = int(state.max_steps * self.early_stopping_after)
 
@@ -166,19 +184,42 @@ class LossEarlyStoppingCallback(EarlyStoppingCallback):
             # Skip early stopping before threshold step
             return control
 
+        # Resolve which metric to monitor (decoupled from selection by default).
+        if self.early_stopping_metric == self.SENTINEL_BEST:
+            metric_to_check = args.metric_for_best_model or 'eval_loss'
+            greater_is_better = bool(args.greater_is_better)
+        else:
+            metric_to_check = self.early_stopping_metric
+            greater_is_better = 'loss' not in metric_to_check.lower()
+        if not metric_to_check.startswith('eval_'):
+            metric_to_check = f'eval_{metric_to_check}'
+
         current = metrics.get(metric_to_check)
+        if current is None:
+            # Robustness: the toolkit may expand metric_for_best_model into a
+            # task-prefixed key (e.g. 'eval_tune.<cfg>/accuracy'). Match by suffix.
+            suffix = metric_to_check.split('/')[-1]
+            cands = [v for k, v in metrics.items()
+                     if k.startswith('eval_') and k.endswith(suffix)]
+            current = cands[0] if cands else None
 
         if self.best_metric is None or current is None:
             self.best_metric = current
             return control
 
-        if current < self.best_metric - self.early_stopping_threshold:
+        if greater_is_better:
+            improved = current > self.best_metric + self.early_stopping_threshold
+        else:
+            improved = current < self.best_metric - self.early_stopping_threshold
+
+        if improved:
             self.best_metric = current
             self.patience_counter = 0
         else:
             self.patience_counter += 1
             if self.patience_counter >= self.early_stopping_patience:
-                print(f'[EarlyStopping] Triggered at step {current_step}')
+                print(f'[EarlyStopping] Triggered at step {current_step} '
+                      f'on {metric_to_check} (greater_is_better={greater_is_better})')
                 control.should_training_stop = True
 
         print(f'\nEarly stopping patience counter: {self.patience_counter}/{self.early_stopping_patience}\n')
