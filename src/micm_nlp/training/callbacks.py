@@ -148,7 +148,7 @@ class NormalizePromptEncoderEmbeddings(TrainerCallback):
             wandb.log({'train/ape_embedd_norm': mean_norm})
 
 
-class LossEarlyStoppingCallback(EarlyStoppingCallback):
+class CustomEarlyStoppingCallback(EarlyStoppingCallback):
     """Early stopping decoupled from model selection, gated by an
     ``early_stopping_after`` floor (fraction of max_steps before stopping is
     allowed).

@@ -26,7 +26,7 @@ from micm_nlp.models.xpe import is_xpe_config
 from micm_nlp.training.callbacks import (
     DownstreamFineTuningCallback,
     EmptyCudaCacheCallback,
-    LossEarlyStoppingCallback,
+    CustomEarlyStoppingCallback,
     NormalizePromptEncoderEmbeddings,
     ParamNormLogger,
 )
@@ -398,7 +398,7 @@ class TRAINER:
 
         if self._config.custom_training_args.early_stopping_patience:
             self._trainer_callbacks.append(
-                LossEarlyStoppingCallback(
+                CustomEarlyStoppingCallback(
                     early_stopping_patience=self._config.custom_training_args.early_stopping_patience,
                     early_stopping_threshold=self._config.custom_training_args.early_stopping_threshold,
                     early_stopping_after=self._config.custom_training_args.early_stopping_after,
