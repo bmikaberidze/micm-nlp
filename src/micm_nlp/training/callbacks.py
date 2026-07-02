@@ -131,7 +131,12 @@ class NormalizePromptEncoderEmbeddings(TrainerCallback):
     A custom callback that normalizes the prompt encoder embeddings.
     """
 
-    def on_optimizer_step(self, args, state, control, model=None, **kwargs):
+    def on_step_end(self, args, state, control, **kwargs):
+        # NB: must be on_step_end (fires + receives model via kwargs, like
+        # ParamNormLogger). on_optimizer_step did NOT pass `model` under
+        # transformers 4.48 -> the body silently early-returned and no
+        # normalization ever happened.
+        model = kwargs.get('model')
         if model is None:
             return
         active_adapter = getattr(model, 'active_adapter', None)
@@ -145,7 +150,7 @@ class NormalizePromptEncoderEmbeddings(TrainerCallback):
             return
         if isinstance(prompt_encoder, CrossPromptEncoder):
             mean_norm = prompt_encoder.normalize_embeddings()
-            wandb.log({'train/ape_embedd_norm': mean_norm})
+            wandb.log({'train/xpe_embedd_norm': mean_norm})
 
 
 class CustomEarlyStoppingCallback(EarlyStoppingCallback):
