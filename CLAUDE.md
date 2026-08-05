@@ -4,7 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**nlpka** is an NLP research toolkit built on HuggingFace Transformers, supporting tokenization, pretraining, fine-tuning, and PEFT across encoder-only, decoder-only, and encoder-decoder architectures. It has been used in two peer-reviewed publications covering BERT-like pretraining/fine-tuning for text and token classification, and parameter-efficient soft prompt tuning across 200 languages (SIB-200 topic classification) with cross-prompt encoders on XLM-RoBERTa-large. The most recent work — **Cross-Prompt Encoder (XPE)** — is accepted at *Findings of IJCNLP–AACL 2025* ([arXiv:2508.10352](https://arxiv.org/abs/2508.10352)). The toolkit is expanding to decoder-only models and includes T5 encoder-decoder pipelines for fine-tuning and evaluation.
+**micm-nlp** (import name `micm_nlp`) is an NLP research toolkit built on HuggingFace
+Transformers, covering tokenization, pretraining, fine-tuning and PEFT across
+encoder-only, decoder-only and encoder-decoder architectures. It is the shared core
+that experiment repos build on — **not** a frozen third-party dependency; it is
+maintained alongside them.
+
+It has backed two peer-reviewed publications: BERT-like pretraining/fine-tuning for
+text and token classification, and parameter-efficient soft-prompt tuning across 200
+languages (SIB-200 topic classification) with cross-prompt encoders on
+XLM-RoBERTa-large. The most recent work — **Cross-Prompt Encoder (XPE)** — is in
+*Findings of IJCNLP–AACL 2025* ([arXiv:2508.10352](https://arxiv.org/abs/2508.10352)).
+Current work extends it to decoder-only backbones (Aya, BLOOMZ) and to further
+encoder backbones on SIB-200.
+
+Predecessor: the package was formerly called `nlpka`. That name and its module paths
+(`src/nlpka/...`, `nlpka.models.scripts.*`) survive only in the legacy repo at
+`/fscratch/bmikaberidze/XPE` — nothing here uses them.
 
 ## Setup
 
@@ -19,38 +35,58 @@ docker run --gpus all -it --rm -v $(pwd):/xpe_runner -w /xpe_runner xpe bash
 pip install -e ".[dev]"
 ```
 
+## Running on the SLURM cluster (pegasus)
+
+**NEVER run python on the login node. Every step goes through `sbatch` + an array,
+and the container that `run.sh` starts carries the correct environment** — it is the
+only interpreter whose output counts. This covers dataset downloads, tokenization,
+probes, training, evaluation and pytest. The bare `python -m …` commands documented
+below are the **inner** command that goes inside the wrapper's quotes.
+
+```bash
+sbatch --array=0 --mem=30G --wait runtime/clusters/pegasus/shell/run.sh --site-packages --no-gpu \
+  "python -m pytest tests/ -q"
+
+# a consumer repo's experiment grid, throttled to 10 concurrent tasks
+sbatch --array=0-59%10 --mem=30G runtime/clusters/pegasus/shell/run.sh --site-packages \
+  "python -m scripts.run_xlt_meta --meta-config ... --test-config ... --source-group ..."
+```
+
+### The rules
+
+- **ALWAYS an array — even for one job** (`--array=0`). Never a bare `sbatch`.
+- **NEVER loop `sbatch` over runs.** A shell loop submitting one `sbatch` per run puts
+  one row per run in `squeue`, floods the cluster and has **no throttle**. One array
+  submission is one row and is throttleable. If you are writing
+  `for X in ...; do sbatch ...; done` over *runs*, that matrix belongs in a config.
+- **ALWAYS throttle with `%10`** — `--array=0-59%10` runs at most 10 tasks at once.
+  Unthrottled arrays starve other users and make dead nodes harder to spot.
+- `--array`, `--mem`, `--partition` go on the **`sbatch` CLI**, never after `run.sh`:
+  the wrapper consumes only `--site-packages` and `--no-gpu` as `$1`, and **anything
+  else becomes the command it runs**, so a stray `--mem 30G` silently drops your
+  python command. Add `--no-gpu` for CPU-only steps.
+- `--mem` stays **≥30G** always — the ~25 GB container image unpacks into the job cgroup.
+- Read output from `runtime/clusters/pegasus/shell/logs/sbatch/{jobid}_{task}.{out,err}`,
+  not stdout. `--wait` blocks until the job finishes.
+- Multi-line inspection snippets: write a `.py` file first, then run
+  `"python <path>.py"` through the wrapper — nesting quotes inside `run.sh "…"` is fragile.
+
 ## Common Commands
 
-**Download dataset:**
-```bash
-python -m micm_nlp.datasets.scripts.sib200.download_tokenized
-```
+`micm_nlp` is a **library**, not an experiment runner — it ships no experiment
+entrypoints of its own. Experiments live in consumer repos and import from here:
 
-**Run experiment (main entrypoint):**
-```bash
-python -m micm_nlp.models.scripts.peft.xpe.run \
-  --config xlmr/finetune/peft/sib200_hybrid.xpe \
-  --supervision_regime=<0|1> <source_dataset> <setup_id>
-```
+- **`/fscratch/bmikaberidze/xpe-exp`** — the current XPE work (Belebele decoders,
+  SIB-200 encoders). Its `scripts/run_xlt.py` / `scripts/run_xlt_meta.py` are the
+  real entrypoints; they drive `CONFIG → DATASET → MODEL → PEFT → TRAINER`.
+- **`/fscratch/bmikaberidze/XPE`** — the legacy `nlpka` repo that produced the
+  published IJCNLP-AACL 2025 results. Read-only reference. Its
+  `nlpka.models.scripts.peft.xpe.run` entrypoint does **not** exist here.
 
-- `--supervision_regime`: `0` = Zero-Shot XLT, `1` = Fully Supervised XLT
-- `<source_dataset>`: `sib200_enarzho`, `sib200_joshi5`, `sib200_xlmr_seen` (zero-shot) or `sib200_joshi5_divers_24` (supervised)
-- `<setup_id>`: `1`=SPT, `2`=D30 (30% XPE hybrid), `3`=D70 (70% XPE hybrid), `4`=XPE
-
-**Collect hidden states:**
+**Tests** (via the wrapper — see the SLURM section above):
 ```bash
-python -m micm_nlp.models.scripts.peft.xpe.collect_hs_v
-```
-
-**Evaluate AYA on Belebele:**
-```bash
-python -m micm_nlp.evaluations.scripts.eval_aya_belebele
-```
-
-**Visualize / quantitative analysis:**
-```bash
-python -m micm_nlp.evaluations.scripts.plot
-python -m micm_nlp.evaluations.scripts.quant
+sbatch --array=0 --mem=30G --wait runtime/clusters/pegasus/shell/run.sh --site-packages --no-gpu \
+  "python -m pytest tests/ -q"
 ```
 
 **Lint & format:**
@@ -59,73 +95,126 @@ ruff check src/
 ruff format src/
 ```
 
+**Install into a consumer repo** (editable, so edits here take effect immediately):
+```bash
+python -m pip install -e /fscratch/bmikaberidze/micm-nlp
+```
+
 ## Project Structure
 
+Standard `src` layout; `pip install -e .` makes `from micm_nlp.X import Y` work.
+
 ```
-ExpXPE/
-├── pyproject.toml              # Package metadata, dependencies, ruff config
+micm-nlp/
+├── pyproject.toml              # hatchling; name = micm-nlp, requires-python >=3.10
 ├── dockerfile
-├── .env.example
-├── config/                     # YAML experiment configs
-├── examples/                   # Simple usage demos for the package API
-├── experiments/                # Research-specific code (XPE, SIB-200, evals)
-│   ├── config/                 # Experiment config utilities (xpe_utils, etc.)
-│   ├── datasets/               # Dataset prep (SIB-200, Belebele, xStory, etc.)
-│   ├── models/                 # Experiment runners (XPE train, collect HS, etc.)
-│   └── evals/                  # Plots, quantitative analysis, eval scripts
-├── artefacts/                  # Generated outputs
-└── src/micm_nlp/               # Package source (standard src layout)
-    ├── pipeline.py             # High-level wiring: load_dataset, load_model, run
-    ├── env.py                  # Loads .env, exposes os.environ as `env`
-    ├── setup.py                # Runtime init (Rich pretty-printing + traceback)
-    ├── utils.py                # Pure helpers, JSON/YAML/pickle I/O, SimpleNamespace utils
-    ├── path.py                 # Project path resolution, directory traversal
-    ├── enums.py                # StrEnum definitions for all categorical choices
-    ├── config.py               # Config loader (YAML → SimpleNamespace)
-    ├── datasets/               # Dataset loading/preprocessing
-    ├── tokenizers/             # Tokenizer factory (XLM-R, BERT, T5, etc.)
-    ├── models/                 # Model, PEFT, XPE, trainers, callbacks
-    └── evals/                  # Metrics, confusion matrices, plots
+├── examples/                   # usage demos for the package API
+├── tests/                      # pytest suite (+ tests/golden fixtures)
+├── runtime/                    # cluster wrappers (SLURM/pegasus)
+├── docs/
+└── src/micm_nlp/
+    ├── __init__.py             # re-exports `env` and `init` from bootstrap
+    ├── bootstrap.py            # .env loading (pydantic-settings), `env`, `init()`, set_root
+    ├── config.py               # CONFIG (YAML → validated objects) + PeftConfig/TaskConfig/...
+    ├── path.py                 # workspace/artefacts_dir/models_dir/datasets_dir/...
+    ├── pipeline.py             # thin wiring: load_dataset, preprocess_dataset, load_model, run
+    ├── utils.py                # resolve_cls, timing, get_time_id, JSON/YAML/pickle I/O
+    ├── enums.py                # every StrEnum (ModelArchSE, TaskCatSE, TaskNameSE, ...)
+    ├── datasets/dataset.py     # DATASET: load, tokenize, concat, splits
+    ├── tokenizers/             # tokenizer.py (factory) + xlm_roberta.py, bert_byt5.py,
+    │                           #   decoding.py, lib/sent/ka_sen_tok.py
+    ├── models/
+    │   ├── model.py            # MODEL: from_pretrained + task-derived kwargs
+    │   ├── peft.py             # PEFT: dispatch to stock PEFT or the XPE path
+    │   ├── architectures.py    # CustomT5ForConditionalGeneration (T5 + optional FlashAttention)
+    │   └── xpe/                # a PACKAGE, not a module
+    │       ├── encoder.py      # CrossPromptEncoder  <- XPE/SPT/DUAL are ALL this one class
+    │       ├── config.py       # CrossPromptEncoderConfig
+    │       ├── factory.py      # get_xpe_model, is_xpe_config, is_xpe_adapter_dir
+    │       ├── peft_models.py  # XPEPeftModelFor{SequenceClassification,CausalLM}
+    │       ├── heads.py        # MLP / LSTM / attention reparameterization heads
+    │       ├── save_load.py    # XPE-aware state-dict get/set
+    │       └── enums.py
+    ├── training/
+    │   ├── runner.py           # TRAINER: builds the HF Trainer, callbacks, collator
+    │   ├── trainers.py         # CustomTrainerMixin, RandomTaskExclusionBatchSampler
+    │   ├── callbacks.py        # CustomEarlyStopping, ParamNormLogger, NormalizePromptEncoder...
+    │   ├── data_collators.py   # custom collators
+    │   ├── batching.py         # TokenBudgetBatchSampler + calibration
+    │   └── logits_processors.py
+    └── evals/
+        ├── eval.py             # get_compute_metrics, preprocess_logits_for_metrics, grouping
+        ├── plot.py             # confusion matrices
+        └── metrics/            # log_likelihood, multirc, string_f1
 ```
 
 ## Architecture
 
-All core logic follows a class-based, config-driven pattern:
+Class-based and config-driven throughout:
 
 ```
-CONFIG (YAML) → TOKENIZER → DATASET → MODEL → PEFT → Trainer → EVALUATE
+CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER → compute_metrics
 ```
 
-| Class | File | Role |
-|-------|------|------|
-| `CONFIG` | `src/nlpka/config/config.py` | Loads YAML configs from `config/language_model/` |
-| `TOKENIZER` | `src/nlpka/tokenizers/tokenizer.py` | Tokenizer factory for XLM-R, BERT, T5, etc. |
-| `DATASET` | `src/nlpka/datasets/dataset.py` | Loads/preprocesses HuggingFace, CSV, or TXT datasets |
-| `MODEL` | `src/nlpka/models/model.py` | Wraps HuggingFace model + Trainer, WandB logging |
-| `PEFT` | `src/nlpka/models/peft.py` | Attaches LoRA / Prefix / P-Tuning / XPE to base model |
-| `CrossPromptEncoder` | `src/nlpka/models/xpe.py` | The XPE module (based on NeMo's prompt encoder) |
-| `EVALUATE` | `src/nlpka/evals/eval.py` | Metrics (accuracy, F1), confusion matrices, t-SNE plots |
+| Symbol | File | Role |
+|--------|------|------|
+| `CONFIG` | `src/micm_nlp/config.py` | Loads + validates YAML (`CONFIG.from_yaml`) |
+| `tokenizer.load()` | `src/micm_nlp/tokenizers/tokenizer.py` | `AutoTokenizer` factory; `tokenizer.args` is a verbatim passthrough |
+| `DATASET` | `src/micm_nlp/datasets/dataset.py` | Loads/preprocesses HF, CSV or TXT datasets; concatenation |
+| `MODEL` | `src/micm_nlp/models/model.py` | `from_pretrained` via `model.pretrained.cls`; injects `num_labels` for classification tasks; `model.pretrained.args` is a verbatim passthrough |
+| `PEFT` | `src/micm_nlp/models/peft.py` | Routes to stock PEFT or the XPE path |
+| `CrossPromptEncoder` | `src/micm_nlp/models/xpe/encoder.py` | The XPE module (based on NeMo's prompt encoder) |
+| `TRAINER` | `src/micm_nlp/training/runner.py` | Builds the HF Trainer: args, collator, callbacks, eval |
+| `get_compute_metrics` | `src/micm_nlp/evals/eval.py` | Metrics, per-task grouping, logits preprocessing |
 
-**PEFT dispatch**: `PEFT.setup_model()` checks `is_xpe_config()` to route between standard PEFT methods and the custom XPE path (`get_xpe_model()`, which instantiates `XPEPeftModelForSequenceClassification`). `PEFT.from_pretrained()` peeks at `adapter_config.json` via `is_xpe_adapter_dir()` and dispatches to `load_xpe_pretrained()` — this preserves loading of paper-era checkpoints saved with `peft_type='P_TUNING' + encoder_ratio`.
+**XPE / SPT / DUAL are ALL one class — `CrossPromptEncoder`.** All three set
+`peft_type: XPE` and differ only by `encoder_ratio`, the XPE fraction of the virtual
+tokens: **SPT = 0** (plain soft prompt, `reparam=NONE`, uses `self.embedding`),
+**XPE = 1** (`self.xpe_embedding` → `xpe_head` MLP), **DUAL = 0 < r < 1** (concat of
+both; the ratio is a free hyperparameter, not tied to the dataset). Consequence:
+anything gated on `isinstance(pe, CrossPromptEncoder)` fires for SPT too.
 
-**Enums** in `src/nlpka/enums.py` define all categorical choices (`ModelArchSE`, `TaskCatSE`, etc.) using `StrEnum` — check here before adding new method/task types.
+**PEFT dispatch**: `PEFT.setup_model()` checks `is_xpe_config()` to route between
+stock PEFT methods and the XPE path (`get_xpe_model()`, which picks an
+`XPEPeftModelFor*` subclass from `task_type`). `PEFT.from_pretrained()` peeks at
+`adapter_config.json` via `is_xpe_adapter_dir()` so paper-era checkpoints saved with
+`peft_type='P_TUNING' + encoder_ratio` still load.
 
-**Foundational modules** (no circular dependencies):
+**Class selection stays in YAML.** `model.pretrained.cls`, `trainer.cls`,
+`data_collator.cls` and `training_args.cls` are resolved by name against
+`transformers` (and, for collators, `micm_nlp.training.data_collators`). Adding a new
+backbone or head should need **no code change here** — if it does, that is a signal
+the change belongs in the consumer repo, not in this toolkit.
 
-| Module | Role | Depends on |
-|--------|------|------------|
-| `env.py` | Loads `.env`, exposes `env` | stdlib only |
-| `utils.py` | Pure helpers, file I/O | stdlib + numpy/rich/tqdm/yaml |
-| `path.py` | Path resolution, directory ops | `env` |
-| `setup.py` | Runtime init (`init()`): Rich pretty + traceback | stdlib + rich |
-| `enums.py` | All `StrEnum` types | stdlib only |
+**Enums** in `src/micm_nlp/enums.py` define the categorical choices (`ModelArchSE`,
+`TaskCatSE`, `TaskNameSE`, ...). Note `model.architecture` is *not* validated against
+`ModelArchSE` — it is a free-form string used for run-directory naming.
 
-**Runtime init**: Call `micm_nlp.setup.init()` at the top of entrypoint scripts to activate Rich pretty-printing and tracebacks. This is not triggered on import.
+**Runtime init**: `micm_nlp.init()` (from `bootstrap.py`) activates Rich pretty-printing
+and tracebacks and sets the project root. Not triggered on import.
+
+## Known defects (deliberately unfixed — see git log before "fixing" either)
+
+- **`training/runner.py:411` reads `self._config.task.peft`, but `peft` is a
+  top-level config block.** So `NormalizePromptEncoderEmbeddings` is never registered
+  and the embedding clip/unit-norm callback does not run. Commit `9921fac` fixed a
+  *different* no-op in the same feature (the callback hooked `on_optimizer_step`,
+  which does not receive `model` under transformers 4.48) — the config lookup is
+  still wrong. Fixing it would retroactively change the semantics of already-committed
+  experiment grids, so it needs its own scoped change plus a re-run decision.
+- **`training/data_collators.py:78-80`** — `DataCollatorTaskIDDecorator.__call__`
+  contains a leftover `print(batch[0])` / `exit()` debug body. The class is currently
+  unreachable, which is why this has survived.
 
 ## Key Conventions
 
-- All experiments are tracked via **WandB** (`WANDB_API_KEY` in `.env`).
-- HuggingFace token (`HF_TOKEN`) is needed for gated models/datasets.
-- Model/dataset/tokenizer artifacts are cached under their respective `storage/` subdirectories.
-- GPU training only (CPU supported for small-scale debugging); no non-NVIDIA GPU support.
-- Package uses standard `src` layout — `pip install -e .` makes `from micm_nlp.X import Y` work.
+- Keep this package **general**. Experiment-specific language groups, run-tree
+  layouts, result aggregation and dispatch logic belong in the consumer repo
+  (`xpe-exp/scripts/`), never here. If a backbone needs a one-off shim, prefer the
+  YAML passthroughs (`model.pretrained.args`, `tokenizer.args`) over new code.
+- Own git repo with its own branches — commit changes here separately from `xpe-exp`.
+- Experiments are tracked via **WandB** (`WANDB_API_KEY` in `.env`); gated
+  models/datasets need `HF_TOKEN`.
+- GPU training only (CPU works for small-scale debugging); no non-NVIDIA GPU support.
+- `peft` is pinned to `0.14.0` in `pyproject.toml` — XPE subclasses stock PEFT
+  internals, so bumping it is a breaking-change review, not a routine upgrade.
