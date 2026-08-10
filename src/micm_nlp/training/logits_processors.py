@@ -1,3 +1,14 @@
+"""Generation-time constraints on the decoder's output.
+
+``ConstrainedPrefixLogitsProcessor`` restricts free-form generation to a closed set
+of allowed strings. At each step it keeps only the candidate sequences that still
+match what has been generated so far and masks every token that no survivor could
+produce next; when nothing matches it forces EOS. This turns a generative model into
+a classifier over ``allowed_texts`` without touching the model itself.
+
+Wired up through ``custom_training_args.generation_whitelist``.
+"""
+
 import torch
 from transformers import LogitsProcessor
 

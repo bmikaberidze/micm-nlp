@@ -1,3 +1,13 @@
+"""A byte-level ByT5 tokenizer wearing BERT's special tokens.
+
+``BertByT5Tokenizer`` composes ``ByT5Tokenizer`` with BERT's special-token set and
+its ``build_inputs_with_special_tokens``, so a byte-level vocabulary can drive an
+encoder-only BERT-style model.
+
+Research module, from the Georgian tokenization comparison (ICNLSP 2024) where
+byte-level segmentation was one of the methods evaluated.
+"""
+
 from transformers import BertTokenizerFast, ByT5Tokenizer
 
 from micm_nlp.enums import ModelArchSE

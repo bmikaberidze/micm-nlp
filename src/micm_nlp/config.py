@@ -1,3 +1,28 @@
+"""``CONFIG`` — the YAML schema, validated.
+
+``CONFIG.from_yaml`` loads a run description into typed sections: ``task``, ``peft``,
+``model``, ``tokenizer``, ``ds``, ``eval``, ``test``, ``trainer``, ``training_args``,
+``data_collator``, ``custom_training_args``, ``cuda`` and ``env``. Loading also
+applies the ``env`` block to ``os.environ``.
+
+Two design points shape everything here.
+
+**Sections accept extra keys.** Every section inherits from ``_Flex``, which allows
+extras, implements the mapping protocol so ``dict(obj)`` and ``**obj`` expose both
+declared fields and extras, and recursively wraps nested dicts. YAML may therefore
+carry keys the schema does not declare, and runtime code may attach computed
+attributes (``uuid4``, ``param_size``). Note ``vars(obj)`` does **not** see extras —
+pydantic keeps them in ``__pydantic_extra__``; use ``dict(obj)``.
+
+**Class selection stays in YAML.** ``trainer.cls``, ``training_args.cls``,
+``data_collator.cls`` and ``model.pretrained.cls`` are thin shells: the real schema
+lives in HuggingFace, and the matching ``args`` block is splatted into the
+constructor at runtime.
+
+Importing this module also widens PyYAML's float resolver, so ``5e-5`` parses as a
+float rather than a string — YAML 1.1 otherwise requires a decimal point.
+"""
+
 from __future__ import annotations
 
 import os

@@ -1,3 +1,12 @@
+"""MultiRC scoring through the official SuperGLUE scorer.
+
+``evaluate.load('super_glue', 'multirc')`` will not accept a flat prediction array:
+each prediction must be tagged with its ``(paragraph, question, answer)`` index
+triple. This module rebuilds those triples from the ``idx/paragraph``,
+``idx/question`` and ``idx/answer`` columns of ``ds_split``, coercing predictions and
+labels to 0/1 along the way.
+"""
+
 import evaluate
 
 

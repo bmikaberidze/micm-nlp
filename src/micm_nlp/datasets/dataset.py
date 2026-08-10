@@ -1,3 +1,22 @@
+"""``DATASET`` — load, standardise, preprocess and tokenize the data.
+
+One class covers the whole data path. Construction loads from the HuggingFace Hub, a
+saved HF dataset on disk, or CSV/TXT/JSON files, and renames the configured input and
+label keys to the canonical names in ``DATASET.keys``, so everything downstream sees
+the same column names whatever the source called them.
+
+``preprocess(tokenizer)`` then runs the ``ds.preproc_rules`` pipeline: optional
+subsetting, splitting (by ratio or by token length), and tokenization in three
+stages — ``pre_rules`` (sentence splitting, EOS appending, text-to-text reframing),
+``rules`` (handed to the tokenizer verbatim), and ``post_rules`` (EOS-aware
+truncation, sample concatenation, length sorting).
+
+The remaining methods are inspection and assembly: length statistics and percentiles
+used to size truncation and batches, per-split previews, and
+``get_concatenated_dataset`` for stitching several datasets into one — how consumer
+repos build multilingual source sets from one config instantiated per language.
+"""
+
 import csv
 import gc
 from pathlib import Path

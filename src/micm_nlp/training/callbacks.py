@@ -1,3 +1,24 @@
+"""Trainer callbacks.
+
+- ``CustomEarlyStoppingCallback`` — early stopping decoupled from checkpoint
+  selection and gated by an ``early_stopping_after`` floor, so a run cannot stop
+  during its first fraction of steps.
+- ``NormalizePromptEncoderEmbeddings`` — normalises prompt-encoder embeddings each
+  step and logs the mean norm.
+- ``ParamNormLogger`` — logs parameter and parameter-update norms to W&B.
+- ``EmptyCudaCacheCallback`` — periodic ``torch.cuda.empty_cache()``.
+- ``DownstreamFineTuningCallback`` — fine-tunes on downstream tasks at evaluation
+  and save points.
+
+.. warning::
+   ``NormalizePromptEncoderEmbeddings`` is **never registered**. The registration in
+   :mod:`micm_nlp.training.runner` reads the settings from ``task.peft``, but ``peft``
+   is a top-level config block, so the lookup always returns ``None``. The callback
+   body itself is correct. Fixing the lookup would retroactively change the semantics
+   of already-committed experiment grids, so it needs its own scoped change plus a
+   re-run decision — see the git log before "fixing" it.
+"""
+
 import torch
 import wandb
 from transformers import EarlyStoppingCallback, TrainerCallback, TrainerControl, TrainerState, TrainingArguments

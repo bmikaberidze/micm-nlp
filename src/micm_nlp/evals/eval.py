@@ -1,3 +1,24 @@
+"""Metrics: what is computed after each evaluation, and on what.
+
+``get_compute_metrics`` builds the ``compute_metrics`` callable handed to the HF
+Trainer. Between raw model output and a number there are several configurable steps,
+all driven by ``task.preproc_rules``: decode or flatten predictions, drop padded
+positions, convert label ids to names or back, verify predictions and labels line up,
+group by task, and finally compute whatever ``task.metric_groups`` names.
+
+``get_preprocess_logits_for_metrics`` returns the companion hook that runs *before*
+logits leave the GPU. Taking the argmax there is what keeps an evaluation from
+accumulating full logits over the whole split. It is also where
+``preproc_rules.label_restricted_likelihood`` restricts the answer-slot argmax to the
+candidate label tokens in ``ds.label.names``, lm-eval-harness ``multiple_choice``
+style, while returning the same prediction shape as the ordinary causal-LM path — so
+nothing downstream needs to branch.
+
+``ds_split`` may be passed as a callable thunk instead of a Dataset; it is resolved
+once at call time, which is how the split gets reordered to match a batch sampler
+that does not yield in dataset order.
+"""
+
 import evaluate
 import numpy as np
 import torch

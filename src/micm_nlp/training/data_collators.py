@@ -1,3 +1,23 @@
+"""Data collators beyond the HuggingFace defaults.
+
+A collator is selected by name from ``data_collator.cls``, resolved against
+``transformers`` and this module, with ``data_collator.args`` handed to its
+constructor.
+
+- ``DataCollatorForPLMWithPadding`` — permutation language modelling with padding.
+- ``DataCollatorForSeq2SeqWithShiftLabels`` — seq2seq collation that shifts labels by
+  a configurable offset.
+- ``CustomDataCollatorForSeq2Seq_2`` and ``CustomDataCollatorWithPadding`` — variants
+  carrying the padding behaviour this toolkit needs.
+- ``DataCollatorTaskIDDecorator`` — wraps another collator to attach a task id.
+
+.. warning::
+   ``DataCollatorTaskIDDecorator.__call__`` still opens with a leftover debug body —
+   a ``print`` followed by ``exit()`` — so everything after it is dead code. The
+   class is currently unreachable, which is why this has survived. Do not wire it up
+   before removing those two lines.
+"""
+
 from dataclasses import dataclass
 from typing import Any
 

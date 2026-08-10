@@ -1,6 +1,13 @@
-# Standard Libraries
+"""Model classes that HuggingFace does not ship.
 
-# PyTorch
+``CustomT5ForConditionalGeneration`` subclasses ``T5ForConditionalGeneration`` to add
+optional FlashAttention, enabled with ``flash_attn=True`` and silently unavailable
+when ``flash_attn`` is not installed.
+
+This module stays small on purpose: every other backbone is selected by name from
+``transformers`` through ``model.pretrained.cls``, so adding one should need no code
+here. If it does, that is usually a signal the change belongs in the consumer repo.
+"""
 
 # Transformers
 from transformers import T5Config, T5ForConditionalGeneration

@@ -1,3 +1,17 @@
+"""Process-level setup: ``.env`` loading, typed settings, and ``init()``.
+
+Importing this module reads ``.env`` into ``os.environ``, so libraries that consult
+environment variables directly (huggingface_hub, transformers, wandb) see the same
+values that ``Env`` exposes as typed settings.
+
+``init()`` is the one call an application makes at startup. It sets the workspace
+root, strips the distributed-training variables that would otherwise push
+accelerate into MULTI_GPU mode for a single-process run, and optionally installs
+Rich pretty-printing and tracebacks.
+
+Formerly split across ``env.py`` and ``setup.py``; merged here in 0.2.0.
+"""
+
 import os
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv

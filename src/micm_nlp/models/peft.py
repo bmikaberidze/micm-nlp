@@ -1,3 +1,15 @@
+"""PEFT dispatch: stock PEFT methods or the Cross-Prompt Encoder path.
+
+``PEFT.setup_model()`` is the single entry point ``MODEL`` calls. It branches three
+ways: load a pretrained adapter when ``model.pretrained.adapter`` is set, build a
+Cross-Prompt Encoder when ``is_xpe_config()`` recognises the ``peft`` block, or fall
+through to stock PEFT (LoRA, prefix tuning, P-tuning).
+
+``from_pretrained()`` sniffs ``adapter_config.json`` so checkpoints written before
+the ``XPE`` ``peft_type`` existed — ``P_TUNING`` plus an ``encoder_ratio`` — still
+load.
+"""
+
 import torch
 from peft import (
     PeftModel,

@@ -3,6 +3,16 @@
 All notable changes to micm-nlp will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Every module now carries a module-level docstring, so the generated API reference
+  explains what each module is for instead of listing bare symbols. Three known
+  defects are now documented where they live: the unregistered
+  `NormalizePromptEncoderEmbeddings` callback, the leftover debug body in
+  `DataCollatorTaskIDDecorator.__call__`, and `ka_sen_tok`'s missing abbreviation
+  data (it cannot be imported as shipped).
+
 ## [0.2.0] - 2026-08-10
 
 ### Added

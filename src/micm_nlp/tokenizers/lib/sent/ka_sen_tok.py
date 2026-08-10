@@ -1,3 +1,21 @@
+"""Georgian sentence tokenizer.
+
+Wraps NLTK's ``PunktSentenceTokenizer`` with a Georgian abbreviation list, then
+post-processes the result: a sentence ending in a period whose final token is a
+known abbreviation ending is re-joined with the sentence that follows it. Newlines
+and tabs are treated as sentence boundaries before splitting.
+
+Research module, from the Georgian tokenization comparison (ICNLSP 2024).
+
+.. warning::
+   **This module does not import as shipped.** It requires
+   ``micm_nlp.datasets.storage.collections.abbreviations`` and the data files
+   ``wiki.abbrs.txt`` and ``abbr.ends.txt``, none of which are part of the package —
+   they lived in the pre-rename ``nlpka`` tree. It also calls
+   ``nltk.download('punkt')`` at import time, which touches the network. Kept for
+   provenance until the data is restored or the module is dropped.
+"""
+
 from string import digits
 
 import nltk

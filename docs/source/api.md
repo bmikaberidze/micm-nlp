@@ -97,6 +97,13 @@ From *A Comparison of Different Tokenization Methods for the Georgian Language*
 | {doc}`tokenizers.bert_byt5 <autoapi/micm_nlp/tokenizers/bert_byt5/index>` | `BertByT5Tokenizer` — byte-level tokenizer with BERT-style special tokens |
 | {doc}`tokenizers.lib.sent.ka_sen_tok <autoapi/micm_nlp/tokenizers/lib/sent/ka_sen_tok/index>` | `KaSenTok` — Georgian sentence tokenizer |
 
+:::{warning}
+`ka_sen_tok` **does not import as shipped**: it needs
+`micm_nlp.datasets.storage.collections.abbreviations` and two abbreviation data files
+that are not part of the package — they lived in the pre-rename `nlpka` tree. It also
+calls `nltk.download('punkt')` at import time. It is documented here for provenance.
+:::
+
 ```{toctree}
 :hidden:
 

@@ -1,3 +1,23 @@
+"""``TRAINER`` — assemble the HuggingFace Trainer and drive the run.
+
+``run()`` is the entry point: evaluate before training if asked, train, evaluate
+after, optionally run the test split, and return the test output. Everything else in
+the class is assembly — training arguments, the data collator, the metrics callables,
+callbacks, W&B initialisation, and evaluation-step arithmetic.
+
+Two details worth knowing:
+
+**Selection and stopping are separate.** ``training_args.metric_for_best_model``
+picks the checkpoint; ``custom_training_args.early_stopping_metric`` decides what
+stops the run. They can differ — useful when the evaluation loss is unstable but
+accuracy is the thing you care about.
+
+**Prediction order is not always dataset order.** Token-budget batching length-sorts
+globally, so ``_aligned_ds_split`` permutes the split to the sampler's emit order
+before predictions are zipped against it. Samplers opt in simply by exposing an
+``order`` property.
+"""
+
 import inspect
 import math
 import os

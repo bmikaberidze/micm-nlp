@@ -1,3 +1,13 @@
+"""Filesystem layout: the workspace root and the ``artefacts/`` tree beneath it.
+
+Two kinds of path live here. ``PACKAGE_DIR`` points inside the installed package and
+is read-only. Everything else hangs off the *workspace* — the user's project
+directory — which must be set once via ``set_root()`` before any accessor is called;
+they raise otherwise. ``micm_nlp.init()`` does that for you::
+
+    workspace()/artefacts/{models,datasets,tokenizers,evals}
+"""
+
 import os
 from pathlib import Path
 

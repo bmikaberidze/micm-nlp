@@ -1,3 +1,19 @@
+"""General-purpose helpers shared across the package.
+
+Four loose groups:
+
+- **Class resolution** — ``resolve_cls`` turns the class *names* that appear in YAML
+  (``model.pretrained.cls``, ``trainer.cls``, ``data_collator.cls``) into real
+  classes by looking them up across a list of modules.
+- **Serialisation** — JSON, YAML and pickle round-trips, a numpy-aware JSON encoder,
+  and conversions between dicts and simple namespaces.
+- **Introspection** — object and file sizes, signature-filtered kwargs, dict diffs,
+  UUID validation, global monkey-patching.
+- **Script plumbing** — argument parsing and run identifiers (``get_time_id``).
+
+Nothing here is specific to a model, dataset or task.
+"""
+
 import datetime
 import importlib
 import inspect

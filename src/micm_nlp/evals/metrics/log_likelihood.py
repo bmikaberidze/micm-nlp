@@ -1,3 +1,16 @@
+"""Log-likelihood ranking for multiple-choice QA.
+
+Each candidate answer is a separate sample. ``predictions`` carries the sequence
+log-likelihood in column 0 and the sequence length in column 1. Candidates are
+grouped by ``task.metric_groups[0].args.group_by`` (e.g. a question id), the highest
+*length-normalised* likelihood in each group wins, and accuracy is the fraction of
+groups whose winner carries the configured ``correct_flag``.
+
+This is the ranking scheme. The alternative — restricting the answer-slot argmax to
+the candidate label tokens — lives in :mod:`micm_nlp.evals.eval` behind
+``preproc_rules.label_restricted_likelihood``.
+"""
+
 import numpy as np
 
 

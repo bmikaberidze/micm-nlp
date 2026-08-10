@@ -1,3 +1,21 @@
+"""Tokenizer factory, special-token plumbing, and tokenizer *training*.
+
+``load(config)`` is what the pipeline calls. It resolves a path from
+``tokenizer.source`` / ``name`` / ``type`` / ``algorithm``, hands it to
+``AutoTokenizer.from_pretrained``, and passes ``tokenizer.args`` through verbatim.
+
+``add_special_tokens``, ``add_post_processor`` and ``replace_unk_token_manually``
+adapt a tokenizer to a target architecture's input format, driven by the per-family
+token tables in :mod:`micm_nlp.enums`. They are what allow a vocabulary trained for
+one model family to feed a model from another.
+
+``TokenizerTrainer`` trains a tokenizer from a corpus — HuggingFace WordPiece,
+byte-level BPE, or native SentencePiece — and saves an LM-adapted copy alongside it.
+Together with ``tokenize_sentences``/``tokenize_words`` this is the machinery behind
+the Georgian tokenization comparison (ICNLSP 2024); the fine-tuning path needs only
+``load``.
+"""
+
 import os
 import shutil
 from pathlib import Path

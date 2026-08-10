@@ -1,3 +1,27 @@
+"""Trainer subclass behaviour: optimizer groups, dataloaders, samplers.
+
+``custom_trainer_class_factory`` mixes ``CustomTrainerMixin`` into whichever HF
+Trainer ``trainer.cls`` names, so everything below applies to ``Trainer`` and
+``Seq2SeqTrainer`` alike.
+
+What the mixin changes:
+
+- **Optimizer construction** — ``custom_training_args.optimizer_grouped_parameters``
+  gives a learning rate and weight decay to parameters whose names contain the listed
+  substrings; unmatched parameters fall back to the global values. This is how prompt
+  embeddings get a schedule of their own.
+- **Dataloaders** — train, eval and test dataloaders can batch to a token budget via
+  ``TokenBudgetBatchSampler`` instead of a fixed sample count, with the budget
+  calibrated lazily and cached per stage.
+- **Column retention** — ``_remove_unused_columns`` is overridden so the length column
+  survives long enough for the samplers that read it.
+- **Constrained generation** — a ``generation_whitelist`` injects
+  ``ConstrainedPrefixLogitsProcessor`` into the generation call.
+
+``RandomTaskExclusionBatchSampler`` builds batches that hold out a random task, for
+``custom_training_args.random_task_exclusion``.
+"""
+
 import random
 from typing import Any
 

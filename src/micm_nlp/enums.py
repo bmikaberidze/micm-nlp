@@ -1,3 +1,18 @@
+"""Every categorical choice the configuration layer recognises.
+
+String enums, so a YAML value compares equal to its member without conversion:
+``config.mode == ModeSE.FINETUNE`` works on the raw string ``'finetune'``.
+
+Roughly three families live here — pipeline vocabulary (``ModeSE``, ``DeviceSE``),
+dataset and task vocabulary (``DsCatSE``, ``DsTypeSE``, ``DsSplitSE``, ``TaskCatSE``,
+``TaskNameSE``, ``EvalTypeSE``), and per-architecture special-token tables
+(``BertTokenSE``, ``RobertaTokenSE``, ``XLMRobertaTokenSE``, ``T5TokenSE``, …) that
+the tokenizer factory consults when adding special tokens and post-processors.
+
+Note ``model.architecture`` is deliberately *not* validated against ``ModelArchSE``:
+it is a free-form string used for run-directory naming.
+"""
+
 try:
     from enum import StrEnum
 

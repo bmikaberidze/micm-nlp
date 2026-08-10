@@ -1,3 +1,20 @@
+"""``MODEL`` — build the backbone and keep track of where it lives on disk.
+
+Two construction paths. In ``finetune``/``test`` mode the checkpoint named by
+``model.pretrained`` is loaded through the class in ``model.pretrained.cls``, with
+``model.pretrained.args`` passed to it verbatim; in ``train`` mode the model is
+initialised from scratch from the ``model.init`` block. Either way ``MODEL`` injects
+the kwargs the task implies — ``num_labels`` for classification — and afterwards
+records derived properties: parameter counts, maximum sequence length, embedding
+dimension.
+
+The remainder of the class is checkpoint bookkeeping. Every model gets a uuid4, and
+the lookup helpers resolve a uuid back to a filesystem path, so a later run can point
+at an earlier one by identifier rather than by path.
+
+PEFT is applied separately, by :mod:`micm_nlp.models.peft`.
+"""
+
 import copy
 import os
 import uuid

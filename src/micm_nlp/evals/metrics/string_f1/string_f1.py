@@ -1,4 +1,13 @@
-# string_f1.py
+"""String-level F1 for QA-style span overlap, packaged as an ``evaluate.Metric``.
+
+Token-overlap F1 computed after SQuAD-style normalisation: lowercase, strip
+punctuation, drop articles, collapse whitespace.
+
+Note the normalisation is **English-specific** — the article regex removes ``a``,
+``an`` and ``the`` and nothing else, so scores on other languages are comparable to
+each other but not to published English numbers.
+"""
+
 import re
 import string
 
