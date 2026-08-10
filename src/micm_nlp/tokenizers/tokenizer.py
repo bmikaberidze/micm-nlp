@@ -114,12 +114,15 @@ post_processors_map = {
 
 def load(config):
     """
-    Load Pretrained AutoTokenizer According Language Models Configuration
-    tokenizer:
-        source:       local       | huggingface
-        name:         local_dir   | hf_name
-        type:         wordpiece   | sentpiece
-        parralelism:  'false'     | 'true'
+    Load Pretrained AutoTokenizer According Language Models Configuration.
+
+    Relevant config keys::
+
+        tokenizer:
+            source:       local       | huggingface
+            name:         local_dir   | hf_name
+            type:         wordpiece   | sentpiece
+            parralelism:  'false'     | 'true'
     """
     tok_conf = config.tokenizer
     tokenizer_path = gen_path(tok_conf.source, tok_conf.name, tok_conf.type, tok_conf.algorithm)

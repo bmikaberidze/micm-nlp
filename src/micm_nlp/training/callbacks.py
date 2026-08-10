@@ -159,13 +159,15 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
     allowed).
 
     The monitored signal is chosen by ``early_stopping_metric``:
-      - ``'metric_for_best_model'`` (sentinel): delegate to the Trainer's
-        ``args.metric_for_best_model`` + ``args.greater_is_better`` — i.e. stop
-        on the same metric used to pick the best checkpoint.
-      - any other string (e.g. ``'eval_loss'``): treat it as a literal metric
-        key; direction inferred (``'loss'`` in the name → lower-is-better, else
-        greater-is-better). This preserves the original eval_loss behavior and
-        keeps early stopping SEPARABLE from selection.
+
+    - ``'metric_for_best_model'`` (sentinel): delegate to the Trainer's
+      ``args.metric_for_best_model`` + ``args.greater_is_better`` — i.e. stop
+      on the same metric used to pick the best checkpoint.
+    - any other string (e.g. ``'eval_loss'``): treat it as a literal metric
+      key; direction inferred (``'loss'`` in the name → lower-is-better, else
+      greater-is-better). This preserves the original eval_loss behavior and
+      keeps early stopping SEPARABLE from selection.
+
     Default ``'eval_loss'`` reproduces the pre-existing behavior.
     """
 

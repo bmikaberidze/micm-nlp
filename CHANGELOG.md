@@ -71,6 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   `init()` now strips them when `WORLD_SIZE=1`.
 - `pad_to_multiple_of` is sourced from the data collator instead of a duplicated
   parameter.
+- `micm_nlp.evals.metrics` had no `__init__.py`, making it an implicit namespace
+  package unlike every other subpackage. It is now a regular package.
 
 ## [0.1.0] - 2026-04-30
 
