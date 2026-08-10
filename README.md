@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
 [![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://micm-nlp.readthedocs.io/en/latest/)
 
 NLP research toolkit for tokenization, pretraining, fine-tuning, and PEFT across encoder-only, decoder-only, and encoder-decoder architectures. Built on top of HuggingFace `transformers`, `peft`, and `datasets`.
 
@@ -11,9 +12,11 @@ NLP research toolkit for tokenization, pretraining, fine-tuning, and PEFT across
 `micm-nlp` is a config-driven research toolkit for multilingual NLP work. It wraps the HuggingFace stack with a small set of high-level building blocks — `CONFIG`, `TOKENIZER`, `DATASET`, `MODEL`, and a unified `TRAINER` — that compose into reproducible training, fine-tuning, and evaluation pipelines. 
 The toolkit was used in the *Cross-Prompt Encoder for Low-Performing Languages* paper (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)) and in *A Comparison of Different Tokenization Methods for the Georgian Language* (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/))
 
-This v0.1.0 release ships **two examples** that exercise a single use case end-to-end: preprocessing and decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub. The toolkit's underlying surface is broader than these two examples demonstrate.
+The package currently ships **two examples** that exercise a single use case end-to-end: preprocessing and decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub. The toolkit's underlying surface is broader than these two examples demonstrate.
 
 Additional examples covering encoder-only text classification, encoder-decoder seq2seq, and MLM pretraining will land in subsequent releases. Contributions and issue reports are welcome.
+
+📖 **Full documentation: [micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/)**
 
 ## Install
 
@@ -109,13 +112,13 @@ More examples — encoder-only text classification, encoder-decoder seq2seq, MLM
 
 ## Supported architectures
 
-| Architecture | Toolkit support | Demonstrated by example in v0.1.0 |
+| Architecture | Toolkit support | Demonstrated by a shipped example |
 |---|---|---|
 | Decoder-only (BLOOM, AYA) | ✅ | ✅ |
 | Encoder-only (BERT, XLM-R) | ✅ | ⏳ planned |
 | Encoder-decoder (T5) | ✅ | ⏳ planned |
 
-PEFT methods supported by the toolkit: LoRA, Prefix Tuning, P-Tuning (SPT), Cross-Prompt Encoder (XPE). v0.1.0 examples demonstrate XPE only.
+PEFT methods supported by the toolkit: LoRA, Prefix Tuning, P-Tuning (SPT), Cross-Prompt Encoder (XPE). The shipped examples demonstrate XPE only.
 
 ## Development
 
@@ -145,7 +148,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
   author = {Mikaberidze, Beso},
   title = {micm-nlp: NLP research toolkit for multilingual fine-tuning and PEFT},
   url = {https://github.com/bmikaberidze/micm-nlp},
-  version = {0.1.0},
+  version = {0.2.0},
   year = {2026},
 }
 
