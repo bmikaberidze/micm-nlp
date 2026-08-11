@@ -72,13 +72,97 @@ Georgian Technical University). The package was formerly named `nlpka`; that nam
 survives only in the archived repository behind the IJCNLP–AACL paper.
 
 ```{toctree}
-:maxdepth: 2
+:caption: Getting started
 :hidden:
 
 Home <self>
 install
 quickstart
 config
-api
+```
+
+```{toctree}
+:caption: API reference
+:hidden:
+
+Overview <api>
+```
+
+```{toctree}
+:caption: Core
+:hidden:
+
+config <autoapi/micm_nlp/config/index>
+pipeline <autoapi/micm_nlp/pipeline/index>
+bootstrap <autoapi/micm_nlp/bootstrap/index>
+path <autoapi/micm_nlp/path/index>
+enums <autoapi/micm_nlp/enums/index>
+utils <autoapi/micm_nlp/utils/index>
+```
+
+```{toctree}
+:caption: Data
+:hidden:
+
+datasets.dataset <autoapi/micm_nlp/datasets/dataset/index>
+tokenizers.tokenizer <autoapi/micm_nlp/tokenizers/tokenizer/index>
+tokenizers.xlm_roberta <autoapi/micm_nlp/tokenizers/xlm_roberta/index>
+tokenizers.decoding <autoapi/micm_nlp/tokenizers/decoding/index>
+```
+
+```{toctree}
+:caption: Models
+:hidden:
+
+models.model <autoapi/micm_nlp/models/model/index>
+models.peft <autoapi/micm_nlp/models/peft/index>
+models.architectures <autoapi/micm_nlp/models/architectures/index>
+```
+
+```{toctree}
+:caption: Training
+:hidden:
+
+training.runner <autoapi/micm_nlp/training/runner/index>
+training.trainers <autoapi/micm_nlp/training/trainers/index>
+training.callbacks <autoapi/micm_nlp/training/callbacks/index>
+training.batching <autoapi/micm_nlp/training/batching/index>
+training.data_collators <autoapi/micm_nlp/training/data_collators/index>
+training.logits_processors <autoapi/micm_nlp/training/logits_processors/index>
+```
+
+```{toctree}
+:caption: Evaluation
+:hidden:
+
+evals.eval <autoapi/micm_nlp/evals/eval/index>
+evals.plot <autoapi/micm_nlp/evals/plot/index>
+evals.metrics.log_likelihood <autoapi/micm_nlp/evals/metrics/log_likelihood/index>
+evals.metrics.multirc <autoapi/micm_nlp/evals/metrics/multirc/index>
+evals.metrics.string_f1 <autoapi/micm_nlp/evals/metrics/string_f1/string_f1/index>
+```
+
+```{toctree}
+:caption: Research modules
+:hidden:
+
+models.xpe.encoder <autoapi/micm_nlp/models/xpe/encoder/index>
+models.xpe.config <autoapi/micm_nlp/models/xpe/config/index>
+models.xpe.factory <autoapi/micm_nlp/models/xpe/factory/index>
+models.xpe.peft_models <autoapi/micm_nlp/models/xpe/peft_models/index>
+models.xpe.heads <autoapi/micm_nlp/models/xpe/heads/index>
+models.xpe.save_load <autoapi/micm_nlp/models/xpe/save_load/index>
+models.xpe.enums <autoapi/micm_nlp/models/xpe/enums/index>
+tokenizers.bert_byt5 <autoapi/micm_nlp/tokenizers/bert_byt5/index>
+tokenizers.lib.sent.ka_sen_tok <autoapi/micm_nlp/tokenizers/lib/sent/ka_sen_tok/index>
+```
+
+```{toctree}
+:caption: Meta
+:hidden:
+
 changelog
+PyPI <https://pypi.org/project/micm-nlp/>
+GitHub <https://github.com/bmikaberidze/micm-nlp>
+Issue tracker <https://github.com/bmikaberidze/micm-nlp/issues>
 ```
