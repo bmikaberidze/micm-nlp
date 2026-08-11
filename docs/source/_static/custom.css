@@ -1,0 +1,13 @@
+/* Furo defaults the sidebar logo to the full column width and centres it with
+   `margin: 0 auto`, while the brand text beneath it stays left-aligned — so a square
+   logo reads as both oversized and misaligned. Shrink it and align it to the same
+   edge as the text. */
+
+.sidebar-logo {
+  max-width: 4.5rem;
+  margin: 0;
+}
+
+.sidebar-logo-container {
+  margin-bottom: 0.6rem;
+}

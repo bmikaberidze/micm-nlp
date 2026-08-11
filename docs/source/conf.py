@@ -97,6 +97,8 @@ def _first(*names: str) -> str | None:
     return None
 
 
+html_css_files = ['custom.css']
+
 _logo = _first('logo')
 _logo_light = _first('logo-light') or _logo
 _logo_dark = _first('logo-dark') or _logo
