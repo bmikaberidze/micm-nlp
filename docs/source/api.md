@@ -97,8 +97,52 @@ From *A Comparison of Different Tokenization Methods for the Georgian Language*
 | {doc}`tokenizers.bert_byt5 <autoapi/micm_nlp/tokenizers/bert_byt5/index>` | `BertByT5Tokenizer` — byte-level tokenizer with BERT-style special tokens |
 | {doc}`tokenizers.lib.sent.ka_sen_tok <autoapi/micm_nlp/tokenizers/lib/sent/ka_sen_tok/index>` | `KaSenTok` — Georgian sentence tokenizer |
 
+%% Module pages are listed explicitly, with short titles, so the sidebar reads
+%% "API reference > config" rather than "API reference > micm_nlp > micm_nlp.config".
+%% The cost is that a new module must be added here by hand; the build says so, via
+%% an "isn't included in any toctree" warning naming the page.
+
 ```{toctree}
+:caption: Core
 :hidden:
 
-autoapi/micm_nlp/index
+config <autoapi/micm_nlp/config/index>
+pipeline <autoapi/micm_nlp/pipeline/index>
+bootstrap <autoapi/micm_nlp/bootstrap/index>
+path <autoapi/micm_nlp/path/index>
+enums <autoapi/micm_nlp/enums/index>
+utils <autoapi/micm_nlp/utils/index>
+datasets.dataset <autoapi/micm_nlp/datasets/dataset/index>
+tokenizers.tokenizer <autoapi/micm_nlp/tokenizers/tokenizer/index>
+tokenizers.xlm_roberta <autoapi/micm_nlp/tokenizers/xlm_roberta/index>
+tokenizers.decoding <autoapi/micm_nlp/tokenizers/decoding/index>
+models.model <autoapi/micm_nlp/models/model/index>
+models.peft <autoapi/micm_nlp/models/peft/index>
+models.architectures <autoapi/micm_nlp/models/architectures/index>
+training.runner <autoapi/micm_nlp/training/runner/index>
+training.trainers <autoapi/micm_nlp/training/trainers/index>
+training.callbacks <autoapi/micm_nlp/training/callbacks/index>
+training.batching <autoapi/micm_nlp/training/batching/index>
+training.data_collators <autoapi/micm_nlp/training/data_collators/index>
+training.logits_processors <autoapi/micm_nlp/training/logits_processors/index>
+evals.eval <autoapi/micm_nlp/evals/eval/index>
+evals.plot <autoapi/micm_nlp/evals/plot/index>
+evals.metrics.log_likelihood <autoapi/micm_nlp/evals/metrics/log_likelihood/index>
+evals.metrics.multirc <autoapi/micm_nlp/evals/metrics/multirc/index>
+evals.metrics.string_f1 <autoapi/micm_nlp/evals/metrics/string_f1/index>
+```
+
+```{toctree}
+:caption: Research modules
+:hidden:
+
+models.xpe.encoder <autoapi/micm_nlp/models/xpe/encoder/index>
+models.xpe.config <autoapi/micm_nlp/models/xpe/config/index>
+models.xpe.factory <autoapi/micm_nlp/models/xpe/factory/index>
+models.xpe.peft_models <autoapi/micm_nlp/models/xpe/peft_models/index>
+models.xpe.heads <autoapi/micm_nlp/models/xpe/heads/index>
+models.xpe.save_load <autoapi/micm_nlp/models/xpe/save_load/index>
+models.xpe.enums <autoapi/micm_nlp/models/xpe/enums/index>
+tokenizers.bert_byt5 <autoapi/micm_nlp/tokenizers/bert_byt5/index>
+tokenizers.lib.sent.ka_sen_tok <autoapi/micm_nlp/tokenizers/lib/sent/ka_sen_tok/index>
 ```

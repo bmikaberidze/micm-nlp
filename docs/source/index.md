@@ -44,6 +44,19 @@ Georgian tokenization utilities — because published work depends on them. Neit
 required to use the core, and both are marked as such in the
 [API reference](api.md).
 
+## Links
+
+| | |
+|---|---|
+| **PyPI** | [pypi.org/project/micm-nlp](https://pypi.org/project/micm-nlp/) |
+| **Source** | [github.com/bmikaberidze/micm-nlp](https://github.com/bmikaberidze/micm-nlp) |
+| **Issue tracker** | [github.com/bmikaberidze/micm-nlp/issues](https://github.com/bmikaberidze/micm-nlp/issues) |
+| **Releases** | [github.com/bmikaberidze/micm-nlp/releases](https://github.com/bmikaberidze/micm-nlp/releases) |
+| **Changelog** | [this site](changelog.md) |
+| **XPE paper** | [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/) · [arXiv:2508.10352](https://arxiv.org/abs/2508.10352) |
+| **Tokenization paper** | [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/) |
+| **Contact** | beso.mikaberidze@gmail.com |
+
 ## Provenance
 
 `micm-nlp` has backed two peer-reviewed publications:
