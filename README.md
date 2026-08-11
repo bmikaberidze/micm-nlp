@@ -148,7 +148,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
   author = {Mikaberidze, Beso},
   title = {micm-nlp: NLP research toolkit for multilingual fine-tuning and PEFT},
   url = {https://github.com/bmikaberidze/micm-nlp},
-  version = {0.2.0},
+  version = {0.2.1},
   year = {2026},
 }
 
