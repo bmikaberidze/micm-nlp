@@ -3,6 +3,23 @@
 All notable changes to micm-nlp will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- `CrossPromptEncoderConfig.encoder_embedding_normalize` defaulted to `'unit'`
+  (max_norm `1.0`). Because `_filtered_kwargs` strips `None`-valued kwargs at the
+  factory boundary, a YAML `encoder_embedding_normalize: null` never reached the
+  dataclass — so **every** saved `adapter_config.json` recorded `"unit"` regardless
+  of what the run actually did. The defaults are now `None`/`None`, so a saved
+  adapter config records what happened. Behaviour is unchanged: normalisation is
+  driven by the callback, whose registration reads the top-level `peft` block.
+  Adapter configs written before this change misreport the field — do not read a
+  normalisation claim out of them.
+- `CrossPromptEncoder.__init__` now validates the normalisation settings: an
+  unknown mode raises, and `'clip'` without a `max_norm` raises rather than
+  silently doing nothing (`Tensor.clamp(max=None)` is a no-op, which the new
+  `None` default would otherwise have turned into a silent non-normalising clip).
+
 ## [0.2.1] - 2026-08-11
 
 ### Fixed

@@ -87,6 +87,18 @@ class CrossPromptEncoder(torch.nn.Module):
         # normalization
         self.embedding_normalize = config.encoder_embedding_normalize
         self.embedding_normalize_max_norm = config.encoder_embedding_normalize_max_norm
+        if self.embedding_normalize not in (None, 'unit', 'clip'):
+            raise ValueError(
+                f'encoder_embedding_normalize must be None, "unit" or "clip", '
+                f'got {self.embedding_normalize!r}'
+            )
+        # max_norm now defaults to None, and Tensor.clamp(max=None) is a silent no-op —
+        # so a 'clip' without a max_norm would normalize nothing while claiming to clip.
+        if self.embedding_normalize == 'clip' and self.embedding_normalize_max_norm is None:
+            raise ValueError(
+                'encoder_embedding_normalize="clip" requires '
+                'encoder_embedding_normalize_max_norm to be set'
+            )
 
         # virtual tokens for XPE and SPT (Standard Soft Prompt)
         self.xpe_virtual_tokens = 0

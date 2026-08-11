@@ -5,8 +5,10 @@ The clip/unit normalization was silently a no-op because the callback hooked
 body early-returned). It must use `on_step_end` + `kwargs['model']`, like the
 working ParamNormLogger. These tests guard both the hook wiring and the math.
 """
+import dataclasses
 from types import SimpleNamespace
 
+import pytest
 import torch
 
 from micm_nlp.models.xpe import CrossPromptEncoder
@@ -61,3 +63,39 @@ def test_callback_normalizes_via_on_step_end(monkeypatch):
 
     assert 'train/xpe_embedd_norm' in logged, 'callback did not run / log renamed key'
     assert torch.all(enc.embedding.weight.norm(dim=-1) <= 2.0 + 1e-4)
+
+
+def test_default_is_no_normalization():
+    """The dataclass default must be None.
+
+    `_filtered_kwargs` strips None-valued kwargs at the factory boundary, so a
+    non-None default here is written into every saved `adapter_config.json` even
+    when the YAML asked for no normalization -- which is exactly how the 15a clip
+    audit was fooled into reading "applied" off a config.
+    """
+    from micm_nlp.models.xpe.config import CrossPromptEncoderConfig
+
+    fields = {f.name: f for f in dataclasses.fields(CrossPromptEncoderConfig)}
+    assert fields['encoder_embedding_normalize'].default is None
+    assert fields['encoder_embedding_normalize_max_norm'].default is None
+
+
+def test_clip_without_max_norm_raises():
+    """`Tensor.clamp(max=None)` is a silent no-op, so this must not be reachable."""
+    with pytest.raises(ValueError, match='max_norm'):
+        CrossPromptEncoder(_min_config(encoder_embedding_normalize='clip',
+                                       encoder_embedding_normalize_max_norm=None))
+
+
+def test_unknown_normalize_mode_raises():
+    with pytest.raises(ValueError, match='None, "unit" or "clip"'):
+        CrossPromptEncoder(_min_config(encoder_embedding_normalize='l2'))
+
+
+def test_none_normalize_is_inert():
+    enc = CrossPromptEncoder(_min_config(encoder_embedding_normalize=None,
+                                         encoder_embedding_normalize_max_norm=None))
+    with torch.no_grad():
+        enc.embedding.weight.mul_(0).add_(10.0)
+    assert enc.normalize_embeddings() == 0.0
+    assert torch.allclose(enc.embedding.weight, torch.full_like(enc.embedding.weight, 10.0))

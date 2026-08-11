@@ -50,12 +50,17 @@ class CrossPromptEncoderConfig(PromptEncoderConfig):
             'help': 'List of modules apart from CrossPromptEncoder layers to be set as trainable and saved in the final checkpoint.'
         },
     )
-    encoder_embedding_normalize: str = field(
-        default='unit',
-        metadata={'help': 'The type of normalization to use for the embedding (None, unit, clip)'},
+    encoder_embedding_normalize: str | None = field(
+        default=None,
+        metadata={
+            'help': 'The type of normalization to use for the embedding (None, unit, clip). '
+            'Defaults to None so that a saved adapter_config.json records what actually '
+            'happened: the factory strips None-valued kwargs, so a non-None default here '
+            'is written to every adapter even when the YAML asked for no normalization.'
+        },
     )
-    encoder_embedding_normalize_max_norm: float = field(
-        default=1.0,
+    encoder_embedding_normalize_max_norm: float | None = field(
+        default=None,
         metadata={'help': 'The maximum norm for the embedding'},
     )
     encoder_input_size: int | None = field(
