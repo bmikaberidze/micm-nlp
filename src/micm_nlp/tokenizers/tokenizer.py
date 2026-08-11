@@ -358,10 +358,7 @@ def replace_unk_token_manually(tokenizer, lm_arch):
     return tokenizer
 
 
-def tokenize_sentences(text, method=SentTokTypeSE.KA):
-    # if method == SentTokTypeSE.KA:
-    #     return ka_sen_tok.tokenize(text)
-    # el
+def tokenize_sentences(text, method=SentTokTypeSE.NLTK):
     if method == SentTokTypeSE.NLTK:
         return sent_tokenize(text)
     elif method == SentTokTypeSE.SPACY:

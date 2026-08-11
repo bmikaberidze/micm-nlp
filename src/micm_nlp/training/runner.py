@@ -428,8 +428,13 @@ class TRAINER:
                 )
             )
 
-        peft = getattr(self._config.task, 'peft', None)
-        if peft and is_xpe_config(peft):
+        # `peft` is a top-level config block, not a child of `task` — reading it from
+        # `task` meant this callback was never registered. Registration is further
+        # gated on encoder_embedding_normalize actually being set: without it
+        # normalize_embeddings() is a no-op that would still log a 0.0 norm to W&B
+        # every step for every XPE run.
+        peft = getattr(self._config, 'peft', None)
+        if peft and is_xpe_config(peft) and getattr(peft, 'encoder_embedding_normalize', None):
             self._trainer_callbacks.append(NormalizePromptEncoderEmbeddings())
 
         utils.p('List of Callbacks: ', self._trainer_callbacks)

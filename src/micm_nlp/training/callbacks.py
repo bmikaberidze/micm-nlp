@@ -10,13 +10,14 @@
 - ``DownstreamFineTuningCallback`` — fine-tunes on downstream tasks at evaluation
   and save points.
 
-.. warning::
-   ``NormalizePromptEncoderEmbeddings`` is **never registered**. The registration in
-   :mod:`micm_nlp.training.runner` reads the settings from ``task.peft``, but ``peft``
-   is a top-level config block, so the lookup always returns ``None``. The callback
-   body itself is correct. Fixing the lookup would retroactively change the semantics
-   of already-committed experiment grids, so it needs its own scoped change plus a
-   re-run decision — see the git log before "fixing" it.
+``NormalizePromptEncoderEmbeddings`` only registers when
+``peft.encoder_embedding_normalize`` is set to ``'unit'`` or ``'clip'``; without it
+the callback would be a no-op that still logged a zero norm every step.
+
+.. note::
+   Until 0.2.0 this callback was never registered at all — the trainer looked for its
+   settings under ``task.peft`` while ``peft`` is a top-level block. Results produced
+   before that fix did **not** normalise, whatever their config said.
 """
 
 import torch

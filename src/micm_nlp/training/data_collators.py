@@ -11,11 +11,9 @@ constructor.
   carrying the padding behaviour this toolkit needs.
 - ``DataCollatorTaskIDDecorator`` — wraps another collator to attach a task id.
 
-.. warning::
-   ``DataCollatorTaskIDDecorator.__call__`` still opens with a leftover debug body —
-   a ``print`` followed by ``exit()`` — so everything after it is dead code. The
-   class is currently unreachable, which is why this has survived. Do not wire it up
-   before removing those two lines.
+``DataCollatorTaskIDDecorator`` has no consumers yet; its leftover ``print``/``exit``
+debug body was removed in 0.2.0, so it now does what its name says, but it has not
+been exercised in a real run.
 """
 
 from dataclasses import dataclass
@@ -95,9 +93,7 @@ class DataCollatorTaskIDDecorator:
 
     def __call__(self, batch):
         # Use the original collator to process the batch
-        print(batch[0])
         batch = self.base_collator(batch)
-        exit()
         try:
             # Detect the format of input_ids (e.g., device, tensor type)
             input_ids = batch[DATASET.keys.input_ids]

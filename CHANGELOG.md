@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Fixed
+- `NormalizePromptEncoderEmbeddings` was never registered: the trainer read its
+  settings from `task.peft`, but `peft` is a top-level config block, so the lookup
+  always returned `None`. Registration is now additionally gated on
+  `peft.encoder_embedding_normalize` being set — without it `normalize_embeddings()`
+  is a no-op that would still log a `0.0` norm to W&B on every step of every XPE run.
+  **Consequence for existing results:** any run that set `encoder_embedding_normalize`
+  did not in fact normalise, and measured the unnormalised model.
+- `DataCollatorTaskIDDecorator.__call__` opened with a leftover `print()` / `exit()`
+  debug pair, which made the rest of the method dead code.
+- `tokenize_sentences()` defaulted to `SentTokTypeSE.KA`, whose branch was commented
+  out, so calling it without an explicit method raised `ValueError`. The default is
+  now `SentTokTypeSE.NLTK`.
+
 ### Changed
 - Every module now carries a module-level docstring, so the generated API reference
   explains what each module is for instead of listing bare symbols. Three known

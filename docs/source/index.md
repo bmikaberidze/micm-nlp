@@ -62,6 +62,7 @@ survives only in the archived repository behind the IJCNLP–AACL paper.
 :maxdepth: 2
 :hidden:
 
+Home <self>
 install
 quickstart
 config
