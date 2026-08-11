@@ -98,6 +98,7 @@ def _first(*names: str) -> str | None:
 
 
 html_css_files = ['custom.css']
+html_js_files = ['copy-for-llm.js']
 
 _logo = _first('logo')
 _logo_light = _first('logo-light') or _logo
