@@ -55,6 +55,7 @@ required to use the core, and both are marked as such in the
 | **Changelog** | [this site](changelog.md) |
 | **XPE paper** | [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/) · [arXiv:2508.10352](https://arxiv.org/abs/2508.10352) |
 | **Tokenization paper** | [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/) |
+| **MICM** | [micm.edu.ge](https://micm.edu.ge/) |
 | **Contact** | beso.mikaberidze@gmail.com |
 
 ## Provenance
@@ -165,4 +166,5 @@ changelog
 PyPI <https://pypi.org/project/micm-nlp/>
 GitHub <https://github.com/bmikaberidze/micm-nlp>
 Issue tracker <https://github.com/bmikaberidze/micm-nlp/issues>
+MICM <https://micm.edu.ge/>
 ```

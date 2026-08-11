@@ -78,12 +78,38 @@ autoapi_keep_files = False
 # -- HTML --------------------------------------------------------------------
 
 html_theme = 'furo'
-html_title = f'micm-nlp {version}'
-html_static_path = []
+# The full release (0.2.1), not the short version (0.2) — a patch-level fix is
+# exactly the thing a reader needs to know they are looking at.
+html_title = f'micm-nlp {release}'
+html_static_path = ['_static']
+
+# Branding is picked up from docs/source/_static if present, so adding artwork is a
+# drop-in with no edit here. Furo takes two logos and swaps them with the theme;
+# a single logo.* is used for both when no variants exist.
+_STATIC = Path(__file__).parent / '_static'
+
+
+def _first(*names: str) -> str | None:
+    for name in names:
+        for suffix in ('.svg', '.png'):
+            if (_STATIC / f'{name}{suffix}').is_file():
+                return f'{name}{suffix}'
+    return None
+
+
+_logo = _first('logo')
+_logo_light = _first('logo-light') or _logo
+_logo_dark = _first('logo-dark') or _logo
+_favicon = _first('favicon') or _logo
+
+if _favicon:
+    html_favicon = f'_static/{_favicon}'
 html_theme_options = {
     'source_repository': 'https://github.com/bmikaberidze/micm-nlp/',
     'source_branch': 'main',
     'source_directory': 'docs/source/',
+    **({'light_logo': _logo_light} if _logo_light else {}),
+    **({'dark_logo': _logo_dark} if _logo_dark else {}),
     'footer_icons': [
         {
             'name': 'GitHub',
