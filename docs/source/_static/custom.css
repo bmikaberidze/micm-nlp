@@ -1,10 +1,15 @@
 /* Furo defaults the sidebar logo to the full column width and centres it with
    `margin: 0 auto`, while the brand text beneath it stays left-aligned — so a square
-   logo reads as both oversized and misaligned. Shrink it and align it to the same
-   edge as the text. */
+   logo reads as both oversized and misaligned. Size it and align it to the same edge
+   as the text.
+
+   The logo PNG used to carry 51px of transparent padding per side (10.2% of a 500px
+   square), which held the artwork ~15px right of the text no matter what margin said;
+   it is now cropped to its opaque bounding box. 7.2rem keeps the *visible* cube the
+   same size it was at 9rem uncropped. */
 
 .sidebar-logo {
-  max-width: 9rem;
+  max-width: 7.2rem;
   margin: 0;
 }
 
