@@ -17,7 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   debug pair, which made the rest of the method dead code.
 - `tokenize_sentences()` defaulted to `SentTokTypeSE.KA`, whose branch was commented
   out, so calling it without an explicit method raised `ValueError`. The default is
-  now `SentTokTypeSE.NLTK`.
+  now `SentTokTypeSE.NLTK`, and the `KA` branch works again.
+- `micm_nlp.tokenizers.lib.sent.ka_sen_tok` could not be imported at all: it read its
+  abbreviation lists from `micm_nlp.datasets.storage.collections.abbreviations`, a
+  package that does not exist here. The two data files (885 Georgian abbreviations,
+  379 abbreviation endings) now ship inside the package at
+  `tokenizers/lib/sent/data/` and are loaded through `importlib.resources`, so they
+  survive installation from a wheel. `nltk.download('punkt')` no longer runs at import
+  time — the models are checked first and only fetched when genuinely missing.
 
 ### Changed
 - Every module now carries a module-level docstring, so the generated API reference

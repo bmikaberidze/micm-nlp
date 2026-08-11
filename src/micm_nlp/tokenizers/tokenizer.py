@@ -358,7 +358,19 @@ def replace_unk_token_manually(tokenizer, lm_arch):
     return tokenizer
 
 
+_ka_sen_tok = None
+
+
 def tokenize_sentences(text, method=SentTokTypeSE.NLTK):
+    if method == SentTokTypeSE.KA:
+        global _ka_sen_tok
+        if _ka_sen_tok is None:
+            # Imported lazily and cached: constructing it reads two data files and
+            # builds a Punkt model, which is wasted work for the other methods.
+            from micm_nlp.tokenizers.lib.sent.ka_sen_tok import KaSenTok
+
+            _ka_sen_tok = KaSenTok()
+        return _ka_sen_tok.tokenize(text)
     if method == SentTokTypeSE.NLTK:
         return sent_tokenize(text)
     elif method == SentTokTypeSE.SPACY:
