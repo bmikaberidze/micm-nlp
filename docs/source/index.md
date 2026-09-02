@@ -1,18 +1,23 @@
 # micm-nlp
 
-An NLP research toolkit for tokenization, pretraining, fine-tuning and PEFT across
-encoder-only, decoder-only and encoder-decoder architectures. Built on HuggingFace
-`transformers`, `peft` and `datasets`.
+```{include} ../../README.md
+:start-after: <!-- start:tagline -->
+:end-before: <!-- end:tagline -->
+```
 
-```bash
-pip install micm-nlp
+```{include} ../../README.md
+:start-after: <!-- start:install-pypi -->
+:end-before: <!-- end:install-pypi -->
+```
+
+```{include} ../../README.md
+:start-after: <!-- start:about -->
+:end-before: <!-- end:about -->
 ```
 
 ## What it is
 
-`micm-nlp` is a **config-driven library**, not an experiment runner. It wraps the
-HuggingFace stack in a small set of building blocks that compose into reproducible
-training and evaluation pipelines:
+A **library, not an experiment runner**. The building blocks compose into one chain:
 
 ```
 CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER → compute_metrics
@@ -35,13 +40,16 @@ cluster dispatch — lives in consumer repositories that import this package, ne
 
 ## Scope
 
-The core of the package is task- and research-agnostic: configuration, datasets,
-models, PEFT dispatch, training and evaluation carry no assumptions about any
-particular study.
+Configuration, datasets, models, PEFT dispatch, training and evaluation carry no
+assumptions about any particular study.
 
-It also ships two **research modules** — the Cross-Prompt Encoder and a set of
-Georgian tokenization utilities — because published work depends on them. Neither is
-required to use the core.
+Published work is not partitioned off into a "research" corner — it sits in the
+package where it belongs, and each module's own page cites the paper behind it. The
+Cross-Prompt Encoder is {doc}`models.xpe </autoapi/micm_nlp/models/xpe/index>`; the
+Georgian tokenization work is
+{doc}`tokenizers.architectures </autoapi/micm_nlp/tokenizers/architectures/index>`
+and {doc}`tokenizers.ka_sen_tok </autoapi/micm_nlp/tokenizers/ka_sen_tok/index>`.
+None of it is required to use the rest.
 
 ## Links
 

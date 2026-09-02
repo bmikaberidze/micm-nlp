@@ -1,4 +1,4 @@
-# Installation
+# Install
 
 ```{include} ../../README.md
 :start-after: <!-- start:install-requires -->

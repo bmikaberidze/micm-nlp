@@ -5,7 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://micm-nlp.readthedocs.io/en/latest/)
 
+<!-- start:tagline -->
 NLP research toolkit for tokenization, pretraining, fine-tuning, and PEFT across encoder-only, decoder-only, and encoder-decoder architectures. Built on top of HuggingFace `transformers`, `peft`, and `datasets`.
+<!-- end:tagline -->
 
 <!--
 The blocks between the start/end markers below are pulled into the documentation
