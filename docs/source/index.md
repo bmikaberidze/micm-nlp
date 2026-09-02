@@ -41,8 +41,7 @@ particular study.
 
 It also ships two **research modules** — the Cross-Prompt Encoder and a set of
 Georgian tokenization utilities — because published work depends on them. Neither is
-required to use the core; the pages for
-[Models](api/models.md) and [Tokenizers](api/tokenizers.md) cite the papers behind them.
+required to use the core.
 
 ## Links
 
@@ -83,15 +82,15 @@ config
 ```
 
 ```{toctree}
-:caption: Modules
+:caption: API reference
 :hidden:
 
 Core <api/core>
-Tokenizers <api/tokenizers>
-Datasets <api/datasets>
-Models <api/models>
-Training <api/training>
-Evals <api/evals>
+autoapi/micm_nlp/tokenizers/index
+autoapi/micm_nlp/datasets/index
+autoapi/micm_nlp/models/index
+autoapi/micm_nlp/training/index
+autoapi/micm_nlp/evals/index
 ```
 
 ```{toctree}
@@ -101,6 +100,5 @@ Evals <api/evals>
 changelog
 PyPI <https://pypi.org/project/micm-nlp/>
 GitHub <https://github.com/bmikaberidze/micm-nlp>
-Issue tracker <https://github.com/bmikaberidze/micm-nlp/issues>
 MICM <https://micm.edu.ge/>
 ```

@@ -206,6 +206,40 @@ and tracebacks and sets the project root. Not triggered on import.
   contains a leftover `print(batch[0])` / `exit()` debug body. The class is currently
   unreachable, which is why this has survived.
 
+## Documentation: the source tree is the source of truth
+
+**Docs are written where the thing they describe lives, and the site is generated
+from there.** A page hand-written in `docs/source/` is the exception that has to
+justify itself, not the default.
+
+Order of preference, most preferred first:
+
+1. **Docstrings.** Everything about a module, class or function goes in its
+   docstring. `sphinx-autoapi` parses `src/` statically (it never imports the
+   package) and renders the whole API reference from them. A package's
+   `__init__.py` docstring is where its overview and submodule roles belong — see
+   `models/xpe/__init__.py` for the shape to copy.
+2. **Repo-root files, pulled in with MyST `{include}`.** `docs/source/changelog.md`
+   is already nothing but `` ```{include} ../../CHANGELOG.md `` — that is the
+   pattern. README sections can be included the same way with `:start-after:` /
+   `:end-before:` markers, so README stays the self-contained PyPI landing page and
+   the docs never hold a second copy.
+3. **A hand-written page in `docs/source/`** — only when the content belongs to no
+   module and to no repo-root file. Today that is `config.md`, the YAML schema
+   reference: too long for the README, and not owned by any one module.
+
+Two rules that follow:
+
+- **The sidebar mirrors `src/micm_nlp/`.** The API section links autoapi's root and
+  nothing else, so the tree *is* the package tree. If a grouping looks wrong in the
+  sidebar, the package layout is wrong — move the source, do not hand-list pages in
+  a toctree. `conf.py` shortens the sidebar labels to the leaf module name; that is
+  presentation, and it is the only intervention allowed there.
+- **Never write the same prose twice.** README §Quickstart and
+  `docs/source/quickstart.md` were duplicates and had already drifted apart (quote
+  style, and one paragraph each that the other lacks). Whichever file owns a passage,
+  every other place `{include}`s it.
+
 ## Key Conventions
 
 - Keep this package **general**. Experiment-specific language groups, run-tree

@@ -46,18 +46,27 @@ extensions = [
 templates_path = ['_templates']
 exclude_patterns = ['_build']
 
-# The "Modules" sidebar section is hand-built from docs/source/api/*.md: index.md's
-# toctree names the six group pages, and each group page's own toctree names its
-# modules with leaf-only titles ("runner", not "micm_nlp.training.runner"). The two
-# sub-packages that would otherwise show their full dotted names -- xpe and metrics --
-# have hand-written parent pages for the same reason; autoapi's own package pages
-# title themselves with the full id.
+# The API reference section is autoapi's tree, with two deliberate interventions and
+# no others.
 #
-# autoapi still emits a top-level stub page (autoapi/micm_nlp/index) that nothing
-# links to, which costs one "isn't included in any toctree" warning per build. That
-# is left visible on purpose: suppressing it would need a blanket `toc` suppression,
-# which would also hide a module page genuinely missing from the hand-written
-# toctrees under api/.
+# 1. Order. index.md lists the five subpackages explicitly, because a toctree is the
+#    only lever on sidebar order (autoapi_member_order sorts members *within* a page,
+#    not pages) and the useful order is the pipeline's -- tokenizers, datasets,
+#    models, training, evals -- not the alphabet's. A :glob: entry would be
+#    maintenance-free but alphabetical.
+# 2. Core. The six top-level modules are grouped behind api/core.md, which holds a
+#    toctree and nothing else. "Core" is not a package in src/, so this is the one
+#    place the sidebar shows a grouping the source does not have. The principled fix
+#    is a src/micm_nlp/core/ package; that renames micm_nlp.config and friends, which
+#    every consumer imports, so it is a major-version decision -- see
+#    docs/internal/roadmap.md.
+#
+# Everything below the top level is autoapi's own toctrees, so the tree there mirrors
+# src/micm_nlp/ exactly. Curation belongs in the package docstrings, which autoapi
+# renders -- see models/xpe/__init__.py for the shape.
+#
+# autoapi/micm_nlp/index is not linked, so that stub is orphaned and costs one
+# "isn't included in any toctree" warning per build -- see the note below.
 
 # Pages are authored in Markdown.
 myst_enable_extensions = ['colon_fence', 'deflist']
@@ -141,15 +150,69 @@ html_theme_options = {
 }
 
 
-# Sidebar labels for the generated module pages are the leaf name only -- "runner",
-# not "micm_nlp.training.runner". The parent packages are already the sidebar section
-# above them, so the dotted prefix is pure repetition at every level.
+# Sidebar labels are the leaf module name -- "runner", not
+# "micm_nlp.training.runner". The parent package is the entry directly above in the
+# tree, so the dotted prefix repeats it at every level.
 #
 # Sphinx renders a toctree from ``env.tocs`` -- the per-document TOC built by
 # TocTreeCollector at priority 500 -- not from ``env.titles``. Rewriting the label in
 # ``env.tocs`` after that collector has run shortens every toctree entry while leaving
 # the page's own H1, the breadcrumb and ``env.titles`` fully qualified, which is where
 # a reader actually needs the dotted path.
+
+
+_SUBMODULE_ORDER = {
+    'tokenizers': ['tokenizer', 'decoding', 'xlm_roberta', 'bert_byt5', 'lib'],
+    'models': ['model', 'architectures', 'peft', 'xpe'],
+    'training': [
+        'runner',
+        'trainers',
+        'callbacks',
+        'batching',
+        'data_collators',
+        'logits_processors',
+    ],
+    'evals': ['eval', 'plot', 'metrics'],
+}
+"""Sidebar order for each package's submodules, by leaf name.
+
+autoapi's package template sorts submodules alphabetically. That puts ``batching``
+before ``runner`` and ``bert_byt5`` before ``tokenizer``, which reads as a list
+rather than as the order someone meets these modules in. Anything not named here
+keeps its alphabetical position at the end, so a new module still appears -- it is
+never silently dropped from the sidebar.
+
+The six top-level modules are not here: they have no package page to reorder, and
+their order lives in the toctree in ``api/core.md``.
+"""
+
+
+def _order_autoapi_submodules(app, doctree):
+    """Reorder a package page's submodule toctree to _SUBMODULE_ORDER."""
+    from sphinx import addnodes
+
+    docname = app.env.docname
+    parts = docname.split('/')
+    # autoapi/micm_nlp/<package>/index
+    if len(parts) != 4 or parts[0] != autoapi_root or parts[3] != 'index':
+        return
+
+    order = _SUBMODULE_ORDER.get(parts[2])
+    if not order:
+        return
+
+    def rank(entry):
+        # Entries are (title, ref); ref is the generated page, ".../<leaf>/index".
+        ref = entry[1]
+        suffix = '/index'
+        if ref.endswith(suffix):
+            ref = ref[: -len(suffix)]
+        leaf = ref.rsplit('/', 1)[-1]
+        # Unlisted modules keep their alphabetical position, after the listed ones.
+        return (order.index(leaf), '') if leaf in order else (len(order), leaf)
+
+    for node in doctree.findall(addnodes.toctree):
+        node['entries'] = sorted(node['entries'], key=rank)
 
 
 def _shorten_autoapi_sidebar_labels(app, doctree):
@@ -176,4 +239,7 @@ def _shorten_autoapi_sidebar_labels(app, doctree):
 
 
 def setup(app):
+    # Ordering must run before Sphinx's TocTreeCollector (priority 500) reads the
+    # toctree nodes; relabelling must run after it has built env.tocs.
+    app.connect('doctree-read', _order_autoapi_submodules, priority=400)
     app.connect('doctree-read', _shorten_autoapi_sidebar_labels, priority=900)
