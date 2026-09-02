@@ -1,7 +1,7 @@
 """The :class:`CrossPromptEncoder` module (XPE core).
 
 The method from *Cross-Prompt Encoder for Low-Performing Languages*
-(`Findings of IJCNLP–AACL 2025 <https://aclanthology.org/2025.findings-ijcnlp.144/>`_,
+(`Findings of IJCNLP-AACL 2025 <https://aclanthology.org/2025.findings-ijcnlp.144/>`_,
 `arXiv:2508.10352 <https://arxiv.org/abs/2508.10352>`_).
 
 XPE, SPT and DUAL are all this one class, separated only by ``encoder_ratio`` -- the

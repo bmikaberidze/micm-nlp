@@ -8,7 +8,7 @@
 - :mod:`.architectures` — model classes HuggingFace does not ship, currently
   ``CustomT5ForConditionalGeneration``.
 - :mod:`.xpe` — the Cross-Prompt Encoder, from *Cross-Prompt Encoder for
-  Low-Performing Languages* (`Findings of IJCNLP–AACL 2025
+  Low-Performing Languages* (`Findings of IJCNLP-AACL 2025
   <https://aclanthology.org/2025.findings-ijcnlp.144/>`_).
 
 As with tokenizers, a new backbone is selected by name from ``transformers`` through
