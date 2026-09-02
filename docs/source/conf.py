@@ -46,12 +46,18 @@ extensions = [
 templates_path = ['_templates']
 exclude_patterns = ['_build']
 
-# api.md links every module page explicitly, with short titles, so the sidebar shows
-# one flat level instead of "API reference > micm_nlp > module". autoapi still emits a
-# top-level stub page (autoapi/micm_nlp/index) that nothing now links to, which costs
-# one "isn't included in any toctree" warning per build. That is left visible on
-# purpose: suppressing it would need a blanket `toc` suppression, which would also
-# hide a module page genuinely missing from api.md's hand-written toctrees.
+# The "Modules" sidebar section is hand-built from docs/source/api/*.md: index.md's
+# toctree names the six group pages, and each group page's own toctree names its
+# modules with leaf-only titles ("runner", not "micm_nlp.training.runner"). The two
+# sub-packages that would otherwise show their full dotted names -- xpe and metrics --
+# have hand-written parent pages for the same reason; autoapi's own package pages
+# title themselves with the full id.
+#
+# autoapi still emits a top-level stub page (autoapi/micm_nlp/index) that nothing
+# links to, which costs one "isn't included in any toctree" warning per build. That
+# is left visible on purpose: suppressing it would need a blanket `toc` suppression,
+# which would also hide a module page genuinely missing from the hand-written
+# toctrees under api/.
 
 # Pages are authored in Markdown.
 myst_enable_extensions = ['colon_fence', 'deflist']
@@ -133,3 +139,41 @@ html_theme_options = {
         },
     ],
 }
+
+
+# Sidebar labels for the generated module pages are the leaf name only -- "runner",
+# not "micm_nlp.training.runner". The parent packages are already the sidebar section
+# above them, so the dotted prefix is pure repetition at every level.
+#
+# Sphinx renders a toctree from ``env.tocs`` -- the per-document TOC built by
+# TocTreeCollector at priority 500 -- not from ``env.titles``. Rewriting the label in
+# ``env.tocs`` after that collector has run shortens every toctree entry while leaving
+# the page's own H1, the breadcrumb and ``env.titles`` fully qualified, which is where
+# a reader actually needs the dotted path.
+
+
+def _shorten_autoapi_sidebar_labels(app, doctree):
+    """Label autoapi pages by their leaf name in every toctree that lists them."""
+    from docutils import nodes as _nodes
+
+    docname = app.env.docname
+    if not docname.startswith(f'{autoapi_root}/'):
+        return
+
+    toc = app.env.tocs.get(docname)
+    if toc is None:
+        return
+
+    # The document's own entry is the only reference with an empty anchor.
+    for ref in toc.findall(_nodes.reference):
+        if ref.get('anchorname'):
+            continue
+        full = ref.astext()
+        leaf = full.rsplit('.', 1)[-1]
+        if leaf and leaf != full:
+            ref.children = [_nodes.Text(leaf)]
+        break
+
+
+def setup(app):
+    app.connect('doctree-read', _shorten_autoapi_sidebar_labels, priority=900)
