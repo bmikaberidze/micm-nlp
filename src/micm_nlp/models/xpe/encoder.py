@@ -1,4 +1,14 @@
-"""The :class:`CrossPromptEncoder` module (XPE core)."""
+"""The :class:`CrossPromptEncoder` module (XPE core).
+
+The method from *Cross-Prompt Encoder for Low-Performing Languages*
+(`Findings of IJCNLP–AACL 2025 <https://aclanthology.org/2025.findings-ijcnlp.144/>`_,
+`arXiv:2508.10352 <https://arxiv.org/abs/2508.10352>`_).
+
+XPE, SPT and DUAL are all this one class, separated only by ``encoder_ratio`` -- the
+fraction of virtual tokens routed through the encoder. ``0`` is plain soft prompt
+tuning, ``1`` is pure XPE, anything between is DUAL. Code gated on
+``isinstance(pe, CrossPromptEncoder)`` therefore fires for soft prompt tuning too.
+"""
 
 from typing import TYPE_CHECKING
 

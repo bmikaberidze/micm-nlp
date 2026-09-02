@@ -59,17 +59,20 @@ required to use the core.
 
 ## Provenance
 
-`micm-nlp` has backed two peer-reviewed publications:
+```{include} ../../README.md
+:start-after: <!-- start:acknowledgements -->
+:end-before: <!-- end:acknowledgements -->
+```
 
-- *Cross-Prompt Encoder for Low-Performing Languages* — Findings of IJCNLP–AACL 2025
-  ([ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/),
-  [arXiv](https://arxiv.org/abs/2508.10352))
-- *A Comparison of Different Tokenization Methods for the Georgian Language* —
-  ICNLSP 2024 ([ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/))
+The package was formerly named `nlpka`; that name survives only in the archived
+repository behind the IJCNLP–AACL paper.
 
-It was developed at the Muskhelishvili Institute of Computational Mathematics (MICM,
-Georgian Technical University). The package was formerly named `nlpka`; that name
-survives only in the archived repository behind the IJCNLP–AACL paper.
+## Citation
+
+```{include} ../../README.md
+:start-after: <!-- start:citation -->
+:end-before: <!-- end:citation -->
+```
 
 ```{toctree}
 :caption: Getting started

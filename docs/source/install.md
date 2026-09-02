@@ -1,45 +1,41 @@
 # Installation
 
-Requires **Python 3.10 or newer**.
+```{include} ../../README.md
+:start-after: <!-- start:install-requires -->
+:end-before: <!-- end:install-requires -->
+```
 
 ## From PyPI
 
-```bash
-pip install micm-nlp
+```{include} ../../README.md
+:start-after: <!-- start:install-pypi -->
+:end-before: <!-- end:install-pypi -->
 ```
 
 ## From source
 
-```bash
-git clone https://github.com/bmikaberidze/micm-nlp.git
-cd micm-nlp
-pip install -e ".[dev]"
+```{include} ../../README.md
+:start-after: <!-- start:install-source -->
+:end-before: <!-- end:install-source -->
 ```
-
-The `dev` extra adds `pytest` and `ruff`.
 
 ## Docker
 
 Recommended for reproducibility on GPU machines:
 
-```bash
-docker build -t micm-nlp .
-docker run --gpus all -it --rm -v $(pwd):/app -w /app micm-nlp bash
+```{include} ../../README.md
+:start-after: <!-- start:install-docker -->
+:end-before: <!-- end:install-docker -->
 ```
 
 ## Environment
 
 Credentials and the workspace root come from a `.env` file:
 
-```bash
-cp .env.example .env
+```{include} ../../README.md
+:start-after: <!-- start:install-env -->
+:end-before: <!-- end:install-env -->
 ```
-
-| Variable | Purpose |
-|---|---|
-| `PROJECT_ROOT_PATH` | Workspace directory; `artefacts/` (datasets, models, evals, wandb) is created under it. Used as the fallback when `init()` is called without `root_path`. |
-| `WANDB_API_KEY` | Required only if `training_args.args.report_to` includes `wandb`. |
-| `HF_TOKEN` | Required only for gated HuggingFace models or datasets. |
 
 ## Hardware
 

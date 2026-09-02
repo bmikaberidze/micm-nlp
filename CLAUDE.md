@@ -196,16 +196,18 @@ and tracebacks and sets the project root. Not triggered on import.
 
 ## Known defects (deliberately unfixed — see git log before "fixing" either)
 
-- **`training/runner.py:411` reads `self._config.task.peft`, but `peft` is a
-  top-level config block.** So `NormalizePromptEncoderEmbeddings` is never registered
-  and the embedding clip/unit-norm callback does not run. Commit `9921fac` fixed a
-  *different* no-op in the same feature (the callback hooked `on_optimizer_step`,
-  which does not receive `model` under transformers 4.48) — the config lookup is
-  still wrong. Fixing it would retroactively change the semantics of already-committed
-  experiment grids, so it needs its own scoped change plus a re-run decision.
-- **`training/data_collators.py:78-80`** — `DataCollatorTaskIDDecorator.__call__`
-  contains a leftover `print(batch[0])` / `exit()` debug body. The class is currently
-  unreachable, which is why this has survived.
+None currently. Both former entries are resolved:
+
+- The `training/runner.py` lookup of `self._config.task.peft` — `peft` is a top-level
+  config block, so `NormalizePromptEncoderEmbeddings` never registered and the
+  embedding clip/unit-norm callback never ran. Fixed in `d3ae7e1`. Note the
+  consequence for old results: any run before that commit did not normalise, whatever
+  its config said.
+- The leftover `print(batch[0])` / `exit()` debug body in
+  `DataCollatorTaskIDDecorator.__call__` — both lines are now commented out.
+
+Add an entry here only for a defect that is staying broken *on purpose*, with the
+reason. A defect that should be fixed belongs in `docs/internal/roadmap.md`.
 
 ## Documentation: the source tree is the source of truth
 
