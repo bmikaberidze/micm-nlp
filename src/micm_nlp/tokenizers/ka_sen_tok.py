@@ -17,7 +17,10 @@ Two data files ship with the package, both extracted from Georgian Wikipedia:
     anyway; the post-processing pass in :meth:`KaSenTok.tokenize` glues those
     sentences back together.
 
-Research module, from the Georgian tokenization comparison (ICNLSP 2024).
+From *A Comparison of Different Tokenization Methods for the Georgian Language*
+(`ICNLSP 2024 <https://aclanthology.org/2024.icnlsp-1.22/>`_). This is a sentence
+splitter, not a subword tokenizer: it has no place in ``AutoTokenizer`` and is
+reached through :func:`micm_nlp.tokenizers.tokenizer.tokenize_sentences`.
 """
 
 from __future__ import annotations
@@ -30,7 +33,7 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktParameters, PunktSentenceTokenizer
 
-_DATA_PACKAGE = 'micm_nlp.tokenizers.lib.sent'
+_DATA_PACKAGE = 'micm_nlp.tokenizers'
 _DATA_DIR = 'data'
 _WIKI_ABBRS_FILE = 'wiki.abbrs.txt'
 _ABBR_ENDS_FILE = 'abbr.ends.txt'

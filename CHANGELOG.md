@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Changed (breaking)
+- The `tokenizers` subpackage is flat. Two module paths moved:
+  - `micm_nlp.tokenizers.bert_byt5.BertByT5Tokenizer` and
+    `micm_nlp.tokenizers.xlm_roberta.CustomXlmRoberta` are now both in
+    `micm_nlp.tokenizers.architectures`, mirroring `micm_nlp.models.architectures`.
+    Each module held one wrapper class and nothing else; the split bought no
+    isolation.
+  - `micm_nlp.tokenizers.lib.sent.ka_sen_tok.KaSenTok` is now
+    `micm_nlp.tokenizers.ka_sen_tok.KaSenTok`, and its two data files moved from
+    `lib/sent/data/` to `tokenizers/data/`. The `lib` and `lib.sent` packages held
+    a docstring each and no code — three levels of nesting around one module.
+
+  No shims: the old paths are gone. Nothing in this repo or in `xpe-exp` imported
+  either class outside of tests and one lazy import, both updated. Update
+  `tokenizer.cls` values in any consumer config that names them.
+
+
 ### Fixed
 - `CrossPromptEncoderConfig.encoder_embedding_normalize` defaulted to `'unit'`
   (max_norm `1.0`). Because `_filtered_kwargs` strips `None`-valued kwargs at the

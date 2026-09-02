@@ -60,7 +60,7 @@ from micm_nlp.enums import (
 
 spacy = spacy.blank('en')
 spacy.add_pipe('sentencizer')
-# from micm_nlp.tokenizers.lib.sent.ka_sen_tok import KaSenTok
+# from micm_nlp.tokenizers.ka_sen_tok import KaSenTok
 # Word Tokenization
 whitespace_tokenize = RegexpTokenizer(r'\w+')
 
@@ -367,7 +367,7 @@ def tokenize_sentences(text, method=SentTokTypeSE.NLTK):
         if _ka_sen_tok is None:
             # Imported lazily and cached: constructing it reads two data files and
             # builds a Punkt model, which is wasted work for the other methods.
-            from micm_nlp.tokenizers.lib.sent.ka_sen_tok import KaSenTok
+            from micm_nlp.tokenizers.ka_sen_tok import KaSenTok
 
             _ka_sen_tok = KaSenTok()
         return _ka_sen_tok.tokenize(text)

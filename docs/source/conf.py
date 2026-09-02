@@ -162,7 +162,7 @@ html_theme_options = {
 
 
 _SUBMODULE_ORDER = {
-    'tokenizers': ['tokenizer', 'decoding', 'xlm_roberta', 'bert_byt5', 'lib'],
+    'tokenizers': ['tokenizer', 'decoding', 'architectures', 'ka_sen_tok'],
     'models': ['model', 'architectures', 'peft', 'xpe'],
     'training': [
         'runner',
@@ -177,7 +177,7 @@ _SUBMODULE_ORDER = {
 """Sidebar order for each package's submodules, by leaf name.
 
 autoapi's package template sorts submodules alphabetically. That puts ``batching``
-before ``runner`` and ``bert_byt5`` before ``tokenizer``, which reads as a list
+before ``runner`` and ``architectures`` before ``tokenizer``, which reads as a list
 rather than as the order someone meets these modules in. Anything not named here
 keeps its alphabetical position at the end, so a new module still appears -- it is
 never silently dropped from the sidebar.
@@ -215,6 +215,33 @@ def _order_autoapi_submodules(app, doctree):
         node['entries'] = sorted(node['entries'], key=rank)
 
 
+_SIDEBAR_REDIRECTS = {
+    'autoapi/micm_nlp/evals/metrics/string_f1/index': (
+        'autoapi/micm_nlp/evals/metrics/string_f1/string_f1/index'
+    ),
+}
+"""Sidebar entries to point at a module page instead of its package page.
+
+``evals/metrics/string_f1`` must be a directory holding a module of the same name --
+that is what ``evaluate.load('<dir>')`` requires, see the docstring in
+``evals/metrics/__init__.py``. Linking the package page therefore nests "string_f1"
+inside "string_f1" in the sidebar. Here, and only here, the source shape is fixed by
+an external tool rather than by us, so the fix is presentational: link the module
+page, which carries the actual class documentation. The package page is still built
+and still reachable from the generated tree.
+"""
+
+
+def _redirect_sidebar_entries(app, doctree):
+    """Repoint toctree entries listed in _SIDEBAR_REDIRECTS."""
+    from sphinx import addnodes
+
+    for node in doctree.findall(addnodes.toctree):
+        node['entries'] = [
+            (title, _SIDEBAR_REDIRECTS.get(ref, ref)) for title, ref in node['entries']
+        ]
+
+
 def _shorten_autoapi_sidebar_labels(app, doctree):
     """Label autoapi pages by their leaf name in every toctree that lists them."""
     from docutils import nodes as _nodes
@@ -242,4 +269,5 @@ def setup(app):
     # Ordering must run before Sphinx's TocTreeCollector (priority 500) reads the
     # toctree nodes; relabelling must run after it has built env.tocs.
     app.connect('doctree-read', _order_autoapi_submodules, priority=400)
+    app.connect('doctree-read', _redirect_sidebar_entries, priority=400)
     app.connect('doctree-read', _shorten_autoapi_sidebar_labels, priority=900)

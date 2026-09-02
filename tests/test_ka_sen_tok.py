@@ -2,7 +2,7 @@
 
 import pytest
 
-from micm_nlp.tokenizers.lib.sent.ka_sen_tok import KaSenTok
+from micm_nlp.tokenizers.ka_sen_tok import KaSenTok
 
 # The demo text that used to live in the module's __main__ block. It packs three
 # things Punkt gets wrong on Georgian without help: an abbreviation with internal
