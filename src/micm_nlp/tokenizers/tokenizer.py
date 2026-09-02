@@ -362,6 +362,16 @@ _ka_sen_tok = None
 
 
 def tokenize_sentences(text, method=SentTokTypeSE.NLTK):
+    """Split text into sentences with the chosen splitter.
+
+    ``KA`` selects the Georgian splitter, which is imported lazily and cached --
+    constructing it reads two data files and builds a Punkt model, wasted work for
+    the other methods.
+
+    :param text: text to split.
+    :param method: a :class:`~micm_nlp.enums.SentTokTypeSE` member.
+    :raises ValueError: on an unknown method.
+    """
     if method == SentTokTypeSE.KA:
         global _ka_sen_tok
         if _ka_sen_tok is None:
@@ -381,6 +391,12 @@ def tokenize_sentences(text, method=SentTokTypeSE.NLTK):
 
 
 def tokenize_words(text, method=WordTokTypeSE.NLTK_PUNCT):
+    """Split text into words -- NLTK's punctuation-aware tokenizer, or whitespace.
+
+    :param text: text to split.
+    :param method: a :class:`~micm_nlp.enums.WordTokTypeSE` member.
+    :raises ValueError: on an unknown method.
+    """
     if method == WordTokTypeSE.NLTK_PUNCT:
         return word_tokenize(text)
     elif method == WordTokTypeSE.NLTK_WHITESPACE:
@@ -395,6 +411,14 @@ def tokenize_words(text, method=WordTokTypeSE.NLTK_PUNCT):
 
 
 class TokenizerTrainer:
+    """Train a new tokenizer from a corpus, rather than load an existing one.
+
+    The counterpart of the ``load`` path in this module: given corpus files and a
+    vocabulary size, it trains SentencePiece (natively), or a HuggingFace WordPiece
+    or byte-level BPE model, and writes it under ``artefacts/tokenizers``. Which one
+    is decided by ``model.type`` -- see :class:`~micm_nlp.enums.TokTypeSE`.
+    """
+
     min_frequency = 2
     sentpiece_pref = 'sp'
     unigram_pref = 'unigram'
@@ -439,6 +463,12 @@ class TokenizerTrainer:
 
     #
     def train(self):
+        """Train the tokenizer named by ``model.type`` and save it.
+
+        Note the dispatch has no ``else``: a type that is neither native
+        SentencePiece, WordPiece nor byte-level BPE does nothing at all rather than
+        raising.
+        """
         if self.type == TokTypeSE.NATIVE_SENTPIECE:
             self.train_native_sentpiece()
         else:

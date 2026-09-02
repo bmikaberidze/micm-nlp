@@ -117,6 +117,14 @@ class _XPEPeftMixin:
         ).long()
 
     def get_prompt(self, batch_size: int, task_ids: torch.Tensor | None = None) -> torch.Tensor:
+        """Produce the virtual-token embeddings prepended to a batch.
+
+        Overrides PEFT's own: the Cross-Prompt Encoder is called with the prompt
+        token indices *and* the task ids, which stock prompt learning does not pass.
+
+        :param batch_size: rows in the batch; the prompt is expanded to match.
+        :param task_ids: per-example task ids, for task-conditioned prompts.
+        """
         prompt_encoder = self.prompt_encoder[self.active_adapter]
         prompt_tokens = (
             self.prompt_tokens[self.active_adapter].unsqueeze(0).expand(batch_size, -1).to(prompt_encoder.get_device())
@@ -124,10 +132,20 @@ class _XPEPeftMixin:
         return prompt_encoder(prompt_tokens, task_ids)
 
     def save_pretrained(self, save_directory, **kwargs):
+        """Save the adapter with the XPE-aware state-dict helpers installed.
+
+        PEFT's own get/set state-dict functions do not know about the encoder's
+        parameters, so they are swapped for the duration of the call.
+        """
         with _xpe_state_dict_helpers():
             return super().save_pretrained(save_directory, **kwargs)
 
     def load_adapter(self, model_id, adapter_name, **kwargs):
+        """Load an adapter with the XPE-aware state-dict helpers installed.
+
+        The counterpart of :meth:`save_pretrained`; without the swap the encoder's
+        weights are silently skipped.
+        """
         with _xpe_state_dict_helpers():
             return super().load_adapter(model_id, adapter_name, **kwargs)
 
@@ -192,11 +210,11 @@ class _XPEPeftMixin:
 
 
 class XPEPeftModelForSequenceClassification(_XPEPeftMixin, PeftModelForSequenceClassification):
-    pass
+    """PEFT sequence-classification model driven by the Cross-Prompt Encoder."""
 
 
 class XPEPeftModelForCausalLM(_XPEPeftMixin, PeftModelForCausalLM):
-    pass
+    """PEFT causal-LM model driven by the Cross-Prompt Encoder."""
 
 
 TASK_TYPE_TO_XPE_MODEL: dict[TaskType, type[PeftModel]] = {

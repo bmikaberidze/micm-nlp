@@ -40,6 +40,18 @@ from micm_nlp.datasets.dataset import DATASET
 
 # Pad sequences dynamically within the batch
 class DataCollatorForPLMWithPadding(DataCollatorForPermutationLanguageModeling):
+    """Permutation language modelling (XLNet) with padding applied first.
+
+    HuggingFace's ``DataCollatorForPermutationLanguageModeling`` assumes every
+    sequence in the batch is already the same length -- it builds the permutation
+    mask and target mapping from a fixed shape. This pads the batch to
+    ``max_length`` (or to the longest row), then hands the padded batch to the
+    parent, so variable-length examples can be used.
+
+    Padding is forced to the right regardless of the tokenizer's setting, because
+    the permutation mask is built from the left.
+    """
+
     def __init__(
         self,
         tokenizer: XLNetTokenizer,
@@ -49,6 +61,13 @@ class DataCollatorForPLMWithPadding(DataCollatorForPermutationLanguageModeling):
         max_span_length: int = 5,  # maximum length of a span of masked tokens
         return_tensors: str = 'pt',
     ):
+        """:param tokenizer: an XLNet tokenizer.
+        :param max_length: target length when ``padding='max_length'``.
+        :param padding: ``'max_length'``, ``True`` (longest in batch) or ``False``.
+        :param plm_probability: fraction of tokens to mask, as the parent defines it.
+        :param max_span_length: longest span of masked tokens.
+        :param return_tensors: framework for the returned batch.
+        """
         super().__init__(
             tokenizer=tokenizer,
             plm_probability=plm_probability,
@@ -61,7 +80,7 @@ class DataCollatorForPLMWithPadding(DataCollatorForPermutationLanguageModeling):
         self.return_tensors = return_tensors
 
     def torch_call(self, features):
-
+        """Pad the batch, then build the permutation mask and target mapping."""
         # Set padding to the right
         self.tokenizer.padding_side = 'right'
 
@@ -88,6 +107,9 @@ class DataCollatorTaskIDDecorator:
     """Decorator for adding task_ids to any data collator."""
 
     def __init__(self, base_collator, task_id):
+        """:param base_collator: the collator to wrap; any collator will do.
+        :param task_id: task id to attach to every batch this produces.
+        """
         self.base_collator = base_collator  # Wrap any existing DataCollator
         self.task_id = task_id
 
@@ -116,7 +138,22 @@ class DataCollatorTaskIDDecorator:
 
 
 class DataCollatorForSeq2SeqWithShiftLabels(DataCollatorForSeq2Seq):
+    """Seq2seq collation that pads the labels to account for virtual tokens.
+
+    Prompt learning prepends N virtual tokens to the decoder input, which makes the
+    labels one position short at every step. This left-pads them with ``-100`` --
+    ignored by the loss -- so labels line up with the shifted inputs.
+
+    ``shift_labels_by`` should equal the number of virtual tokens; ``None`` leaves
+    the labels alone, making this behave as the stock collator.
+    """
+
     def __init__(self, *args, shift_labels_by=None, **kwargs):
+        """:param args: forwarded to ``DataCollatorForSeq2Seq``.
+        :param shift_labels_by: positions to left-pad the labels by, normally the
+            virtual-token count.
+        :param kwargs: forwarded to ``DataCollatorForSeq2Seq``.
+        """
         super().__init__(*args, **kwargs)
         self.shift_labels_by = shift_labels_by
 

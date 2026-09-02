@@ -25,47 +25,70 @@ if TYPE_CHECKING:
 
 
 class CrossPromptEncoder(torch.nn.Module):
-    """
-    The CrossPromptEncoder is a neural network module designed to generate virtual token embeddings, supporting various embedding strategies.
+    """Generates the virtual-token embeddings prepended to a model's input.
 
-    Args:
-        config ([`CrossPromptEncoderConfig`]): The configuration of the cross prompt encoder.
+    One class covers all three methods, separated only by ``encoder_ratio``: at 0 the
+    tokens come straight from :attr:`embedding` (plain soft prompt tuning), at 1 they
+    all pass through :attr:`xpe_embedding` and :attr:`xpe_head` (XPE), and in between
+    the two sets are concatenated (DUAL).
 
-    Example:
+    :param config: a :class:`~micm_nlp.models.xpe.config.CrossPromptEncoderConfig`.
 
-    ```py
-    >>> from micm_nlp.models.cross_prompt_encoder import CrossPromptEncoder, CrossPromptEncoderConfig
+    Input shape ``(batch_size, total_virtual_tokens)``; output shape
+    ``(batch_size, total_virtual_tokens, token_dim)``.
 
-    >>> config = CrossPromptEncoderConfig(
-    ...     peft_type="P_TUNING",
-    ...     num_virtual_tokens=20,
-    ...     token_dim=768,
-    ...     encoder_num_layers=12,
-    ...     encoder_reparameterization_type="MLP",
-    ...     encoder_hidden_size=768,
-    ...     encoder_embedding_type="FULLY_SHARED",
-    ... )
+    .. rubric:: Example
 
-    >>> prompt_encoder = CrossPromptEncoder(config)
-    ```
+    .. code-block:: python
 
-    **Attributes**:
-        - **embedding** (`torch.nn.Embedding`) -- The Standard Soft Prompt (SPT) embedding layer (Skips XPE)
-        - **xpe_embedding** (`torch.nn.Embedding`) -- The Cross Prompt Encoder (XPE) embedding layer (XPE input embeddings).
-        - **xpe_head** (`torch.nn.Module`) -- The Cross Prompt Encoder (XPE) head of the prompt encoder if `encoder_reparameterization_type="MLP"`.
-        - **token_dim** (`int`) -- The hidden embedding dimension of the base transformer model.
-        - **input_size** (`int`) -- The input size of the prompt encoder.
-        - **output_size** (`int`) -- The output size of the prompt encoder.
-        - **hidden_size** (`int`) -- The hidden size of the prompt encoder.
-        - **total_virtual_tokens** (`int`): The total number of virtual tokens of the prompt encoder.
-        - **encoder_type** (Union[[`CrossPromptEncoderReparameterizationType`], `str`]): The encoder type of the prompt encoder.
+        from micm_nlp.models.xpe.config import CrossPromptEncoderConfig
+        from micm_nlp.models.xpe.encoder import CrossPromptEncoder
 
-    Input shape: (`batch_size`, `total_virtual_tokens`)
+        config = CrossPromptEncoderConfig(
+            peft_type='XPE',
+            num_virtual_tokens=20,
+            token_dim=768,
+            encoder_num_layers=12,
+            encoder_reparameterization_type='MLP',
+            encoder_hidden_size=768,
+            encoder_ratio=1.0,
+        )
+        prompt_encoder = CrossPromptEncoder(config)
 
-    Output shape: (`batch_size`, `total_virtual_tokens`, `token_dim`)
+    .. rubric:: Attributes
+
+    ``embedding`` (``torch.nn.Embedding``)
+        The soft-prompt table, used for the tokens that skip the encoder.
+    ``xpe_embedding`` (``torch.nn.Embedding``)
+        The table feeding the encoder head.
+    ``xpe_head`` (``torch.nn.Module``)
+        The reparameterization head -- MLP, LSTM or attention, per
+        ``encoder_reparameterization_type``.
+    ``token_dim`` (``int``)
+        Hidden width of the base transformer, and so of the produced embeddings.
+    ``input_size`` (``int``)
+        Width of the encoder's input, defaulting to ``token_dim``.
+    ``output_size`` (``int``)
+        Width of the encoder's output; always ``token_dim``.
+    ``hidden_size`` (``int``)
+        Hidden width inside the head.
+    ``total_virtual_tokens`` (``int``)
+        Virtual tokens across all transformer submodules.
+    ``encoder_type``
+        The reparameterization type, as
+        :class:`~micm_nlp.models.xpe.enums.CrossPromptEncoderReparameterizationType`.
     """
 
     def __init__(self, config: 'CrossPromptEncoderConfig'):
+        """Build the embeddings and, unless this is plain soft prompt tuning, the head.
+
+        Both are always constructed, even when pretrained weights will be loaded
+        over them, so the module is never left in a half-initialised state by a
+        checkpoint that happens to be missing a tensor.
+
+        :param config: the encoder config; ``encoder_ratio`` decides how the virtual
+            tokens are split between the plain embedding table and the encoded one.
+        """
         super().__init__()
         self.token_dim = config.token_dim
         self.input_size = config.encoder_input_size or self.token_dim
@@ -180,6 +203,13 @@ class CrossPromptEncoder(torch.nn.Module):
         self.set_grad_requirements()
 
     def init_embeddings(self, num: int, dim: int):
+        """Create an embedding table, initialised as ``encoder_embedding_init_type`` asks.
+
+        :param num: number of virtual tokens.
+        :param dim: embedding width.
+        :raises ValueError: on an unknown initialisation type -- silently falling
+            back to the default would be indistinguishable from it working.
+        """
         embedding = torch.nn.Embedding(num, dim)
         if self.embedding_init_type == 'xavier_uniform':
             init.xavier_uniform_(embedding.weight)
@@ -282,7 +312,12 @@ class CrossPromptEncoder(torch.nn.Module):
                 utils.p(f'⚠️ Pretrained parameter {name} not found in model. Skipping.')
 
     def set_grad_requirements(self):
+        """Freeze or unfreeze the embeddings and the head, per config.
 
+        ``original_module`` parameters are skipped: those are PEFT's copies of the
+        base model's weights, which must stay frozen either way. The head is only
+        touched when there is one (``encoder_ratio > 0``).
+        """
         utils.p(f'[yellow]Setting embedding trainability to {not self.embedding_freeze}...[/yellow]')
         for name, param in self.named_parameters():
             if 'embedding' in name and 'original_module' not in name:
@@ -327,10 +362,24 @@ class CrossPromptEncoder(torch.nn.Module):
         raise ValueError(f'Unknown encoder ratio: {self.encoder_ratio}')
 
     def get_device(self):
+        """Device the encoder's parameters live on.
+
+        Reads whichever embedding table exists -- at ``encoder_ratio`` 0 or 1 only
+        one of the two is created.
+        """
         embedding = self.embedding if hasattr(self, 'embedding') else self.xpe_embedding
         return embedding.weight.device
 
     def normalize_embeddings(self):
+        """Renormalise the embedding rows in place, and report their mean norm.
+
+        Applies whatever ``encoder_embedding_normalize`` asks for, under
+        ``no_grad``. Note the row filter is by *name*: any 2-D trainable parameter
+        whose name contains ``embedding`` is normalised, which includes the plain
+        soft-prompt table -- so this is not an XPE-only operation.
+
+        :returns: the mean row norm after normalising, for logging.
+        """
         norms_after = []
         if self.embedding_normalize:
             with torch.no_grad():

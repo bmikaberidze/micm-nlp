@@ -34,11 +34,13 @@ class EmptyCudaCacheCallback(TrainerCallback):
     """A custom callback that empties the CUDA cache at specified intervals."""
 
     def __init__(self, empty_cache_steps=None):
+        """:param empty_cache_steps: free the cache every N steps; ``None`` disables."""
         self.empty_cache_steps = empty_cache_steps
         self.device = torch.cuda.current_device()
         self.gb_coeff = 1024 * 1024 * 1024
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        """Empty the CUDA allocator cache on the configured step interval."""
         if self.empty_cache_steps and state.global_step % self.empty_cache_steps == 0:
             print('Empty CUDA cache!')
             torch.cuda.empty_cache()
@@ -50,17 +52,27 @@ class DownstreamFineTuningCallback(TrainerCallback):
     """
 
     def __init__(self, config, model_path):
+        """:param config: the run config; ``eval.downstream_tasks`` steers this callback.
+        :param model_path: directory of the checkpoint to fine-tune from.
+        """
         self._is_training = False
         self._model_path = model_path
         self._config = config
 
     def on_train_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        """Mark training as in progress, so evaluations can tell which phase they are in."""
         self._is_training = True
 
     def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        """Mark training as finished."""
         self._is_training = False
 
     def on_evaluate(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        """Run the downstream fine-tuning probe, if this evaluation warrants one.
+
+        Two cases qualify: the step-0 evaluation of an already-pretrained model
+        (a baseline before any training), and any evaluation outside training.
+        """
         pret = self._config.model.pretrained
         # print('\n on_evaluate >>>>>>>', self._is_training, state.global_step, pret.name, '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n')
         if (state.global_step == 0 and (pret.name or pret.time_id)) or (
@@ -69,6 +81,12 @@ class DownstreamFineTuningCallback(TrainerCallback):
             self.finetune_on_downstream_tasks(state.global_step)
 
     def on_save(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        """Probe the just-saved checkpoint on the downstream tasks.
+
+        Skipped at step 0, and during training when
+        ``eval.downstream_tasks.not_while_training`` is set -- the probe is
+        expensive, so a run can defer every one of them to the end.
+        """
         # print('\n on_save >>>>>>>', self._is_training, state.global_step, self._config.model.pretrained.name, '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n')
         not_while_training = self._config.eval.downstream_tasks.not_while_training
         if state.global_step != 0 and not (self._is_training and not_while_training):
@@ -118,11 +136,22 @@ class DownstreamFineTuningCallback(TrainerCallback):
 
 
 class ParamNormLogger(TrainerCallback):
+    """Log the mean parameter norm and mean per-step update norm to wandb.
+
+    A training-stability probe: a norm that grows without bound, or an update norm
+    that collapses, shows up here before it shows up in the loss. Only trainable
+    parameters are measured -- with PEFT that is the adapter, not the backbone.
+
+    It keeps a CPU copy of every trainable parameter between steps in order to
+    difference them, so memory scales with the trainable parameter count.
+    """
+
     def __init__(self):
+        """Start with no previous step recorded; the first step logs no update norm."""
         self.prev_params = {}
 
     def on_step_end(self, args, state, control, **kwargs):
-
+        """Measure this step's parameter norms and log them."""
         model = kwargs['model']
         param_norms = []
         param_update_norms = []
@@ -154,6 +183,12 @@ class NormalizePromptEncoderEmbeddings(TrainerCallback):
     """
 
     def on_step_end(self, args, state, control, **kwargs):
+        """Renormalise the prompt encoder's embeddings and log their mean norm.
+
+        Does nothing unless the active adapter's prompt encoder is a
+        :class:`~micm_nlp.models.xpe.encoder.CrossPromptEncoder`; the encoder itself
+        decides what normalisation means, from its own config.
+        """
         # NB: must be on_step_end (fires + receives model via kwargs, like
         # ParamNormLogger). on_optimizer_step did NOT pass `model` under
         # transformers 4.48 -> the body silently early-returned and no
@@ -197,6 +232,14 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
 
     def __init__(self, early_stopping_patience=5, early_stopping_threshold=0.0,
                  early_stopping_after=0.5, early_stopping_metric='eval_loss'):
+        """:param early_stopping_patience: evaluations without improvement before stopping.
+        :param early_stopping_threshold: how much counts as an improvement.
+        :param early_stopping_after: fraction of ``max_steps`` that must elapse
+            before stopping is allowed at all, so a slow start is not cut short.
+        :param early_stopping_metric: metric to monitor -- a literal key, or the
+            sentinel ``'metric_for_best_model'`` to follow the Trainer's own
+            selection metric.
+        """
         super().__init__(
             early_stopping_patience=early_stopping_patience, early_stopping_threshold=early_stopping_threshold
         )
@@ -206,6 +249,11 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
         self.early_stopping_metric = early_stopping_metric or 'eval_loss'
 
     def on_evaluate(self, args, state, control, metrics, **kwargs):
+        """Consider stopping, once past the ``early_stopping_after`` floor.
+
+        Evaluations before that step return unchanged, so patience is not spent
+        while the model is still warming up.
+        """
         current_step = state.global_step
         required_min_step = int(state.max_steps * self.early_stopping_after)
 

@@ -24,7 +24,25 @@ except ImportError:
 
 
 class CustomT5ForConditionalGeneration(T5ForConditionalGeneration):
+    """T5 with optional FlashAttention in place of its self-attention.
+
+    When ``flash_attn=True`` every self-attention module in the encoder and decoder
+    is replaced by a ``FlashSelfAttention``, with the pretrained q/k/v weights and
+    biases copied across -- so the swap does not change what the model computes,
+    only how fast it does it. The decoder's replacements are causal, the encoder's
+    are not.
+
+    ``flash_attn`` is optional at import: if the package is missing the class still
+    loads, and only asking for it raises.
+    """
+
     def __init__(self, config: T5Config, flash_attn: bool = False):
+        """:param config: the T5 config.
+        :param flash_attn: swap in FlashAttention.
+        :raises RuntimeError: if ``flash_attn`` is requested but ``flash-attn`` is
+            not installed -- silently falling back would hide the reason a run is
+            slower than expected.
+        """
         super().__init__(config)
 
         # Adjust Flash Attention
@@ -72,6 +90,12 @@ class CustomT5ForConditionalGeneration(T5ForConditionalGeneration):
         task_ids=None,
         **kwargs,
     ):
+        """Forward pass, dropping the arguments stock T5 does not accept.
+
+        ``task_ids`` is accepted so the signature matches the task-conditioned
+        models, and ignored here. ``num_items_in_batch`` is popped from ``kwargs``:
+        newer ``Trainer`` versions pass it for loss averaging and T5 rejects it.
+        """
         # utils.p('CustomT5ForConditionalGeneration.forward()')
 
         kwargs.pop('num_items_in_batch', None)

@@ -93,8 +93,9 @@ class CustomXlmRoberta:
     hf_name = 'xlm-roberta-base'
 
     def __init__(self, model_arch=ModelArchSE.BERT):
-        """:param model_arch: architecture whose special tokens and post-processor
-        to apply to XLM-R's tokenizer.
+        """Apply ``model_arch``'s special tokens and post-processor to XLM-R's tokenizer.
+
+        :param model_arch: a :class:`~micm_nlp.enums.ModelArchSE` member.
         """
         self.xlmr = AutoTokenizer.from_pretrained(self.hf_name)
 

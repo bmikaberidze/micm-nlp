@@ -40,6 +40,22 @@ from micm_nlp.tokenizers import tokenizer as tok_module
 
 
 class DATASET:
+    """The whole data path: load, standardise, preprocess, tokenize, split, save.
+
+    Loading happens in ``__init__``, driven by ``ds.type`` -- a local CSV/TXT/JSON
+    file, a Hub dataset, or a ``save_to_disk`` directory. Several datasets can be
+    loaded and concatenated, which is how a multilingual source set is assembled
+    from one per-language template path.
+
+    :data:`keys` fixes the column names the rest of the package expects
+    (``input_ids``, ``labels``, ``task_ids``, ...); ``ds.input.standardize_key`` and
+    its siblings rename the dataset's own columns onto them, so downstream code
+    never has to know what a particular corpus called its text column.
+
+    The HuggingFace object is reachable as :attr:`hf`, and the splits as
+    ``train`` / ``test`` / ``validation``.
+    """
+
     seed = 42
 
     keys = SimpleNamespace()
@@ -60,7 +76,12 @@ class DATASET:
     }
 
     def __init__(self, config, hf_datasets=None):
+        """Load the dataset described by the config, then print a summary.
 
+        :param config: the run config; the ``ds`` block decides what is loaded.
+        :param hf_datasets: already-loaded HuggingFace datasets to wrap instead of
+            reading from disk or the Hub.
+        """
         if hf_datasets is None:
             hf_datasets = []
         self._config = config
@@ -71,10 +92,16 @@ class DATASET:
 
     @property
     def hf(self):
+        """The underlying HuggingFace ``DatasetDict``."""
         return self._hf
 
     @hf.setter
     def hf(self, hf_dataset):
+        """Replace the dataset and re-derive the split attributes from it.
+
+        Assignment is not a plain setter: ``train`` / ``test`` / ``validation`` are
+        recomputed, so they can never drift from what ``hf`` holds.
+        """
         self._hf = hf_dataset
         self._extract_splits_form_hf(hf_dataset)
 
@@ -1021,7 +1048,15 @@ class DATASET:
         return formatted_dataset
 
     def get_concatenated_dataset(self, datasets):
+        """Concatenate several datasets split by split.
 
+        A split is only present in the result if at least one input has it, so
+        concatenating datasets with differing splits does not fail -- it yields the
+        union.
+
+        :param datasets: datasets to merge, each a split-keyed mapping.
+        :returns: one dataset with each split concatenated in the given order.
+        """
         train_split = self.split_map[DsSplitSE.TRAIN]
         test_split = self.split_map[DsSplitSE.TEST]
         valid_split = self.split_map[DsSplitSE.VALIDATION]
@@ -1178,6 +1213,15 @@ class DATASET:
             print_examples(self.validation, 'Validation')
 
     def get_first_available_split(self):
+        """Return the first present split, preferring test, then validation, then train.
+
+        For steps that need *some* data to inspect -- length statistics, a sanity
+        print -- and should not care which split provides it. The order prefers
+        held-out data, so an inspection does not silently look at training rows.
+
+        :returns: ``(dataset, split_name)``.
+        :raises ValueError: if the dataset has no splits at all.
+        """
         for split in [DsSplitSE.TEST, DsSplitSE.VALIDATION, DsSplitSE.TRAIN]:
             try:
                 dataset = getattr(self, split)
@@ -1294,6 +1338,14 @@ class DATASET:
         DatasetDict(dataset).save_to_disk(save_path)
 
     def save(self, save_as, dirs, train_split=None, test_split=None, validation_split=None):
+        """Write the dataset to disk as CSV or in HuggingFace's own format.
+
+        :param save_as: a :class:`~micm_nlp.enums.SaveDatasetAsSE` member.
+        :param dirs: destination path under ``artefacts/datasets``.
+        :param train_split: split to write instead of this object's ``train``.
+        :param test_split: as above, for ``test``.
+        :param validation_split: as above, for ``validation``.
+        """
         if save_as == SaveDatasetAsSE.CSV:
             self._save_as_csv(dirs)
         elif save_as == SaveDatasetAsSE.HUGGINGFACE:
@@ -1304,6 +1356,11 @@ class DATASET:
 
     @staticmethod
     def get_name(config):
+        """Resolve a dataset's display name, preferring ``descriptive_name``.
+
+        Also writes the result back to ``config.descriptive_name``, so callers that
+        read the config later see the resolved value -- this is not a pure getter.
+        """
         name = None
         if hasattr(config, 'ds'):
             name = getattr(config.ds, 'descriptive_name', None) or config.ds.name

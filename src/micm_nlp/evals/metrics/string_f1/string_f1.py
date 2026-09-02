@@ -37,6 +37,13 @@ def normalize_answer(s):
 
 
 def f1_score(prediction, ground_truth):
+    """Token-overlap F1 between two strings, after SQuAD-style normalisation.
+
+    Overlap is measured on token *sets*, so repeated tokens count once -- a
+    prediction that repeats a correct word does not score higher for it.
+
+    :returns: F1 in ``[0, 1]``; ``0.0`` when nothing overlaps.
+    """
     pred_tokens = normalize_answer(prediction).split()
     truth_tokens = normalize_answer(ground_truth).split()
     common = set(pred_tokens) & set(truth_tokens)
@@ -49,6 +56,16 @@ def f1_score(prediction, ground_truth):
 
 @evaluate.utils.file_utils.add_start_docstrings(_DESCRIPTION, _CITATION)
 class StringF1(evaluate.Metric):
+    """String-level F1 packaged as an ``evaluate.Metric``.
+
+    Loaded by path rather than imported -- see the docstring in
+    ``micm_nlp.evals.metrics`` for why this module lives in a directory of its own.
+
+    The normalisation is **English-specific**: the article regex strips ``a``,
+    ``an`` and ``the`` and nothing else, so scores on other languages are comparable
+    to each other but not to published English numbers.
+    """
+
     def _info(self):
         return evaluate.MetricInfo(
             description=_DESCRIPTION,

@@ -101,6 +101,15 @@ def build_inference_dataloader_kwargs(
 
 # Build a custom trainer class that inherits from the base trainer class and adds custom functionality
 def custom_trainer_class_factory(BaseTrainer: Trainer | Seq2SeqTrainer):
+    """Mix :class:`CustomTrainerMixin` into whichever ``Trainer`` class is configured.
+
+    A factory rather than a fixed subclass because ``trainer.cls`` names the base at
+    runtime -- ``Trainer``, ``Seq2SeqTrainer``, or another -- and the mixin has to
+    sit in front of it in the MRO either way.
+
+    :param BaseTrainer: the HuggingFace trainer class to extend.
+    :returns: a new class accepting the usual arguments plus ``custom_args``.
+    """
     class CustomTrainer(CustomTrainerMixin, BaseTrainer):
         def __init__(self, *args, custom_args=None, **kwargs):
             super().__init__(*args, **kwargs)
@@ -140,6 +149,12 @@ class CustomTrainerMixin:
         # exit()
 
     def create_optimizer_and_scheduler(self, num_training_steps: int):
+        """Build optimizer and scheduler, then inspect the weight decay once.
+
+        The inspection prints which parameters landed in which group -- with
+        ``optimizer_grouped_parameters`` in play, a prompt-embedding group silently
+        not matching is otherwise invisible.
+        """
         super().create_optimizer_and_scheduler(num_training_steps)
         if not self._inspected_optimizer:
             self._inspect_optimizer_weight_decay()
@@ -507,6 +522,12 @@ class CustomTrainerMixin:
         ignore_keys: list[str] | None = None,
         **gen_kwargs,
     ) -> tuple[float | None, torch.Tensor | None, torch.Tensor | None]:
+        """Run one prediction step, applying the generation whitelist if configured.
+
+        When ``custom_training_args.generation_whitelist`` is set, a
+        :class:`~micm_nlp.training.logits_processors.ConstrainedPrefixLogitsProcessor`
+        is injected for this step, restricting generation to the allowed strings.
+        """
 
         # Inject custom logits processor
         generation_whitelist = getattr(self.custom_args, 'generation_whitelist', None)
@@ -526,6 +547,10 @@ class RandomTaskExclusionBatchSampler(BatchSampler):
     """
 
     def __init__(self, dataset, batch_size: int, drop_last: bool = False):
+        """:param dataset: dataset with a task-id column, used to group indices by task.
+        :param batch_size: examples per batch.
+        :param drop_last: drop a trailing partial batch.
+        """
         self.batch_size = batch_size
         self.drop_last = drop_last
 

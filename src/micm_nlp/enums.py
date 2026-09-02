@@ -20,7 +20,12 @@ except ImportError:  # Python < 3.11
     from enum import Enum
 
     class StrEnum(str, Enum):  # noqa: UP042  (enum.StrEnum doesn't exist on Python <3.11)
-        pass
+        """Stand-in for ``enum.StrEnum`` on Python 3.10, which does not have it.
+
+        Subclassing ``str`` gives the same property the real thing does, and the one
+        this module depends on: a member compares equal to its value, so a YAML
+        string matches without conversion.
+        """
 
 
 # Device types:

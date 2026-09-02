@@ -34,7 +34,22 @@ predictions_k = 'predictions'
 
 
 def get_compute_metrics(config, label_pad_id, metric_prefix, eval_path, tokenizer, ds_split):
+    """Build the ``compute_metrics`` callable the HuggingFace ``Trainer`` expects.
 
+    A closure rather than a method, because ``Trainer`` calls it with only
+    ``(predictions, labels)`` -- everything else it needs has to be captured here.
+
+    :param config: the run config; supplies the metric groups and preprocessing rules.
+    :param label_pad_id: label padding id, excluded from scoring.
+    :param metric_prefix: prefix for the returned metric names (``eval_``, ``test_``).
+    :param eval_path: directory for artefacts such as the confusion matrix.
+    :param tokenizer: needed when the rules ask for decoding.
+    :param ds_split: the split being scored. May be a **thunk**, so ordering
+        decisions can be deferred until the dataloader exists -- a length-sorted
+        batch sampler yields rows in a different order than the dataset. It is
+        resolved once, so verification and preprocessing see one snapshot.
+    :returns: the ``compute_metrics`` function.
+    """
     print('Get compute_metrics function...')
     print(' metric_prefix:', metric_prefix)
     print(' label_pad_id:', label_pad_id)
@@ -142,7 +157,16 @@ def verify_labels_match(ds_split, labels, config):
 
 
 def preproc_preds_labels(predictions, labels, config, label_pad_id, tokenizer, ds_split):
+    """Run predictions and labels through ``task.preproc_rules`` before scoring.
 
+    The steps are applied in a fixed order: flatten, drop padded positions, decode
+    ids to text, strip and lowercase, then convert label names to floats or ids.
+    Each is off unless the rules turn it on, so a task that predicts ids directly
+    passes through untouched.
+
+    :returns: the processed ``(predictions, labels)``, grouped by task when
+        ``per_task`` is set.
+    """
     # Preprocess predictions and labels
     preproc_rules = config.task.preproc_rules
     flatten = preproc_rules.flatten
@@ -225,6 +249,13 @@ def preproc_preds_labels(predictions, labels, config, label_pad_id, tokenizer, d
 
 
 def group_preds_labels(predictions, labels, ds_split, group_by):
+    """Split predictions and labels into per-group arrays for multi-task scoring.
+
+    :param group_by: dataset column holding the group id (usually the task id).
+    :returns: ``(grouped_preds, grouped_labels)``, each keyed by group id plus an
+        ``'all'`` key holding the ungrouped arrays, so overall and per-task metrics
+        come from one pass.
+    """
     grouped_preds = {}
     grouped_labels = {}
     for p, l, s in zip(predictions, labels, ds_split, strict=True):
@@ -244,6 +275,12 @@ def group_preds_labels(predictions, labels, ds_split, group_by):
 
 
 def convert_label_names_to_floats(predictions, labels):
+    """Parse decoded label strings as floats, for regression-style tasks.
+
+    Note the nested ``string_to_float`` helper is defined but not used: the
+    conversion below calls ``float()`` directly, so a prediction that does not
+    parse raises rather than falling back to ``-1.0``.
+    """
     def string_to_float(string, default=-1.0):
         """Converts string to float, using default when conversion not possible."""
         try:
@@ -257,6 +294,13 @@ def convert_label_names_to_floats(predictions, labels):
 
 
 def convert_label_names_to_ids(predictions, labels):
+    """Map decoded label strings to class ids.
+
+    The class list is derived from the *labels*, sorted -- so the id space comes
+    from the gold data, and a prediction outside it maps to ``-1`` rather than
+    inventing a class. How often that happens is printed, since a high unknown rate
+    means the model is not producing label-shaped text at all.
+    """
     def name_to_id(string_label, label_classes, default=-1):
         """Returns index of string_label in label_classes or default if not found."""
         if string_label in label_classes:
@@ -284,6 +328,16 @@ def _compute_metrics(predictions, labels, config, ds_split):
 
 
 def compute_metrics_by_metric_groups(predictions, labels, config):
+    """Compute every metric group named in ``task.metric_groups``.
+
+    Each group names its metrics by string and they are loaded through
+    ``evaluate.combine``; with ``eval.per_task`` set, a group scores only its own
+    task's rows and its metric names are prefixed with the task name. Groups whose
+    rows are absent are skipped with a message.
+
+    :raises ValueError: if no group produced anything -- an empty metric dict is
+        almost always a misconfiguration rather than a real result.
+    """
     eval_per_task = getattr(config.eval, 'per_task', None)
     results = {}
 
@@ -326,7 +380,11 @@ def compute_metrics_by_metric_groups(predictions, labels, config):
 
 
 def postproc_metrics(results, config, add_prefix):
+    """Make a metrics dict JSON-safe and prefix its keys.
 
+    numpy arrays become lists and numpy scalars become Python scalars, so the
+    result survives being written to disk and logged.
+    """
     # cast np.ndarray to list and np.generic to item
     def cast_value(value):
         if isinstance(value, np.ndarray):
@@ -355,6 +413,7 @@ def postproc_metrics(results, config, add_prefix):
 
 
 def add_prefix_to_metrics(results, prefix):
+    """Prefix every metric name, e.g. ``accuracy`` -> ``eval_accuracy``."""
     return {f'{prefix}{name}': value for name, value in results.items()}
 
 

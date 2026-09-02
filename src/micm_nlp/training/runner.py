@@ -54,12 +54,31 @@ from micm_nlp.training.trainers import custom_trainer_class_factory
 
 
 class TRAINER:
+    """Builds the HuggingFace ``Trainer`` from the config, and runs it.
+
+    Everything the ``Trainer`` needs is assembled here from YAML: the training
+    arguments class, the collator and the ``Trainer`` subclass are all resolved by
+    *name* against the ``*_SOURCE_MODULES`` lists, which is why a run can select a
+    HuggingFace class or one of this package's without any code change.
+
+    Construction wires the trainer; :meth:`run` executes the phases the config asks
+    for -- zero-shot test, evaluation before training, training, evaluation after,
+    final test -- in that order.
+    """
+
     # Modules searched (in order) when resolving class names from YAML.
     DATA_COLLATOR_SOURCE_MODULES: ClassVar[list[str]] = ['transformers', 'micm_nlp.training.data_collators']
     TRAINING_ARGS_SOURCE_MODULES: ClassVar[list[str]] = ['transformers']
     TRAINER_SOURCE_MODULES: ClassVar[list[str]] = ['transformers', 'micm_nlp.training.trainers']
 
     def __init__(self, model, dataset, tokenizer=None):
+        """Assemble the ``Trainer`` and print what was built.
+
+        :param model: a :class:`~micm_nlp.models.model.MODEL`; its config drives
+            everything here.
+        :param dataset: a :class:`~micm_nlp.datasets.dataset.DATASET`.
+        :param tokenizer: tokenizer to use; defaults to the dataset's own.
+        """
         self._model = model
         self._config = model._config
         self._tokenizer = tokenizer if tokenizer else dataset._tokenizer
@@ -70,6 +89,16 @@ class TRAINER:
     # -- Run loop ----------------------------------------------------------
 
     def run(self):
+        """Run the phases the config selects, in order.
+
+        Zero-shot test, evaluation before training, training, evaluation after
+        training, then the final test. ``test.zero_shot_only`` skips training
+        entirely, which is how a zero-shot baseline row is produced; each phase is
+        otherwise gated by its own flag in ``eval`` / ``test``.
+
+        :returns: the test output -- both the full-shot and zero-shot results when
+            both ran.
+        """
         full_shot_res = None
         zero_shot_res = None
         test_pref = 'test'
@@ -552,6 +581,11 @@ class TRAINER:
     # -- Print details -----------------------------------------------------
 
     def print_details(self):
+        """Print the assembled model, dataset and trainer setup.
+
+        The record of what a run actually built -- resolved classes, paths, sizes --
+        as opposed to what the YAML asked for.
+        """
         m = self._model
         print('\nModel Details >')
         if hasattr(m, 'pret_path'):
@@ -614,6 +648,16 @@ class TRAINER:
         utils.p(f'\n[green][bold]Model is ready to {self._config.mode}![/bold][/green]\n')
 
     def print_batch_examples(self, split, batches=2, samples_per_batch=2):
+        """Print a few decoded examples as the model will actually receive them.
+
+        Goes through the real dataloader, so what is printed reflects collation,
+        padding and any special tokens -- the fastest way to catch a prompt template
+        or label alignment that is wrong. Returns quietly if the split is absent.
+
+        :param split: which split to sample, a :class:`~micm_nlp.enums.DsSplitSE`.
+        :param batches: how many batches to show.
+        :param samples_per_batch: how many rows from each.
+        """
         dataloader = None
         if split == DsSplitSE.TRAIN and self._dataset.train:
             dataloader = self.trainer.get_train_dataloader()
