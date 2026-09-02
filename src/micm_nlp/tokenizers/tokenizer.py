@@ -41,7 +41,7 @@ from transformers import (
 )
 from transformers.convert_slow_tokenizer import SpmConverter
 
-# from micm_nlp.tokenizers.bert_byt5 import BertByT5Tokenizer
+# from micm_nlp.tokenizers.architectures import BertByT5Tokenizer
 import micm_nlp.path as npath
 import micm_nlp.utils as utils
 from micm_nlp.enums import (
