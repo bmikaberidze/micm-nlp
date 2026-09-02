@@ -72,9 +72,11 @@ class _Flex(BaseModel):
     model_config = ConfigDict(extra='allow')
 
     def keys(self):
+        """Declared fields plus extras -- what ``dict(obj)`` and ``**obj`` see."""
         return list(self.model_fields) + list(self.__pydantic_extra__ or {})
 
     def __getitem__(self, key: str):
+        """Attribute access by key, so a section satisfies the mapping protocol."""
         return getattr(self, key)
 
     @model_validator(mode='after')
@@ -100,6 +102,14 @@ def _wrap_value(v):
 
 
 class CONFIG(_Flex):
+    """One run, fully described.
+
+    Every section is optional except ``mode``, because the same schema covers
+    training, evaluation, preprocessing and tokenizer training -- a preprocessing
+    config has no ``training_args``, and validation only demands what the mode
+    needs. See :meth:`from_yaml` for the entry point.
+    """
+
     mode: ModeSE
     file_path: str | None = None
     task: TaskConfig | None = None
@@ -121,6 +131,14 @@ class CONFIG(_Flex):
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> CONFIG:
+        """Load and validate a YAML file into a :class:`CONFIG`.
+
+        Also records ``file_path`` and applies the ``env`` block to
+        ``os.environ`` -- so loading a config has a side effect on the process.
+
+        :param path: path to the YAML file.
+        :returns: the validated config.
+        """
         with open(path) as f:
             data = yaml.safe_load(f)
         config = cls(**data)
@@ -131,6 +149,11 @@ class CONFIG(_Flex):
     # -- Env-var side-effect ------------------------------------------------
 
     def apply_env_vars(self) -> None:
+        """Copy the ``env`` block into ``os.environ``, skipping null values.
+
+        Called by :meth:`from_yaml`; exposed so a config built in code can do the
+        same. Keys with a ``None`` value are left alone rather than cleared.
+        """
         if self.env:
             for key, value in self.env.items():
                 if value is not None:
@@ -172,6 +195,14 @@ class CONFIG(_Flex):
 
 
 class PeftConfig(_Flex):
+    """The ``peft`` block: which PEFT method, and how it is parameterized.
+
+    A superset of the fields the supported methods need, so ``peft_type: LORA``
+    and ``peft_type: XPE`` share one schema; unused fields stay ``None``. The
+    ``encoder_*`` fields belong to the Cross-Prompt Encoder -- notably
+    ``encoder_ratio``, which is what separates SPT (0), DUAL (between) and XPE (1).
+    """
+
     peft_type: str | None = None
     task_type: str | None = None
     num_virtual_tokens: int | None = None
@@ -191,6 +222,15 @@ class PeftConfig(_Flex):
 
 
 class PostprocConfig(_Flex):
+    """``task.preproc_rules``: what happens to predictions before metrics see them.
+
+    Each flag is a step -- flatten, drop padded positions, decode ids to text,
+    map label ids to names, strip and lowercase, coerce to float or back to ids --
+    applied in the order ``evals.eval`` runs them. ``label_restricted_likelihood``
+    is the opt-in that scores only the candidate label tokens rather than the whole
+    vocabulary.
+    """
+
     flatten: bool = False
     filter_padded: bool = False
     label_id_to_name: bool = False
@@ -209,6 +249,12 @@ class PostprocConfig(_Flex):
 
 
 class TaskConfig(_Flex):
+    """The ``task`` block: what is being learned and how it is scored.
+
+    ``metric_groups`` is a list because one run can score several tasks separately;
+    ``preproc_rules`` is the post-processing chain applied before scoring.
+    """
+
     id: str | None = None
     category: str | None = None
     name: str | None = None
@@ -222,6 +268,10 @@ class TaskConfig(_Flex):
 
 
 class AdapterConfig(_Flex):
+    """Locates a saved PEFT adapter to load: by ``name`` or ``uuid4``, optionally
+    a specific ``checkpoint``, from ``source``.
+    """
+
     name: str | None = None
     uuid4: str | None = None
     source: str | None = None
@@ -229,6 +279,12 @@ class AdapterConfig(_Flex):
 
 
 class PretrainedConfig(_Flex):
+    """Locates a pretrained model, and names the class to load it with.
+
+    ``cls`` is resolved by name at runtime, so a new backbone usually needs no code
+    change. An ``adapter`` here loads PEFT weights on top of the base model.
+    """
+
     cls: str | None = None
     args: _Flex | None = None
     name: str | None = None
@@ -258,6 +314,15 @@ class InitConfig(_Flex):
 
 
 class ModelConfig(_Flex):
+    """The ``model`` block: architecture, and how the model is obtained.
+
+    Exactly one of ``init`` (build from scratch) or ``pretrained`` (load) is used,
+    decided by ``mode``. ``architecture`` is a free-form string used for
+    run-directory naming -- deliberately *not* validated against
+    :class:`~micm_nlp.enums.ModelArchSE`. The ``param_size`` fields are filled in at
+    runtime, not by YAML.
+    """
+
     architecture: str
     init: InitConfig | None = None
     pretrained: PretrainedConfig | None = None
@@ -274,6 +339,12 @@ class ModelConfig(_Flex):
 
 
 class TokenizerConfig(_Flex):
+    """The ``tokenizer`` block: which tokenizer to load, or which to train.
+
+    ``adapt_to_lm`` applies the target architecture's special tokens and
+    post-processor to a tokenizer borrowed from elsewhere.
+    """
+
     source: str | None = None
     name: str | None = None
     type: str | None = None
@@ -288,12 +359,25 @@ class TokenizerConfig(_Flex):
 
 
 class SplitsConfig(_Flex):
+    """Which splits a dataset already ships with.
+
+    Each field is ``False`` when absent, or the split's name when present -- a
+    string because the on-disk name is not always ``train``/``test``/``validation``.
+    """
+
     train: bool | str = False
     test: bool | str = False
     validation: bool | str = False
 
 
 class InputConfig(_Flex):
+    """Which dataset column(s) hold the input.
+
+    ``key_2`` and ``key_3`` cover pair and triple inputs (premise/hypothesis,
+    context/question/answer). ``standardize_key`` renames the column to the
+    canonical name instead of carrying the original through.
+    """
+
     key: str
     key_2: str | None = None
     key_3: str | None = None
@@ -301,6 +385,13 @@ class InputConfig(_Flex):
 
 
 class LabelConfig(_Flex):
+    """Which column holds the label, and what the label space is.
+
+    ``names`` and ``number`` must agree when the config asks for id-to-name mapping;
+    ``CONFIG`` validates that. ``padded`` is the id used to pad label sequences,
+    which the loss ignores.
+    """
+
     key: str
     number: int | None = None
     names: list[str] | None = None
@@ -309,11 +400,21 @@ class LabelConfig(_Flex):
 
 
 class TaskIdConfig(_Flex):
+    """Which column identifies the task, for multi-task runs that score each
+    task separately.
+    """
+
     key: str
     standardize_key: bool = False
 
 
 class DatasetConfig(_Flex):
+    """The ``ds`` block: which dataset, where it lives, and how to read it.
+
+    ``dirs`` is a path *template* under ``artefacts/datasets/<category>``; consumer
+    repos substitute into it (a language segment, a fold) to assemble a run's data.
+    """
+
     descriptive_name: str | None = None
     category: str | None = None
     dirs: str | None = None
@@ -333,6 +434,12 @@ class DatasetConfig(_Flex):
 
 
 class EvalConfig(_Flex):
+    """The ``eval`` block: when evaluation runs.
+
+    Before and after training, on the validation split or the test split, and
+    during training. ``per_task`` groups metrics by task id.
+    """
+
     before_training: bool = False
     before_training_on_test: bool = False
     during_training: bool | _Flex | None = None
@@ -348,6 +455,12 @@ class EvalConfig(_Flex):
 
 
 class TestConfig(_Flex):
+    """The ``test`` block: whether and how the held-out test split is scored.
+
+    ``zero_shot`` adds an untrained baseline pass; ``zero_shot_only`` skips training
+    altogether, which is how a zero-shot row is produced.
+    """
+
     run: bool = False
     zero_shot: bool = False
     zero_shot_only: bool = False
@@ -394,6 +507,17 @@ class DataCollatorConfig(_Flex):
 
 
 class CustomTrainingArgsConfig(_Flex):
+    """Settings this package adds beyond HuggingFace's ``TrainingArguments``.
+
+    Three groups. **Batching**: ``*_force_sequential`` and ``*_max_tokens_per_batch``
+    -- mutually exclusive, since token-budget batching needs length-sorted order that
+    a sequential sampler would override. **Early stopping**: patience, threshold, a
+    floor before stopping is allowed, and a metric that is deliberately separable
+    from the one used to pick the best checkpoint. **Everything else**: which columns
+    to keep, per-parameter-group optimizer settings, a generation whitelist, and what
+    to save at the end.
+    """
+
     train_force_sequential: bool = False
     eval_force_sequential: bool = False
     test_force_sequential: bool = False
@@ -453,4 +577,8 @@ class CustomTrainingArgsConfig(_Flex):
 
 
 class CudaConfig(_Flex):
+    """The ``cuda`` block. ``empty_cache_steps`` frees the allocator cache every N
+    steps, trading a little speed for headroom.
+    """
+
     empty_cache_steps: int | None = None

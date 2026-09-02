@@ -155,6 +155,12 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
         token_budget: int,
         pad_multiple: int = 1,
     ) -> None:
+        """:param lengths: per-sample sequence lengths, one per dataset row.
+        :param token_budget: cap on ``batch_size * padded_max_length`` per batch.
+        :param pad_multiple: alignment for the padded length; 1 disables rounding.
+        :raises ValueError: if ``token_budget`` is not positive or ``pad_multiple``
+            is below 1.
+        """
         if token_budget <= 0:
             raise ValueError(f'token_budget must be positive, got {token_budget}')
         if pad_multiple < 1:
@@ -167,6 +173,11 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
 
     @property
     def order(self) -> list[int]:
+        """The order samples are emitted in, length-ascending.
+
+        Public because batches are not in dataset order: a consumer that needs to
+        line predictions back up with dataset rows has to know the permutation.
+        """
         # Per-sample emission order (length-ascending). Public so downstream
         # consumers can align dataset-order rows to predictions-yield order.
         return list(self._order)

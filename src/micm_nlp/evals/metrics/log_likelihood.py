@@ -15,7 +15,28 @@ import numpy as np
 
 
 def compute_log_likelihood_accurac(predictions, labels, config, ds_split):
+    """Score multiple-choice accuracy by comparing per-option log-likelihoods.
 
+    A generative model answers a multiple-choice question by being scored on every
+    option: each option is one row, and rows belonging to the same question share a
+    group id. The chosen answer is the highest-scoring row in the group, and the
+    question is correct if that row is the one flagged correct.
+
+    Log-likelihood is **length-normalised** before comparing -- dividing by the
+    sequence length, floored at 1 -- because otherwise the shortest option wins
+    almost by construction.
+
+    ``group_by`` and ``correct_flag`` name the dataset columns, and come from
+    ``task.metric_groups[0].args``.
+
+    :param predictions: array with sequence log-likelihood in column 0 and
+        sequence length in column 1.
+    :param labels: unused; present for the ``compute_metrics`` signature.
+    :param config: the run config, read for the metric-group args.
+    :param ds_split: the split being scored, read for the group and correctness
+        columns.
+    :returns: ``accuracy``, ``mean_ll`` and ``mean_normalized_ll``.
+    """
     ll_args = config.task.metric_groups[0].args
     group_by = ll_args.group_by
     correct_flag = ll_args.correct_flag

@@ -57,6 +57,11 @@ def resolve_cls(cls_name, modules, yaml_path=None):
 
 # Module info / debug ------------------------------------------------------------------------------------------------------------------
 def info(file=__file__, name=__name__, package=__package__):
+    """Print the calling module's file, module and package names.
+
+    The defaults bind to *this* module, so a caller wanting its own identity has to
+    pass ``__file__``, ``__name__`` and ``__package__`` explicitly.
+    """
     print(
         'Module info:',
         json_dumps(
@@ -70,7 +75,12 @@ def info(file=__file__, name=__name__, package=__package__):
 
 
 def print_traceback(show_locals=False, width=120, extra_lines=1):
-    from micm_nlp.setup import init_rich
+    """Install Rich tracebacks and immediately raise, to see a formatted stack.
+
+    A debugging aid: it always raises ``Exception('Ephemeral Exception')``. There is
+    no way to call it without an exception escaping.
+    """
+    from micm_nlp.bootstrap import init_rich
 
     init_rich({'show_locals': show_locals, 'width': width, 'extra_lines': extra_lines})
     raise Exception('Ephemeral Exception')
@@ -78,6 +88,14 @@ def print_traceback(show_locals=False, width=120, extra_lines=1):
 
 # Timing -------------------------------------------------------------------------------------------------------------------------------
 def tik(tok, key, callback, params=()):
+    """Call ``callback``, recording how long it took into ``tok[key]``.
+
+    :param tok: dict to write the formatted duration into.
+    :param key: key to write it under.
+    :param callback: the callable to time.
+    :param params: positional arguments for ``callback``.
+    :returns: whatever ``callback`` returned.
+    """
     start = time.perf_counter()
     res = callback(*params)
     end = time.perf_counter()
@@ -86,30 +104,48 @@ def tik(tok, key, callback, params=()):
 
 
 def format_seconds(n):
+    """Format a duration in seconds as ``H:MM:SS`` (``datetime.timedelta``)."""
     return str(datetime.timedelta(seconds=n))
 
 
 def get_time_id():
+    """A sortable ``YYYYmmdd_HHMMSS`` stamp, used to name run directories."""
     return datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
 
 # JSON serialization -------------------------------------------------------------------------------------------------------------------
 def json_dumps(object, **kwargs):
+    """``json.dumps`` with this package's defaults: indented, key order preserved,
+    non-ASCII left as-is so Georgian and other non-Latin text stays readable."""
     return json.dumps(object, sort_keys=False, indent=4, ensure_ascii=False, **kwargs)
 
 
 def json_dumps_numpy(object, **kwargs):
+    """:func:`json_dumps` with :class:`NumpyEncoder`, so arrays serialise as lists."""
     return json_dumps(object, cls=NumpyEncoder, **kwargs)
 
 
 class NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that turns ``np.ndarray`` into a list.
+
+    Handles arrays only; for scalars and arbitrary objects use
+    :func:`safe_json_default`.
+    """
+
     def default(self, obj):
+        """Serialise ``np.ndarray`` as a list; defer everything else to the base."""
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super().default(obj)
 
 
 def safe_json_default(o):
+    """A ``json.dumps(default=...)`` hook that never raises.
+
+    numpy scalars become Python scalars, arrays become lists, objects with a
+    ``__dict__`` become that dict, and anything else falls back to ``str(o)`` --
+    which is what makes enums serialisable.
+    """
     if isinstance(o, np.generic):
         return o.item()
     elif isinstance(o, np.ndarray):
@@ -122,28 +158,50 @@ def safe_json_default(o):
 
 # Simple Namespace ---------------------------------------------------------------------------------------------------------------------
 def json_dumps_simple_nsp(simple_nsp):  # dump
+    """Serialise a ``SimpleNamespace`` tree to JSON, via :func:`safe_json_default`."""
     return json_dumps(simple_nsp, default=safe_json_default)
 
 
 def json_load_simple_nsp(json_string):  # load
+    """Parse JSON into nested ``SimpleNamespace`` objects instead of dicts.
+
+    This is what makes config access attribute-style (``config.model.pretrained``)
+    all the way down.
+    """
     return json.loads(json_string, object_hook=lambda d: SimpleNamespace(**d))
 
 
 def copy_simple_nsp(simple_nsp):  # dump and load
+    """Deep-copy a namespace tree by round-tripping it through JSON.
+
+    Only what JSON can represent survives; see :func:`safe_json_default` for how
+    the rest degrades.
+    """
     return json_load_simple_nsp(json_dumps_simple_nsp(simple_nsp))
 
 
 def dict_to_simple_nsp(dictionary=None):  # dump and load
+    """Convert a dict to a nested ``SimpleNamespace``.
+
+    Runs :func:`scientific_notation_to_float` on the way in, so a YAML learning rate
+    written ``5e-5`` -- which YAML hands over as a *string* -- arrives as a float.
+    """
     if dictionary is None:
         dictionary = {}
     return json_load_simple_nsp(json_dumps(scientific_notation_to_float(dictionary)))
 
 
 def simple_nsp_to_dict(simple_nsp):  # dump and load
+    """Convert a nested ``SimpleNamespace`` back to plain dicts."""
     return json.loads(json_dumps_simple_nsp(simple_nsp))
 
 
 def simple_nsps_to_params(*simple_nsps):
+    """Flatten several namespaces into one kwargs dict.
+
+    Later namespaces overwrite earlier ones on key collisions. Only the top level
+    is merged; nested namespaces are copied by reference.
+    """
     params = {}
     # Merging each SimpleNamespace into the params dictionary
     for simple_nsp in simple_nsps:
@@ -152,6 +210,7 @@ def simple_nsps_to_params(*simple_nsps):
 
 
 def update_simple_nsp(simple_nsps, updates):
+    """Set attributes on a namespace in place, from a dict or mapping."""
     for key, value in dict(updates).items():
         setattr(simple_nsps, key, value)
 
@@ -172,56 +231,75 @@ def read_jsons_in_folder(folder_path):
 
 
 def json_file_to_dict(json_file_path):
+    """Read a JSON file into a dict."""
     with open(json_file_path) as json_file:
         return json.load(json_file)
 
 
 def json_file_to_simple_nsp(json_file_path):
+    """Read a JSON file into a nested ``SimpleNamespace``."""
     return dict_to_simple_nsp(json_file_to_dict(json_file_path))
 
 
 def yaml_file_to_dict(yaml_file_path):
+    """Read a YAML file into a dict, using ``yaml.safe_load``."""
     with open(yaml_file_path) as yaml_file:
         return yaml.safe_load(yaml_file)
 
 
 def yaml_file_to_simple_nsp(yaml_file_path):
+    """Read a YAML file into a nested ``SimpleNamespace``.
+
+    This is the path a config takes on its way to ``CONFIG``.
+    """
     return dict_to_simple_nsp(yaml_file_to_dict(yaml_file_path))
 
 
 # Write
 def dict_to_json_file(dict, json_file_path):
+    """Write a dict to a JSON file, overwriting it."""
     with open(json_file_path, 'w') as json_file:
         json_file.write(json_dumps(dict))
 
 
 def simple_nsp_to_json_file(object, json_file_path):
+    """Write a ``SimpleNamespace`` tree to a JSON file, overwriting it."""
     with open(json_file_path, 'w') as json_file:
         json_file.write(json_dumps_simple_nsp(object))
 
 
 def dict_to_yaml_file(dict, yaml_file_path):
+    """Write a dict to a YAML file in block style, overwriting it."""
     with open(yaml_file_path, 'w') as yaml_file:
         yaml.dump(dict, yaml_file, default_flow_style=False)
 
 
 def simple_nsp_to_yaml_file(object, yaml_file_path):
+    """Write a ``SimpleNamespace`` tree to a YAML file, overwriting it."""
     dict_to_yaml_file(simple_nsp_to_dict(object), yaml_file_path)
 
 
 # Pickle
 def pickle_save(object, path):
+    """Pickle an object to ``path``."""
     with open(path, 'wb') as f:
         pickle.dump(object, f)
 
 
 def pickle_load(path):
+    """Unpickle the object stored at ``path``."""
     with open(path, 'rb') as f:
         return pickle.load(f)
 
 
 # File info
 def file_len(path, print_lines=False):
+    """Count the lines in a file by reading it, with a progress bar.
+
+    :param path: file to count.
+    :param print_lines: also print the count.
+    :returns: number of lines.
+    """
     with open(path) as f:
         l = sum(1 for _ in tqdm(f))
     if print_lines:
@@ -230,11 +308,19 @@ def file_len(path, print_lines=False):
 
 
 def sizeof_file(file):
+    """Human-readable size of a file, or ``0`` if it does not exist."""
     return format_size(os.path.getsize(file)) if os.path.exists(file) else 0
 
 
 # Data transforms ----------------------------------------------------------------------------------------------------------------------
 def scientific_notation_to_float(item):
+    """Recursively turn scientific-notation *strings* into floats.
+
+    YAML gives ``5e-5`` back as a string, not a float, so a learning rate written
+    that way would reach the optimizer as text. This walks dicts and lists and
+    converts any string containing ``e`` that parses as a float; everything else is
+    returned untouched.
+    """
     if isinstance(item, dict):
         return {k: scientific_notation_to_float(v) for k, v in item.items()}
     elif isinstance(item, list):
@@ -249,6 +335,7 @@ def scientific_notation_to_float(item):
 
 
 def format_size(num, suffix='B'):
+    """Format a byte count with a binary unit prefix (KiB, MiB, ...)."""
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return f'{num:3.1f}{unit}{suffix}'
@@ -257,10 +344,16 @@ def format_size(num, suffix='B'):
 
 
 def sizeof_object(object):
+    """Human-readable ``sys.getsizeof`` -- shallow, so containers understate."""
     return format_size(sys.getsizeof(object))
 
 
 def to_utf8_if_binary(text):
+    """Decode UTF-8 bytes to ``str``, for a single value or a list of them.
+
+    A list is judged by its first element. Text that is already ``str`` passes
+    through.
+    """
     if isinstance(text, list) and isinstance(text[0], bytes):
         text = [t.decode('utf-8') for t in text]
     elif isinstance(text, bytes):
@@ -269,6 +362,7 @@ def to_utf8_if_binary(text):
 
 
 def get_placeholder(name):
+    """Build a ``<PLACEHOLDER:name>`` marker for prompt templating."""
     return '<PLACEHOLDER:' + name + '>'
 
 
@@ -386,6 +480,12 @@ def filter_kwargs_by_method_signature(method, kwargs):
 
 
 def is_valid_uuid(uuid_to_test, version=4):
+    """Whether a string is a UUID of the given version, in canonical form.
+
+    Stricter than ``UUID()`` alone: the round-tripped string must equal the input,
+    so a UUID written without hyphens is rejected. Used to tell a run directory
+    named by UUID from one named otherwise.
+    """
     try:
         uuid_obj = UUID(uuid_to_test, version=version)
     except ValueError:
@@ -394,6 +494,14 @@ def is_valid_uuid(uuid_to_test, version=4):
 
 
 def monkey_patch_globally(name: str, new_obj, verbose=False):
+    """Rebind ``name`` to ``new_obj`` in every already-imported module that has it.
+
+    A blunt instrument for patching a symbol that other modules imported by value
+    (``from x import y``), where patching the defining module alone would not be
+    seen. Modules imported *after* this call keep the original.
+
+    :returns: how many modules were patched.
+    """
     count = 0
     for module in list(sys.modules.values()):
         if module and hasattr(module, '__dict__') and name in module.__dict__:
@@ -406,6 +514,15 @@ def monkey_patch_globally(name: str, new_obj, verbose=False):
 
 # Script args --------------------------------------------------------------------------------------------------------------------------
 def get_script_param(len, number, default=None, p=False):
+    """Read a positional ``sys.argv`` entry, with a default and its type.
+
+    When ``default`` is given, the argument is coerced to ``type(default)``.
+
+    :param len: ``len(sys.argv)``, passed in by the caller.
+    :param number: index into ``sys.argv``.
+    :param default: value when the argument is absent; also fixes the type.
+    :param p: print the resolved value.
+    """
     param = default if len <= number else sys.argv[number]
     param = type(default)(param) if param is not None and default is not None else param
     print(param) if p else None
@@ -430,6 +547,11 @@ def parse_script_args(ap=None):
 
 
 def parse_config_name():
+    """Parse a single positional config name from the command line.
+
+    The positional counterpart of :func:`parse_script_args`, which expects
+    ``--config``.
+    """
     import argparse
 
     ap = argparse.ArgumentParser()
@@ -440,11 +562,13 @@ def parse_config_name():
 
 # Debug / Print ------------------------------------------------------------------------------------------------------------------------
 def print_list(list):
+    """Print each element of an iterable on its own line."""
     for element in list:
         print(element)
 
 
 def print_stack():
+    """Print the current call stack as ``file:line - function`` lines."""
     print('Call stack:')
     for frame in inspect.stack():
         print(f'  {frame.filename}:{frame.lineno} - {frame.function}')

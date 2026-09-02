@@ -26,10 +26,27 @@ from micm_nlp.models.xpe import (
 
 
 class PEFT:
+    """Dispatch between stock PEFT methods and the Cross-Prompt Encoder path.
+
+    A namespace of static methods rather than an object: :class:`MODEL` calls into
+    it, passing itself as ``base``, and PEFT mutates ``base._model`` in place.
+
+    Two things route here. A ``model.pretrained.adapter`` path loads an already
+    trained adapter; a ``peft`` config block builds a fresh one. Either way the XPE
+    path is taken when the adapter directory or the config says so, and stock PEFT
+    otherwise.
+    """
+
     prompt_encoder_key = 'default'
 
     @staticmethod
     def is_peft(base):
+        """Whether this run involves PEFT at all.
+
+        True if a ``peft`` block names a ``peft_type``, or if
+        ``model.pretrained.adapter`` points at an adapter to load. Both are checked
+        because a run can attach PEFT either way.
+        """
         peft = getattr(base._config, 'peft', None)
         pretrained = base._config.model.pretrained
         return (peft is not None and getattr(peft, 'peft_type', None) is not None) or (
@@ -38,6 +55,11 @@ class PEFT:
 
     @staticmethod
     def from_pretrained(base_model, path):
+        """Load a saved adapter, choosing the loader by what is in the directory.
+
+        Cross-Prompt Encoder adapters are not loadable by stock ``PeftModel``, so
+        the directory is sniffed first; anything else goes through PEFT itself.
+        """
         if is_xpe_adapter_dir(path):
             return load_xpe_pretrained(base_model, path)
         return PeftModel.from_pretrained(base_model, path)
@@ -55,7 +77,12 @@ class PEFT:
 
     @staticmethod
     def setup_model(base):
+        """Attach PEFT to ``base._model``, replacing it with the wrapped model.
 
+        Order matters: a pretrained adapter wins over a ``peft`` block, so a config
+        that both names an adapter and describes one loads the adapter rather than
+        building a new one.
+        """
         pret = base._config.model.pretrained
         peft = getattr(base._config, 'peft', None)
 

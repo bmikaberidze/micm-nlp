@@ -81,6 +81,14 @@ class KaSenTok:
     """
 
     def __init__(self, abbreviations_path=None, abbr_ends_path=None):
+        """Load the abbreviation lists and build the Punkt tokenizer.
+
+        Downloads NLTK's punkt models only if they are missing, so constructing
+        this on a machine that already has them does not touch the network.
+
+        :param abbreviations_path: override for the shipped ``wiki.abbrs.txt``.
+        :param abbr_ends_path: override for the shipped ``abbr.ends.txt``.
+        """
         _ensure_punkt()
 
         # Punkt wants abbreviations without their trailing period.

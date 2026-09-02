@@ -14,7 +14,23 @@ from transformers import LogitsProcessor
 
 
 class ConstrainedPrefixLogitsProcessor(LogitsProcessor):
+    """Restrict generation to a closed set of strings, one step at a time.
+
+    Each allowed string is tokenized once, up front, prefixed with the pad token
+    that opens a decoder sequence. At every step the processor keeps the candidates
+    whose prefix still matches what has been generated, and passes through the
+    scores of only those tokens any survivor could produce next; everything else is
+    masked to ``-inf``. A candidate that has been generated in full contributes EOS,
+    and if nothing matches at all, EOS is forced.
+
+    The decoder prefix length is inferred on the first call rather than configured,
+    so this works whatever the model prepends.
+    """
+
     def __init__(self, tokenizer, allowed_texts):
+        """:param tokenizer: tokenizer used to encode ``allowed_texts``.
+        :param allowed_texts: the strings generation is restricted to.
+        """
         self.tokenizer = tokenizer
         self.allowed_token_seqs = [
             [tokenizer.pad_token_id, *tokenizer.encode(text, add_special_tokens=False)] for text in allowed_texts

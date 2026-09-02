@@ -34,6 +34,19 @@ def _filtered_kwargs(peft_config_vars):
 
 
 def get_xpe_model(base_model, peft_config_vars):
+    """Wrap a base model in the Cross-Prompt Encoder PEFT model for its task type.
+
+    The PEFT-model class is chosen from ``task_type`` by
+    :func:`~micm_nlp.models.xpe.peft_models.xpe_model_for`. After construction the
+    prompt encoder's gradient requirements are set and its layers printed, and an
+    ``encoder_init_state_dict_path`` in the config is loaded on top.
+
+    :param base_model: the backbone to wrap.
+    :param peft_config_vars: mapping of config fields; ``None`` values are stripped
+        before they reach :class:`CrossPromptEncoderConfig` (see
+        ``_filtered_kwargs``).
+    :returns: the wrapped PEFT model, adapter name ``'default'``.
+    """
     model_config = BaseTuner.get_model_config(base_model)
     peft_config = CrossPromptEncoderConfig(**_filtered_kwargs(peft_config_vars))
     peft_config = _prepare_prompt_learning_config(peft_config, model_config)

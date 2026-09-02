@@ -27,6 +27,14 @@ load_dotenv(find_dotenv(usecwd=True))
 
 
 class Env(BaseSettings):
+    """Typed view of the environment, read from ``.env`` and the process env.
+
+    ``extra='allow'`` and ``case_sensitive=True``: unknown variables are kept rather
+    than rejected, so a project can put its own settings in the same ``.env``. The
+    module-level :data:`env` instance is built at import time; nothing re-reads the
+    file afterwards.
+    """
+
     model_config = SettingsConfigDict(
         env_file=find_dotenv(usecwd=True) or '.env',
         env_file_encoding='utf-8',
@@ -47,17 +55,44 @@ env = Env()
 
 
 class RichConfig(BaseModel):
+    """Settings for Rich's pretty-printer and traceback handler.
+
+    ``show_locals`` renders local variables in tracebacks — useful when debugging,
+    noisy in a training log.
+    """
+
     show_locals: bool = False
     width: int = 120
     extra_lines: int = 1
 
 
 class MicmNlpConfig(BaseModel):
+    """What :func:`init` accepts.
+
+    ``root_path`` defaults to ``PROJECT_ROOT_PATH`` from the environment, so
+    ``init()`` with no arguments works when ``.env`` sets it. ``pretty_output`` takes
+    ``True`` for Rich defaults, or a :class:`RichConfig` to tune it.
+    """
+
     root_path: str | None = os.getenv('PROJECT_ROOT_PATH')
     pretty_output: RichConfig | bool = False
 
 
 def init(config: MicmNlpConfig | dict) -> None:
+    """Set up the process: workspace root, distributed env, optional Rich output.
+
+    Call once before any pipeline call. **Not** triggered on import — until it runs,
+    every accessor in :mod:`micm_nlp.path` raises, so ``artefacts/`` can never land
+    in the wrong place by accident.
+
+    Three things happen, in order: the workspace root is set from ``root_path``
+    (falling back to ``PROJECT_ROOT_PATH``); the distributed-training variables are
+    stripped when this is a single-process run, see
+    ``_disable_distributed_if_single_process``; and Rich is installed if
+    ``pretty_output`` asks for it.
+
+    :param config: a :class:`MicmNlpConfig` or a plain dict of its fields.
+    """
     if isinstance(config, dict):
         config = MicmNlpConfig(**config)
     set_root(config.root_path)
@@ -89,6 +124,14 @@ def _disable_distributed_if_single_process() -> None:
 
 
 def init_rich(rich_config: RichConfig | dict | bool) -> None:
+    """Install Rich's pretty-printer and traceback handler.
+
+    Usually reached through :func:`init` rather than called directly. Rich is
+    imported inside the function, so a project that never asks for pretty output
+    does not pay the import.
+
+    :param rich_config: ``True`` for defaults, or a :class:`RichConfig` / dict.
+    """
     if rich_config is True:
         rich_config = RichConfig()
     elif isinstance(rich_config, dict):

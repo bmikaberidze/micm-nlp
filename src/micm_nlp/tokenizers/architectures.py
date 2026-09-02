@@ -25,11 +25,27 @@ from micm_nlp.enums import ModelArchSE
 
 
 class BertByT5Tokenizer(ByT5Tokenizer):
-    """ """
+    """A byte-level ByT5 vocabulary wearing BERT's special tokens.
+
+    ByT5 tokenizes to raw UTF-8 bytes, which sidesteps the vocabulary question
+    entirely -- attractive for a language whose script is poorly served by
+    subword vocabularies. But ByT5 is an encoder-decoder tokenizer and does not
+    build the ``[CLS] ... [SEP]`` input an encoder-only model expects. This class
+    keeps ByT5's byte vocabulary and borrows BERT's special tokens and its
+    ``build_inputs_with_special_tokens``, so byte-level segmentation can drive a
+    BERT-style model.
+
+    Note the composition is by delegation, not inheritance of behaviour: the
+    instance copies the configured ByT5 tokenizer's ``__dict__`` over its own.
+    """
 
     bert_tok_name = 'bert-base-uncased'
 
     def __init__(self, byt5_name='google/byt5-small', *args, **kwargs):
+        """:param byt5_name: ByT5 checkpoint to take the byte vocabulary from.
+        :param args: forwarded to ``ByT5Tokenizer``.
+        :param kwargs: forwarded to ``ByT5Tokenizer``.
+        """
         super().__init__(*args, **kwargs)
 
         self.byt5 = ByT5Tokenizer.from_pretrained(byt5_name)
@@ -62,12 +78,24 @@ class BertByT5Tokenizer(ByT5Tokenizer):
 
 
 class CustomXlmRoberta:
-    """ """
+    """XLM-R's multilingual vocabulary, re-dressed for another architecture.
+
+    XLM-R's SentencePiece vocabulary is the reason to reach for it -- 100
+    languages, trained on CC100. Its *input format* is often not what you want:
+    a BERT-style encoder expects different special tokens and a different
+    post-processor. This loads ``xlm-roberta-base``'s tokenizer and applies the
+    special tokens and post-processor of ``model_arch`` instead.
+
+    Like :class:`BertByT5Tokenizer`, composition is by copying the wrapped
+    tokenizer's ``__dict__``; this class does not subclass a tokenizer.
+    """
 
     hf_name = 'xlm-roberta-base'
 
     def __init__(self, model_arch=ModelArchSE.BERT):
-
+        """:param model_arch: architecture whose special tokens and post-processor
+        to apply to XLM-R's tokenizer.
+        """
         self.xlmr = AutoTokenizer.from_pretrained(self.hf_name)
 
         from micm_nlp.tokenizers.tokenizer import add_post_processor, add_special_tokens

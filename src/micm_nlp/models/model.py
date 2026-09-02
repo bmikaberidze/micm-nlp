@@ -30,25 +30,55 @@ from micm_nlp.path import evals_dir, find_dirs_by_prefix, models_dir
 
 
 class MODEL:
+    """The backbone: built or loaded from config, then wrapped with PEFT if asked.
+
+    Construction does the whole job -- paths are resolved and the model is set up in
+    ``__init__``, so an instance is ready to hand to
+    :class:`~micm_nlp.training.runner.TRAINER`. The HuggingFace model itself is
+    reachable as :attr:`hf`.
+
+    Which class is instantiated comes from YAML: ``model.pretrained.cls`` (or the
+    ``init`` block when training from scratch) is resolved by name against
+    :data:`CLS_SOURCE_MODULES`, so adding a backbone normally needs no code here.
+
+    The static half of this class is a small registry over ``artefacts/models``:
+    models are stored in UUID-named directories, and
+    :meth:`find_path_by_uuid4` and friends locate one and remember where it was.
+    """
+
     checkpoint_pref = 'checkpoint-'
 
     # Modules searched (in order) when resolving class names from YAML.
     CLS_SOURCE_MODULES: ClassVar[list[str]] = ['transformers']
 
     def __init__(self, config):
+        """Resolve paths and build the model.
+
+        The config is deep-copied, so runtime fields written here (``uuid4``,
+        ``param_size``) do not leak back into the caller's object.
+
+        :param config: the validated run config.
+        """
         self._config = copy.deepcopy(config)
         self._set_paths()
         self._setup_model()
 
     def reinit(self, config):
+        """Rebuild this instance from a different config, in place.
+
+        Used to swap models between phases of a run without dropping the object
+        the surrounding code holds.
+        """
         self.__init__(config)
 
     @property
     def hf(self):
+        """The underlying HuggingFace model -- PEFT-wrapped if PEFT is configured."""
         return self._model
 
     @hf.setter
     def hf(self, value):
+        """Replace the underlying model, for code that rewraps it."""
         self._model = value
 
     # -- Path management ---------------------------------------------------
@@ -249,6 +279,14 @@ class MODEL:
     # -- Debug / print -----------------------------------------------------
 
     def print_named_parameters(self, requires_grad=None, model=None):
+        """Print each parameter's name, ``requires_grad`` and mean.
+
+        The quickest way to check that PEFT froze what it should have.
+
+        :param requires_grad: print only parameters with this flag; ``None`` prints
+            all of them.
+        :param model: model to inspect; defaults to this one.
+        """
         model = model if model else self._model
         for name, param in model.named_parameters():
             if requires_grad is None or requires_grad == param.requires_grad:
@@ -258,6 +296,11 @@ class MODEL:
 
     @staticmethod
     def get_base_model(model):
+        """Unwrap a PEFT model down to the backbone it wraps.
+
+        Tries ``get_base_model()``, then a ``base_model`` attribute, then returns
+        the model unchanged -- so it is safe to call on an unwrapped model.
+        """
         if hasattr(model, 'get_base_model'):
             return model.get_base_model()
         elif hasattr(model, 'base_model'):
@@ -266,31 +309,58 @@ class MODEL:
 
     @staticmethod
     def get_last_checkpoint(path):
+        """Highest ``checkpoint-N`` step number under ``path``, or ``None``.
+
+        Compares N numerically, so ``checkpoint-1000`` beats ``checkpoint-999``.
+        """
         dirs = os.listdir(path)
         checkpoints = [int(d.split('-')[-1]) for d in dirs if d.startswith(MODEL.checkpoint_pref)]
         return max(checkpoints) if checkpoints else None
 
     @staticmethod
     def get_last_checkpoint_path(path, last_checkpoint=None):
+        """Path of the newest checkpoint under ``path``.
+
+        Falls back to ``path`` itself when there are no checkpoint directories --
+        which is what a final saved model looks like.
+        """
         last_checkpoint = last_checkpoint if last_checkpoint else MODEL.get_last_checkpoint(path)
         return os.path.join(path, f'{MODEL.checkpoint_pref}{last_checkpoint}') if last_checkpoint else path
 
     @staticmethod
     def get_last_checkpoint_path_by_uuid4(source_model_uuid4):
+        """Locate a model directory by UUID and return its newest checkpoint."""
         model_path = MODEL.find_path_by_uuid4(source_model_uuid4)
         return MODEL.get_last_checkpoint_path(model_path)
 
     @staticmethod
     def store_path_by_uuid4_in_envs(uuid4, path):
+        """Cache a resolved model path in ``MODEL_PATH_<uuid4>``.
+
+        The cache is the environment because the walk in
+        :meth:`find_path_by_uuid4` is expensive and a run resolves the same UUID
+        repeatedly. It lives only for the process.
+        """
         os.environ[f'MODEL_PATH_{uuid4}'] = path
         utils.p(f'\n[green]Model path is stored in envvar MODEL_PATH_{uuid4}:[/green]\n {path}')
 
     @staticmethod
     def get_path_by_uuid4_from_envs(uuid4):
+        """Read back a path cached by :meth:`store_path_by_uuid4_in_envs`."""
         return os.environ.get(f'MODEL_PATH_{uuid4}', None)
 
     @staticmethod
     def find_path_by_uuid4(uuid4, root_path=None):
+        """Find the model directory whose name starts with ``uuid4``.
+
+        Checks the environment cache first, then walks ``artefacts/models``. The
+        result is cached for the rest of the process.
+
+        :param uuid4: the model's UUID.
+        :param root_path: directory to search; defaults to ``models_dir()``.
+        :raises Exception: if no directory matches, or if more than one does --
+            an ambiguous UUID is a corrupt run tree, not something to guess at.
+        """
         path = MODEL.get_path_by_uuid4_from_envs(uuid4)
         if not path:
             root_path = root_path if root_path else str(models_dir())
@@ -305,6 +375,12 @@ class MODEL:
 
     @staticmethod
     def get_uuid_path_dict(root_path=None):
+        """Map every model UUID under ``root_path`` to its directory.
+
+        One walk instead of many: cheaper than calling
+        :meth:`find_path_by_uuid4` for each of a long list of models. The key is
+        the part of the directory name before the first ``_``.
+        """
         from tqdm import tqdm
 
         uuid_path_dict = {}
@@ -317,6 +393,11 @@ class MODEL:
 
     @staticmethod
     def extract_uuid_from_name(name):
+        """Pull the leading UUID out of a run-directory name, or ``None``.
+
+        Only the canonical hyphenated form is accepted, so a directory that merely
+        starts with hex is not mistaken for one named by UUID.
+        """
         uuid = None
         prefix = name[:38]
         if utils.is_valid_uuid(prefix):

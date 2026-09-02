@@ -11,7 +11,22 @@ import evaluate
 
 
 def compute_multirc(predictions, labels, ds_split):
+    """Score MultiRC with the official SuperGLUE metric.
 
+    ``evaluate.load('super_glue', 'multirc')`` will not take a flat prediction
+    array: MultiRC scores per question, so each prediction has to carry the
+    paragraph/question/answer indices it belongs to. This rebuilds that structure
+    from ``ds_split``'s ``idx/*`` columns and coerces predictions and labels to
+    0/1, accepting either booleans or the strings ``'true'``/``'1'``.
+
+    :param predictions: one prediction per answer row.
+    :param labels: gold labels, same order.
+    :param ds_split: the split being scored; supplies ``idx/paragraph``,
+        ``idx/question`` and ``idx/answer``.
+    :returns: the official scorer's output (exact match and F1a).
+    :raises Exception: re-raised after printing the offending sample, if a row is
+        missing its index columns.
+    """
     multirc_metric = evaluate.load('super_glue', 'multirc')
 
     structured_preds = []

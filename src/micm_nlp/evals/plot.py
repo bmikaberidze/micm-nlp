@@ -12,6 +12,18 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 
 def calc_confusion_matrix(predictions, true_labels, config, eval_path):
+    """Compute a confusion matrix and write it to ``<eval_path>/confusion_matrix.png``.
+
+    Both arrays are flattened first, so this works for per-token and per-example
+    predictions alike. The label axis comes from ``config.ds.label.names``: integer
+    labels are plotted as indices into that list, string labels as the names
+    themselves.
+
+    :param predictions: predicted labels.
+    :param true_labels: gold labels, same shape.
+    :param config: the run config; ``ds.label.names`` supplies the axis.
+    :param eval_path: directory to write the PNG into.
+    """
     # # Flatten the lists for confusion matrix computation
     predictions = predictions.flatten()
     true_labels = true_labels.flatten()
