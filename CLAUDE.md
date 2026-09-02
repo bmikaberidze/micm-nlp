@@ -245,6 +245,9 @@ Two rules that follow:
 
 ## Key Conventions
 
+- **Never collapse `models/xpe/` into fewer modules.** Its seven-module split is the
+  published method's structure and keeps the pieces separately testable. The docs
+  sidebar shows it as a dropdown; that is the intended cost, not a problem to fix.
 - Keep this package **general**. Experiment-specific language groups, run-tree
   layouts, result aggregation and dispatch logic belong in the consumer repo
   (`xpe-exp/scripts/`), never here. If a backbone needs a one-off shim, prefer the
