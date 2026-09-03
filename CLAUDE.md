@@ -215,6 +215,9 @@ reason. A defect that should be fixed belongs in `docs/internal/roadmap.md`.
 from there.** A page hand-written in `docs/source/` is the exception that has to
 justify itself, not the default.
 
+`docs/CONTENT_MAP.md` is the index: for any page on the site, it names the file that
+holds its text. Read it before editing docs, and update it if you move content.
+
 Order of preference, most preferred first:
 
 1. **Docstrings.** Everything about a module, class or function goes in its
