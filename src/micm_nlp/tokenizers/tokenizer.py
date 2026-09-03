@@ -465,17 +465,23 @@ class TokenizerTrainer:
     def train(self):
         """Train the tokenizer named by ``model.type`` and save it.
 
-        Note the dispatch has no ``else``: a type that is neither native
-        SentencePiece, WordPiece nor byte-level BPE does nothing at all rather than
-        raising.
+        :raises ValueError: on a type this trainer cannot train. Only native
+            SentencePiece, WordPiece and byte-level BPE are implemented -- the
+            others in :class:`~micm_nlp.enums.TokTypeSE` are recognised by the
+            config layer but have no trainer here.
         """
         if self.type == TokTypeSE.NATIVE_SENTPIECE:
             self.train_native_sentpiece()
+        elif self.type == TokTypeSE.WORDPIECE:
+            self.train_hf_wordpiece()
+        elif self.type in [TokTypeSE.BYTE_LEVEL_BPE, TokTypeSE.BYTE_LEVEL]:
+            self.train_hf_byte_level_bpe()
         else:
-            if self.type == TokTypeSE.WORDPIECE:
-                self.train_hf_wordpiece()
-            elif self.type in [TokTypeSE.BYTE_LEVEL_BPE, TokTypeSE.BYTE_LEVEL]:
-                self.train_hf_byte_level_bpe()
+            raise ValueError(
+                f'Cannot train tokenizer type {self.type!r}. Supported: '
+                f'{TokTypeSE.NATIVE_SENTPIECE}, {TokTypeSE.WORDPIECE}, '
+                f'{TokTypeSE.BYTE_LEVEL_BPE}, {TokTypeSE.BYTE_LEVEL}.'
+            )
 
     #
     def train_hf_wordpiece(self):
