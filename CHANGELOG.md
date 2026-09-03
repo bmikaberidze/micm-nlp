@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-03
+
 ### Changed (breaking)
 - The `tokenizers` subpackage is flat. Two module paths moved:
   - `micm_nlp.tokenizers.bert_byt5.BertByT5Tokenizer` and
@@ -21,8 +23,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   either class outside of tests and one lazy import, both updated. Update
   `tokenizer.cls` values in any consumer config that names them.
 
+### Added
+- Docstrings for every published class and function. 220 objects had none, so each
+  API page opened with a module description and then listed bare signatures; the
+  generated reference now documents the whole public surface.
 
 ### Fixed
+- `utils.print_traceback()` imported `micm_nlp.setup`, a module that stopped
+  existing in 0.2.0 when it was merged into `bootstrap`, so every call raised
+  `ModuleNotFoundError`.
+- `TokenizerTrainer.train()` returned silently for a `model.type` it cannot train.
+  `TokTypeSE` has six members and only three have a trainer, so a valid config
+  could finish a run reporting nothing wrong and leaving no tokenizer behind. It
+  now raises `ValueError`.
+- `CrossPromptEncoder`'s class docstring used a Markdown code fence, which
+  reStructuredText cannot parse, and its example imported
+  `micm_nlp.models.cross_prompt_encoder` — a path that no longer exists.
 - `CrossPromptEncoderConfig.encoder_embedding_normalize` defaulted to `'unit'`
   (max_norm `1.0`). Because `_filtered_kwargs` strips `None`-valued kwargs at the
   factory boundary, a YAML `encoder_embedding_normalize: null` never reached the
@@ -36,6 +52,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   unknown mode raises, and `'clip'` without a `max_norm` raises rather than
   silently doing nothing (`Tensor.clamp(max=None)` is a no-op, which the new
   `None` default would otherwise have turned into a silent non-normalising clip).
+
+### Documentation
+- The site's API reference now mirrors `src/micm_nlp/` rather than a hand-written
+  taxonomy, and its prose comes from `README.md` through MyST `{include}`, so
+  README is the single copy of every passage the two share.
 
 ## [0.2.1] - 2026-08-11
 
