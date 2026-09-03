@@ -31,3 +31,14 @@ article table.align-default {
   margin-left: 0;
   margin-right: auto;
 }
+
+/* Breathing room under the last sidebar entry.
+
+   Read the Docs injects its own floating widget over the bottom of the viewport,
+   which sits on top of the final row of the navigation — "MICM", today. Furo's
+   sidebar ends flush with its content, so there is nothing to scroll past it.
+   Reserve space at the end of the scroll area instead of shortening the menu. */
+
+.sidebar-scroll {
+  padding-bottom: 5rem;
+}
