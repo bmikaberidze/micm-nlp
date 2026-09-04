@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "micm-nlp"
-version = "0.3.0"
+version = "0.3.1"
 description = "NLP research toolkit built on HuggingFace Transformers"
 authors = [
     { name = "Beso Mikaberidze", email = "beso.mikaberidze@gmail.com" },
