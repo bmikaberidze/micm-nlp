@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Fixed
+- `micm_nlp.init()` with no arguments raised `TypeError`, though both the README and
+  the Quickstart present it as the form to use when `PROJECT_ROOT_PATH` is already
+  set. `config` is now optional.
+- The two example scripts never called `init()`, so both died at the first pipeline
+  stage with `RuntimeError: Call micm_nlp.path.set_root(...) first` — an error naming
+  an API neither page documents. Both call it now.
+- `micm-nlp init-examples` exited 1 when it skipped an existing file, which breaks
+  running it twice from a script. Skipping is a normal outcome; it exits 0.
+- `torch>=2.4` made a source install impossible on macOS-Intel, where 2.2.2 is the
+  last available wheel. The floor is now 2.2.
+
+### Changed
+- The example configs set `WANDB_MODE: offline` in their `env:` block, so they log to
+  `artefacts/wandb/` and run without a W&B account. Both were previously unrunnable
+  without one, and the installation page described the key as optional.
+
 ### Added
 - `micm-nlp init-examples` writes the example configurations into a directory you can
   edit (`micm-nlp-examples/` by default). The configs now ship inside the package, so

@@ -33,7 +33,10 @@ requires-python = ">=3.10"
 # what was run.
 dependencies = [
     "tqdm",
-    "torch>=2.4,<3",
+    # Floor is 2.2, not something newer: torch dropped macOS-Intel wheels after
+    # 2.2.2, and a higher floor makes a source install impossible on those
+    # machines. Tested against 2.5 and 2.14.
+    "torch>=2.2,<3",
     "nltk",
     "aenum",
     "peft==0.14.0",

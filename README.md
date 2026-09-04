@@ -33,7 +33,17 @@ Additional examples covering encoder-only text classification, encoder-decoder s
 ## Install
 
 <!-- start:install-requires -->
-Requires **Python 3.10 or newer**.
+Requires **Python 3.10 or newer**. On an older interpreter `pip` reports
+`No matching distribution found for micm-nlp`, which does not say why — check with
+`python3 --version` first.
+
+A fresh Debian or Ubuntu machine has neither `pip` nor `venv`; install them with
+`apt install python3-venv` (or use `uv`, `conda`, `pyenv` — anything that gives you a
+Python 3.10+ environment with pip):
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+```
 <!-- end:install-requires -->
 
 From PyPI:
@@ -65,17 +75,19 @@ docker run --gpus all -it --rm -v $(pwd):/app -w /app micm-nlp bash
 ```
 <!-- end:install-docker -->
 
-Credentials and the workspace root come from a `.env` file:
+Credentials and the workspace root come from a `.env` file. `.env.example` is in the
+repository, so `cp` only works from a clone — installing from PyPI, set the variables
+in your environment instead, or pass `root_path` straight to `micm_nlp.init()`:
 
 <!-- start:install-env -->
 ```bash
-cp .env.example .env
+cp .env.example .env          # from a clone
 ```
 
 | Variable | Purpose |
 |---|---|
 | `PROJECT_ROOT_PATH` | Workspace directory; `artefacts/` (datasets, models, evals, wandb) is created under it. Used as the fallback when `init()` is called without `root_path`. |
-| `WANDB_API_KEY` | Required only if `training_args.args.report_to` includes `wandb`. |
+| `WANDB_API_KEY` | Needed to log a run to the W&B service. The shipped example configs set `WANDB_MODE: offline` in their `env:` block, so they write to `artefacts/wandb/` on disk and need no account; set it to `online` once you have run `wandb login`. |
 | `HF_TOKEN` | Required only for gated HuggingFace models or datasets. |
 <!-- end:install-env -->
 
@@ -153,6 +165,14 @@ Two runnable examples ship with the repository. Together they cover one use case
 |---|---|---|
 | `examples/preprocess_dataset.py` | `xsc_preprocess.yml` | Loads FTP-reframed XStoryCloze (English) from the Hub, tokenizes it for BLOOM-560M, saves the result locally. |
 | `examples/run_model.py` | `xsc_finetune.yml` | Fine-tunes BLOOM-560M with Cross-Prompt Encoder PEFT on the Arabic split, then evaluates. |
+
+Both scripts take the config as a flag:
+
+```bash
+micm-nlp init-examples
+python examples/preprocess_dataset.py --config micm-nlp-examples/xsc_preprocess.yml
+python examples/run_model.py          --config micm-nlp-examples/xsc_finetune.yml
+```
 
 The configs ship inside the package — `micm-nlp init-examples` writes them to
 `micm-nlp-examples/`. The scripts are four lines each and live in the repository;

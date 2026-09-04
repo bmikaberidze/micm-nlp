@@ -78,7 +78,7 @@ class MicmNlpConfig(BaseModel):
     pretty_output: RichConfig | bool = False
 
 
-def init(config: MicmNlpConfig | dict) -> None:
+def init(config: MicmNlpConfig | dict | None = None) -> None:
     """Set up the process: workspace root, distributed env, optional Rich output.
 
     Call once before any pipeline call. **Not** triggered on import — until it runs,
@@ -91,8 +91,12 @@ def init(config: MicmNlpConfig | dict) -> None:
     ``_disable_distributed_if_single_process``; and Rich is installed if
     ``pretty_output`` asks for it.
 
-    :param config: a :class:`MicmNlpConfig` or a plain dict of its fields.
+    :param config: a :class:`MicmNlpConfig` or a plain dict of its fields. Omit it
+        entirely to take every default -- which is the documented form when
+        ``PROJECT_ROOT_PATH`` is already set in the environment or in ``.env``.
     """
+    if config is None:
+        config = {}
     if isinstance(config, dict):
         config = MicmNlpConfig(**config)
     set_root(config.root_path)

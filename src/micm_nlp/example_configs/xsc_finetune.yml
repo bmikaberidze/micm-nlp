@@ -189,3 +189,6 @@ cuda:
 env:
     PYTORCH_CUDA_ALLOC_CONF: null
     TOKENIZERS_PARALLELISM: 'true'
+    # Logs to artefacts/wandb/ on disk instead of the service, so the example runs
+    # with no account. Set to 'online' once you have run `wandb login`.
+    WANDB_MODE: offline

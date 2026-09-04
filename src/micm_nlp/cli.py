@@ -40,7 +40,9 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
     :param force: overwrite files that are already there. Without it an existing
         file is left alone and reported, so a config you have edited is never
         silently replaced.
-    :returns: a process exit code -- non-zero only if something was skipped.
+    :returns: 0. Skipping an existing file is a normal outcome, not an error --
+        returning non-zero for it would break any script that runs this more than
+        once.
     """
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
@@ -68,7 +70,7 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
             f'import micm_nlp; micm_nlp.init(); '
             f"preprocess_dataset(CONFIG.from_yaml('{example}'))\""
         )
-    return 1 if skipped and not written else 0
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
