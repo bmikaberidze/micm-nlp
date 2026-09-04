@@ -21,7 +21,7 @@ import sys
 from importlib import resources
 from pathlib import Path
 
-_CONFIG_PACKAGE = 'micm_nlp.example_configs'
+_CONFIG_PACKAGE = 'micm_nlp.configs'
 DEFAULT_DEST = 'micm-nlp-examples'
 
 
