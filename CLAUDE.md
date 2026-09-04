@@ -28,8 +28,8 @@ Predecessor: the package was formerly called `nlpka`. That name and its module p
 cp .env.example .env  # add WANDB_API_KEY to .env
 
 # Docker (recommended)
-docker build -t xpe .
-docker run --gpus all -it --rm -v $(pwd):/xpe_runner -w /xpe_runner xpe bash
+docker build -t micm-nlp .
+docker run --gpus all -it --rm -v $(pwd):/app -w /app micm-nlp bash
 
 # Local
 pip install -e ".[dev]"
