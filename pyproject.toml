@@ -66,6 +66,9 @@ Homepage = "https://github.com/bmikaberidze/micm-nlp"
 Repository = "https://github.com/bmikaberidze/micm-nlp"
 Issues = "https://github.com/bmikaberidze/micm-nlp/issues"
 
+[project.scripts]
+micm-nlp = "micm_nlp.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest",

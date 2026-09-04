@@ -169,7 +169,7 @@ only the configured label tokens compete. It is opt-in and off by default.
 
 ## A complete example
 
-`examples/configs/xsc_finetune.yml` fine-tunes BLOOM-560M with the Cross-Prompt
+`xsc_finetune.yml` (from `micm-nlp init-examples`) fine-tunes BLOOM-560M with the Cross-Prompt
 Encoder on the Arabic split of FTP-reframed XStoryCloze:
 
 ```yaml

@@ -7,7 +7,8 @@ the HuggingFace Hub (`mikaberidze/xstory-cloze-ftp`), and evaluates after
 training.
 
 Usage:
-    python examples/run_model.py --config examples/configs/xsc_finetune.yml
+    micm-nlp init-examples
+    python examples/run_model.py --config micm-nlp-examples/xsc_finetune.yml
 """
 
 import micm_nlp.utils as utils

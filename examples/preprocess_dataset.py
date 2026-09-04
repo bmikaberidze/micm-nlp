@@ -6,7 +6,8 @@ HuggingFace Hub (`mikaberidze/xstory-cloze-ftp`), tokenizes it for a
 decoder-only LM (BLOOM-560M), and saves the tokenized output locally.
 
 Usage:
-    python examples/preprocess_dataset.py --config examples/configs/xsc_preprocess.yml
+    micm-nlp init-examples
+    python examples/preprocess_dataset.py --config micm-nlp-examples/xsc_preprocess.yml
 """
 
 import micm_nlp.utils as utils

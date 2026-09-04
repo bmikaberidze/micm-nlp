@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Added
+- `micm-nlp init-examples` writes the example configurations into a directory you can
+  edit (`micm-nlp-examples/` by default). The configs now ship inside the package, so
+  the copy you get always matches the version installed — nothing is downloaded, which
+  keeps it working offline and on a cluster node. An existing file is reported and left
+  alone unless `--force` is given.
+
 ### Changed
 - Dependency bounds instead of exact pins. `transformers` was pinned to `==4.49.0`,
   which both blocked co-installation with anything wanting a different version and
@@ -33,10 +40,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   and the repr is recorded but not compared.
 
 ### Documentation
-- The Quickstart's `CONFIG.from_yaml('examples/configs/xsc_finetune.yml')` only works
-  from a clone: `examples/` ships in the sdist but not the wheel, so a reader who
-  followed `pip install micm-nlp` immediately above hit `FileNotFoundError`. The
-  snippet now says where the examples live.
+- The Quickstart's `CONFIG.from_yaml('examples/configs/xsc_finetune.yml')` raised
+  `FileNotFoundError` for anyone who followed the `pip install micm-nlp` directly
+  above it, because `examples/` ships in the sdist but not the wheel. The configs now
+  ship in the package and the snippet points at `micm-nlp init-examples` output. The
+  example *scripts* stay in the repository — each is four lines, both are reproduced
+  in the Quickstart, and a runnable script tree does not belong inside an installed
+  package.
 
 
 ## [0.3.0] - 2026-09-03
