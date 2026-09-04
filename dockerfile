@@ -17,7 +17,10 @@ RUN apt-get update -y && \
 
 # Install package
 RUN pip install --upgrade pip
-COPY pyproject.toml .
+# pyproject.toml declares `readme = "README.md"`, so the build backend reads it
+# while generating metadata -- without this COPY, `pip install -e .` below fails
+# with `OSError: Readme file does not exist: README.md`.
+COPY pyproject.toml README.md ./
 COPY src/ src/
 RUN pip install -e ".[dev]"
 

@@ -97,6 +97,10 @@ config = CONFIG.from_yaml('examples/configs/xsc_finetune.yml')
 model, test_output = run(config)
 ```
 
+The `examples/` directory lives in the repository, not in the installed package —
+clone the repo to run the line above as written, or point `from_yaml` at a config of
+your own.
+
 `init()` resolves the workspace root from its `root_path` argument, falling back to `PROJECT_ROOT_PATH` in the environment. Call it once before any pipeline call so `artefacts/` lands in the right place. It is **not** triggered on import.
 
 `run(config)` chains: load tokenizer → load and preprocess dataset → load model (with PEFT if configured) → train → evaluate. Every stage is configured by YAML; no plumbing code required.

@@ -157,6 +157,46 @@ def _snapshot(model):
     }
 
 
+# Fields whose value is a PyTorch implementation detail rather than a fact about
+# this package. ``prompt_encoder_repr`` is ``repr()`` of a module tree: torch 2.14
+# added ``bias=True`` to ``LayerNorm.__repr__``, which changed the string without
+# changing anything the string was standing in for. ``full_state_dict_keys`` and
+# ``params`` already pin the structure, so the repr is recorded for a human reading
+# the golden file and not compared.
+_IGNORED_FIELDS = frozenset({'prompt_encoder_repr'})
+
+# Floats in a snapshot are already rounded to 6 decimal places, so they agree to
+# well under this unless something real changed. An exact comparison instead fails
+# on the last digit across torch versions -- a weight norm of 3.372186 vs 3.372187.
+_FLOAT_TOL = 1e-5
+
+
+def _compare(golden, actual, path=''):
+    """Walk two snapshots, returning [(path, golden, actual)] for real differences."""
+    if isinstance(golden, dict) and isinstance(actual, dict):
+        diffs = []
+        for key in sorted(set(golden) | set(actual)):
+            if key in _IGNORED_FIELDS:
+                continue
+            where = f'{path}.{key}' if path else key
+            if key not in golden or key not in actual:
+                diffs.append((where, golden.get(key, '<missing>'), actual.get(key, '<missing>')))
+            else:
+                diffs += _compare(golden[key], actual[key], where)
+        return diffs
+
+    if isinstance(golden, list) and isinstance(actual, list):
+        if len(golden) != len(actual):
+            return [(f'{path}.len', len(golden), len(actual))]
+        return [d for i, (g, a) in enumerate(zip(golden, actual, strict=True))
+                for d in _compare(g, a, f'{path}[{i}]')]
+
+    if isinstance(golden, float) and isinstance(actual, (int, float)):
+        return [] if abs(golden - actual) <= _FLOAT_TOL else [(path, golden, actual)]
+
+    return [] if golden == actual else [(path, golden, actual)]
+
+
 def _key(ratio, head):
     return f'ratio{ratio}_head{head}'
 
@@ -176,10 +216,10 @@ def test_parity(ratio, head):
         pytest.skip(f'Wrote golden snapshot: {golden_path.name}')
 
     golden = json.loads(golden_path.read_text())
-    assert golden == snap, (
+    diffs = _compare(golden, snap)
+    assert not diffs, (
         f'Parity mismatch for {_key(ratio, head)}.\n'
-        f'Expected (golden): {json.dumps(golden, indent=2, sort_keys=True)[:500]}\n'
-        f'Actual: {json.dumps(snap, indent=2, sort_keys=True)[:500]}'
+        + '\n'.join(f'  {path}: golden={g!r} actual={a!r}' for path, g, a in diffs[:10])
     )
 
 

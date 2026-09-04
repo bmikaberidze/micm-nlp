@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Fixed
+- The documented `docker build -t micm-nlp .` could never have worked. `pyproject.toml`
+  declares `readme = "README.md"`, but the dockerfile copied only `pyproject.toml` and
+  `src/`, so the build backend failed with
+  `OSError: Readme file does not exist: README.md`.
+- `tests/test_parity.py` compared snapshots by exact equality, including floats rounded
+  to six decimals and `repr()` of a module tree. On torch 2.14 that failed six tests
+  while every number that matters -- loss, logits, state-dict keys, parameter counts --
+  was identical: a weight norm read `3.372187` instead of `3.372186`, and
+  `LayerNorm.__repr__` gained a `bias=True` field. Floats now compare with a tolerance
+  and the repr is recorded but not compared.
+
+### Documentation
+- The Quickstart's `CONFIG.from_yaml('examples/configs/xsc_finetune.yml')` only works
+  from a clone: `examples/` ships in the sdist but not the wheel, so a reader who
+  followed `pip install micm-nlp` immediately above hit `FileNotFoundError`. The
+  snippet now says where the examples live.
+
+
 ## [0.3.0] - 2026-09-03
 
 ### Changed (breaking)
