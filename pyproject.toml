@@ -22,14 +22,24 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.10"
+# Upper bounds, not exact pins. This is a library: an exact pin makes micm-nlp
+# uninstallable beside anything needing a different version, while a bound still
+# stops a major release arriving unannounced. The exception is peft, whose internals
+# the Cross-Prompt Encoder subclasses -- raising that one is a breaking-change
+# review, not a routine upgrade.
+#
+# Exact versions belong in requirements-lock.txt, which records the environment the
+# published results were produced in. This list says what can work; the lock says
+# what was run.
 dependencies = [
     "tqdm",
+    "torch>=2.4,<3",
     "nltk",
     "aenum",
     "peft==0.14.0",
     "rich",
     "wandb",
-    "numpy",
+    "numpy<3",
     "spacy",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
@@ -38,12 +48,12 @@ dependencies = [
     "seqeval",
     "opentsne",
     "requests",
-    "datasets",
+    "datasets<6",
     "evaluate",
     "lightning",
     "datasketch",
     "matplotlib",
-    "transformers==4.49.0",
+    "transformers>=4.48,<4.50",
     "scikit-learn",
     "python-dotenv",
     "sentencepiece",

@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Changed
+- Dependency bounds instead of exact pins. `transformers` was pinned to `==4.49.0`,
+  which both blocked co-installation with anything wanting a different version and
+  was already violated by the project's own container (4.48.2); it is now
+  `>=4.48,<4.50`. `torch` was **not declared at all** despite being imported
+  directly, so it arrived transitively and a fresh install resolved 2.14 — it is now
+  declared as `>=2.4,<3`. `numpy<3` and `datasets<6` gained upper bounds for the same
+  reason. `peft==0.14.0` stays exact: the Cross-Prompt Encoder subclasses its
+  internals.
+
+### Added
+- `requirements-lock.txt`, recording the container the published results were
+  produced on. It is a record rather than an installable file — 76 of its entries
+  are wheels baked into the NGC image, torch among them.
+
 ### Fixed
 - The documented `docker build -t micm-nlp .` could never have worked. `pyproject.toml`
   declares `readme = "README.md"`, but the dockerfile copied only `pyproject.toml` and
