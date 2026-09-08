@@ -92,7 +92,7 @@ class TRAINER:
         self._stamp_effective_seed()            # the seed is drawn inside _setup_trainer
         self.print_details()
 
-    # -- Results -------------------------------------------------------------
+    # -- Results -----------------------------------------------------------
 
     def _setup_results(self):
         """The run's results writer, and the resolved config saved into the run dir.
@@ -168,8 +168,8 @@ class TRAINER:
 
         # Initialize Weights and Biases
         self._model.hf.wandb_run = self._init_wandb() if not wandb.run else None
-        self._note_wandb()
         try:
+            self._note_wandb()
             # Zero Shot Testing
             if run_test and zero_shot:
                 zero_shot_res = self._test(test_z_pref)

@@ -1,10 +1,12 @@
 """The one writer of a run's result files.
 
-Every run directory ends up with the resolved config and, when the phases ran,
-``valid_res.csv`` (one row per metric group at the best checkpoint) and
-``test_res.csv`` (one row per metric group per test pass). The trainer calls
-this; runners never write results themselves, so every file in the tree has one
-schema.
+Every run directory ends up with the resolved config, ``run.json``
+(environment, versions, wandb identity, paths, start/finish) and ``model`` /
+``wandb`` symlinks to the checkpoint and wandb run directories, plus, when the
+phases ran, ``valid_res.csv`` (one row per metric group at the best checkpoint)
+and ``test_res.csv`` (one row per metric group per test pass). The trainer
+calls this; runners never write results themselves, so every file in the tree
+has one schema.
 
 The CSV contract: the header is fixed by the first rows written; a later row
 carrying a column not in the header raises rather than silently drifting; a

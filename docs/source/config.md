@@ -143,6 +143,9 @@ results:
   columns: {seed: 11, method: spt}                            # stamped onto every result row
 ```
 
+`dir` is used as given — pass an absolute path, or one relative to where the process
+runs, not to the workspace.
+
 `run-group` fills `dir` and the identity columns itself; a unit config run on
 its own lands under `runs/<architecture>/_solo/`. Result rows carry, per row,
 `prefix` (`eval` / `test` / `test_zero`), `metric_group`, every metric, `n` and

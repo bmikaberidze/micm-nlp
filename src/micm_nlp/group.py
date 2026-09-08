@@ -18,8 +18,8 @@ unit config, applies the seed, then the overrides, fills the ``results`` block
 (run dir + identity columns), writes a snapshot of the resolved config into the
 run dir and calls the runner -- ``run(config, ctx)`` -- which does the science.
 Result rows are written by the trainer, never here. The only scheduler
-knowledge in the package is the ``SLURM_ARRAY_TASK_ID`` read in
-:func:`select_indices`.
+*logic* in the package is the ``SLURM_ARRAY_TASK_ID`` read in
+:func:`select_indices` (``run.json`` merely records ``SLURM*`` variables).
 """
 
 from __future__ import annotations
@@ -110,6 +110,8 @@ def load_group(path: str | Path) -> dict[str, Any]:
         name = entry.get('name')
         if not isinstance(name, str) or not name:
             raise ValueError(f'{where} needs a name')
+        if '/' in name or name in ('.', '..'):
+            raise ValueError(f'{where} name {name!r} must be a single path segment')
         if name in names:
             raise ValueError(f'{where} name {name!r} is not unique within the group')
         names.add(name)
