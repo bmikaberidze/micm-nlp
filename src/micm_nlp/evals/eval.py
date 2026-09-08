@@ -333,7 +333,8 @@ def compute_metrics_by_metric_groups(predictions, labels, config):
     Each group names its metrics by string and they are loaded through
     ``evaluate.combine``; with ``eval.per_task`` set, a group scores only its own
     task's rows and its metric names are prefixed with the task name. Groups whose
-    rows are absent are skipped with a message.
+    rows are absent are skipped with a message. Each group also reports ``n``, the
+    number of predictions it scored.
 
     :raises ValueError: if no group produced anything -- an empty metric dict is
         almost always a misconfiguration rather than a real result.
@@ -367,6 +368,9 @@ def compute_metrics_by_metric_groups(predictions, labels, config):
         if metric_args:
             metrics = evaluate.combine(metric_group.metrics)
             group_results = metrics.compute(**metric_args)
+            # The group size travels with its metrics, so a result row can be
+            # weighted or sanity-checked. Same key get_metric_args used.
+            group_results['n'] = len(metric_args[getattr(metric_group, 'predictions_key', predictions_k)])
             if eval_per_task:
                 group_results = add_prefix_to_metrics(group_results, f'{metric_group.task.name}/')
             results.update(group_results)
