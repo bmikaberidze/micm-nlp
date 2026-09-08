@@ -172,7 +172,7 @@ _SUBMODULE_ORDER = {
         'data_collators',
         'logits_processors',
     ],
-    'evals': ['eval', 'plot', 'metrics'],
+    'evals': ['eval', 'results', 'plot', 'metrics'],
 }
 """Sidebar order for each package's submodules, by leaf name.
 

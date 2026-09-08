@@ -5,6 +5,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-XX
+
+### Added
+- `python -m micm_nlp` reaches the CLI (`__main__.py`), so the commands work on
+  `--target` installs that have no `bin/`.
+- `run --config` and `run-group --group-config`: a group config names unit configs
+  and lists runs over them (reserved keys `config`, `overrides`, `seed`, `name`,
+  `separate_test`; every other scalar key becomes a result column). The entry is
+  picked by `SLURM_ARRAY_TASK_ID`, then `--task-id`, else every entry runs.
+  `--runner module:attr` supplies the science; unknown flags reach it as
+  `ctx.extras`. Example shipped as `xsc_group.yml`.
+- Every run saves its resolved `config.yml`, `valid_res.csv` (one row per metric
+  group at the best checkpoint) and `test_res.csv` (one row per metric group per
+  test pass) into its run directory, written by the trainer through
+  `evals/results.py`. A `results:` config block (`dir`, `config_file`, `columns`)
+  redirects the directory and stamps static columns onto every row.
+- Metric groups report `n`, the number of predictions scored.
+- Every run directory also gets `run.json` — `started`/`finished`, every `SLURM*`
+  variable, host, Python, `CUDA_VISIBLE_DEVICES`, package versions, the wandb
+  id/url/dir — and `model` / `wandb` symlinks to the checkpoint and the wandb run.
+
+### Changed
+- The run directory is `artefacts/evals/runs/{architecture}/{group}/{run}`; solo
+  runs use the reserved group `_solo` and keep the generated model name. This
+  replaces `evals/runs/{model name}`, which every test run left behind empty.
+- `pipeline.run(config, ctx=None)` accepts and ignores a run context, so it is the
+  default runner.
+- The saved config records `model.name` and `model.path` beside `model.uuid4`.
+- The CLI no longer accepts abbreviated options (`allow_abbrev=False`), so an
+  unknown flag is forwarded to the runner instead of being matched to a prefix.
+- `test.save_predictions` writes `predictions_{prefix}.csv` into the run directory
+  instead of `evals/predictions/{model name}.csv`, where a run's zero-shot and
+  full-shot passes overwrote each other.
+
 ## [0.3.1] - 2026-09-04
 
 ### Fixed

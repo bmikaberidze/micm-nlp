@@ -131,6 +131,25 @@ order. Anything zipping predictions against a dataset split must use the sampler
 prediction saving; custom consumers of raw predictions should be aware of it.
 :::
 
+## `results`
+
+Optional. Every run writes its resolved `config.yml`, `valid_res.csv` and
+`test_res.csv` into its run directory; this block only decorates that.
+
+```yaml
+results:
+  dir: artefacts/evals/runs/xlmr/my_group/20260907_1431_spt   # overrides the run directory
+  config_file: config.yml                                     # name of the saved config copy
+  columns: {seed: 11, method: spt}                            # stamped onto every result row
+```
+
+`run-group` fills `dir` and the identity columns itself; a unit config run on
+its own lands under `runs/<architecture>/_solo/`. Result rows carry, per row,
+`prefix` (`eval` / `test` / `test_zero`), `metric_group`, every metric, `n` and
+`step`; the header of each CSV is fixed by its first rows, and a later row with
+a new column raises. The directory also holds `run.json` (environment, versions,
+wandb, paths, start/finish) and `model` / `wandb` symlinks.
+
 ## `optimizer_grouped_parameters`
 
 Assigns a different learning rate and weight decay to parameters whose names contain

@@ -14,6 +14,13 @@
 :end-before: <!-- end:stages -->
 ```
 
+## Run a group of runs
+
+```{include} ../../README.md
+:start-after: <!-- start:groups -->
+:end-before: <!-- end:groups -->
+```
+
 ## Worked examples
 
 ```{include} ../../README.md
