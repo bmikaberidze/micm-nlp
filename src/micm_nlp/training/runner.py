@@ -41,6 +41,9 @@ import micm_nlp.path as nlpka_path
 import micm_nlp.utils as utils
 from micm_nlp.enums import DeviceSE, DsSplitSE, ModelArchSE, ModeSE, TaskCatSE
 from micm_nlp.evals.eval import get_compute_metrics, get_preprocess_logits_for_metrics
+from micm_nlp.evals.results import (
+    CONFIG_FILE, TEST_FILE, VALID_FILE, ResultsWriter, best_eval_record, rows_from_metrics,
+)
 from micm_nlp.models.peft import PEFT
 from micm_nlp.models.xpe import is_xpe_config
 from micm_nlp.training.callbacks import (
@@ -83,8 +86,46 @@ class TRAINER:
         self._config = model._config
         self._tokenizer = tokenizer if tokenizer else dataset._tokenizer
         self._dataset = dataset
+        self._results = self._setup_results()   # config.yml lands before the HF args exist
         self._setup_trainer()
+        self._stamp_effective_seed()            # the seed is drawn inside _setup_trainer
         self.print_details()
+
+    # -- Results -------------------------------------------------------------
+
+    def _setup_results(self):
+        """The run's results writer, and the resolved config saved into the run dir.
+
+        Static columns come from ``results.columns`` (the group runner's
+        identity columns plus anything the user or runner added); the trainer
+        contributes ``uuid4`` and, for a solo run, ``time_id``.
+        """
+        results = getattr(self._config, 'results', None)
+        columns = dict(results.columns) if results is not None and results.columns else {}
+        columns.setdefault('time_id', utils.get_time_id())
+        columns['uuid4'] = self._model.uuid4
+        writer = ResultsWriter(self._model.eval_path, columns)
+        writer.write_config(self._config, results.config_file if results is not None else CONFIG_FILE)
+        return writer
+
+    def _stamp_effective_seed(self):
+        """Record the seed the run actually uses -- unless the group pinned one."""
+        self._results.columns.setdefault('seed', self.trainer.args.seed)
+
+    def _write_valid_res(self):
+        """One row per metric group at the best checkpoint."""
+        step, record = best_eval_record(self.trainer.state, self.training_args.metric_for_best_model)
+        rows = rows_from_metrics(record, 'eval', strip=self._metric_prefix)
+        for row in rows:
+            row['step'] = step
+        self._results.append(VALID_FILE, rows)
+
+    def _write_test_res(self, metrics, prefix):
+        """One row per metric group for one test pass (``test_zero`` or ``test``)."""
+        rows = rows_from_metrics(metrics, prefix, strip=self._metric_prefix)
+        for row in rows:
+            row['step'] = self.trainer.state.global_step
+        self._results.append(TEST_FILE, rows)
 
     # -- Run loop ----------------------------------------------------------
 
@@ -170,6 +211,7 @@ class TRAINER:
         )
         self.trainer.train()
         self._load_best_model()
+        self._write_valid_res()
 
         if getattr(self._config.custom_training_args, 'save_final_model', False):
             if getattr(self._config.custom_training_args, 'keep_only_final_model', False):
@@ -218,6 +260,7 @@ class TRAINER:
 
             test_res = self.trainer.predict(self._dataset.test, metric_key_prefix=metric_key_prefix)
             utils.p(test_res.metrics)
+            self._write_test_res(test_res.metrics, metric_key_prefix)
 
             if self._config.test.save_predictions:
                 self._save_predictions(test_res)
