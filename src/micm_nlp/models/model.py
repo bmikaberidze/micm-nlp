@@ -26,7 +26,22 @@ import micm_nlp.utils as utils
 from micm_nlp.datasets.dataset import DATASET
 from micm_nlp.enums import DeviceSE, ModeSE, PretSourceSE
 from micm_nlp.models.peft import PEFT
-from micm_nlp.path import evals_dir, find_dirs_by_prefix, models_dir
+from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, find_dirs_by_prefix, models_dir, run_dir
+
+
+def eval_path_for(config, model_name: str) -> str:
+    """The directory a run's files go to.
+
+    ``results.dir`` wins when set -- the group runner puts the run there.
+    Otherwise the run is a solo one and lands under the reserved ``_solo``
+    group: ``runs/{architecture}/_solo/{model_name}``. ``model_name`` is the
+    generated name (uuid first), unique and equal to the wandb run name.
+    """
+    results = getattr(config, 'results', None)
+    if results is not None and results.dir:
+        return str(results.dir)
+    architecture = config.model.architecture if config.model is not None else NO_MODEL_ARCH
+    return str(run_dir(architecture, SOLO_GROUP, model_name))
 
 
 class MODEL:
@@ -91,7 +106,7 @@ class MODEL:
 
         self._set_name()
 
-        self.eval_path = str(evals_dir() / 'runs' / self.name)
+        self.eval_path = eval_path_for(self._config, self.name)
         self.logs_path = f'{self.eval_path}/logs'
 
         mode = self._config.mode
@@ -111,6 +126,11 @@ class MODEL:
                 self.path = f'{self.path}/{task_name}/{self.name}'
 
             MODEL.store_path_by_uuid4_in_envs(self.uuid4, self.path)
+
+        # Runtime identity into the config copy, beside uuid4 (see _set_name), so
+        # the saved config.yml records the run's name and where its checkpoint went.
+        self._config.model.name = self.name
+        self._config.model.path = getattr(self, 'path', None)
 
     def _set_name(self):
 
