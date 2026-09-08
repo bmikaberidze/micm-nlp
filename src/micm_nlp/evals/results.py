@@ -170,10 +170,21 @@ class ResultsWriter:
         Read-modify-write, so the file is built up as the run learns things:
         environment and paths at setup, wandb once it exists, ``finished`` at
         the end. Values must be JSON-serialisable.
+
+        Dict-valued sections merge one level deep; ``started`` is kept from
+        the first write. Everything else is latest-wins, so a run that
+        constructs two trainers (``separate_test``) records the first
+        phase's start and the last phase's wandb run.
         """
         path = self.run_dir / RUN_INFO_FILE
         current = json.loads(path.read_text()) if path.exists() else {}
-        current.update(sections)
+        for key, value in sections.items():
+            if key == 'started':
+                current.setdefault(key, value)
+            elif isinstance(value, dict) and isinstance(current.get(key), dict):
+                current[key].update(value)
+            else:
+                current[key] = value
         path.write_text(json.dumps(current, indent=2) + '\n')
         return path
 
@@ -182,14 +193,21 @@ class ResultsWriter:
         the run is reachable from its directory.
 
         A target that does not exist yet still gets a link -- the checkpoint
-        directory appears only when the trainer saves. An existing link is left
-        alone; ``None`` is a no-op.
+        directory appears only when the trainer saves. A link that already
+        points at ``target`` is left alone; one that points elsewhere is
+        replaced (removed then re-created) -- latest wins, matching the
+        ``wandb`` section of ``run.json``. ``None`` is a no-op.
         """
         if target is None:
             return None
         link = self.run_dir / name
-        if not link.is_symlink() and not link.exists():
-            os.symlink(os.path.abspath(target), link)
+        abs_target = os.path.abspath(target)
+        if link.is_symlink():
+            if os.readlink(link) != abs_target:
+                link.unlink()
+                os.symlink(abs_target, link)
+        elif not link.exists():
+            os.symlink(abs_target, link)
         return link
 
     def append(self, filename: str, rows: list[dict[str, Any]]) -> Path:

@@ -106,3 +106,32 @@ def test_note_wandb_without_a_run(tmp_path):
     t._results = t._setup_results()
     t._note_wandb()                                   # hf.wandb_run is None and wandb.run is None
     assert 'wandb' not in json.loads((tmp_path / 'run' / RUN_INFO_FILE).read_text())
+
+
+def test_write_run_info_deep_merges_and_keeps_started(tmp_path):
+    w = ResultsWriter(tmp_path / 'run')
+    w.write_run_info(started='t0', paths={'run_dir': '/r', 'model': '/m'}, wandb={'id': 'a'})
+    w.write_run_info(started='t1', paths={'run_dir': '/r'}, wandb={'id': 'b'})
+    saved = json.loads((tmp_path / 'run' / RUN_INFO_FILE).read_text())
+    assert saved['started'] == 't0'
+    assert saved['paths'] == {'run_dir': '/r', 'model': '/m'}
+    assert saved['wandb'] == {'id': 'b'}
+
+
+def test_link_replaces_a_link_to_a_different_target(tmp_path):
+    w = ResultsWriter(tmp_path / 'run')
+    w.link('wandb', tmp_path / 'w1')
+    w.link('wandb', tmp_path / 'w2')
+    assert os.readlink(tmp_path / 'run' / 'wandb') == str(tmp_path / 'w2')
+
+
+def test_two_trainers_one_run_dir(tmp_path):
+    first = _bare(tmp_path)                       # tune phase: has a checkpoint dir
+    first._setup_results()
+    second = _bare(tmp_path)
+    second._model = SimpleNamespace(eval_path=str(tmp_path / 'run'), uuid4='u-2', path=None,
+                                    hf=SimpleNamespace(wandb_run=None))
+    second._setup_results()
+    saved = json.loads((tmp_path / 'run' / RUN_INFO_FILE).read_text())
+    assert saved['paths']['model'] == str(tmp_path / 'm')     # first phase's checkpoint kept
+    assert os.readlink(tmp_path / 'run' / 'model') == str(tmp_path / 'm')

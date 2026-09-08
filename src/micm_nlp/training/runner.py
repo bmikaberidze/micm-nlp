@@ -108,9 +108,10 @@ class TRAINER:
         writer = ResultsWriter(self._model.eval_path, columns)
         writer.write_config(self._config, results.config_file if results is not None else CONFIG_FILE)
         model_path = getattr(self._model, 'path', None)
-        writer.write_run_info(started=utils.get_time_id(),
-                              paths={'run_dir': self._model.eval_path, 'model': model_path},
-                              **environment_info())
+        paths = {'run_dir': self._model.eval_path}
+        if model_path is not None:
+            paths['model'] = model_path
+        writer.write_run_info(started=utils.get_time_id(), paths=paths, **environment_info())
         writer.link('model', model_path)
         return writer
 
