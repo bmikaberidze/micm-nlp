@@ -80,7 +80,8 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
 
 
 def parse_extras(rest: list[str]) -> dict:
-    """Unknown ``--flag value`` / ``--flag`` arguments as a dict for the runner.
+    """Unknown ``--flag value`` / ``--flag=value`` / ``--flag`` arguments as a
+    dict for the runner.
 
     Values stay strings -- the runner knows their types. A bare ``--flag``
     becomes ``True``. Anything that is not a flag is an error, so a typo in a
@@ -93,8 +94,12 @@ def parse_extras(rest: list[str]) -> dict:
         tok = rest[i]
         if not tok.startswith('--'):
             raise ValueError(f'unexpected argument {tok!r}')
-        key = tok[2:].replace('-', '_')
-        if i + 1 < len(rest) and not rest[i + 1].startswith('--'):
+        key, eq, value = tok[2:].partition('=')
+        key = key.replace('-', '_')
+        if eq:
+            extras[key] = value
+            i += 1
+        elif i + 1 < len(rest) and not rest[i + 1].startswith('--'):
             extras[key] = rest[i + 1]
             i += 2
         else:

@@ -13,6 +13,7 @@ def test_parse_extras_forms():
         'source_group': 'joshi5', 'skip_test': True, 'fold': '0',
     }
     assert cli.parse_extras([]) == {}
+    assert cli.parse_extras(['--fold=1', '--source-group=joshi5']) == {'fold': '1', 'source_group': 'joshi5'}
 
 
 def test_parse_extras_rejects_positional():
