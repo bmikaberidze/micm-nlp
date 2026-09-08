@@ -1,14 +1,16 @@
 # src/micm_nlp/configs/xsc_group.yml
 # A group of runs over the shipped finetune example: the same unit config at two
-# seeds, with the test phase switched on (the unit config ships with it off).
-# Paths resolve relative to this file, so the group works wherever
+# seeds. Paths resolve relative to this file, so the group works wherever
 # `micm-nlp init-examples` copied it. Run the preprocess example first, then:
 #
 #   python -m micm_nlp run-group --group-config micm-nlp-examples/xsc_group.yml
 #
 # Each entry lands in artefacts/evals/runs/bloom/xsc_group/<time>_<name>/ with
-# config.yml, valid_res.csv and test_res.csv. `overrides:` sets any config value
-# per entry by dotted path.
+# config.yml, valid_res.csv, run.json and model/wandb links. The example dataset
+# ships no test split (`comes_with_splits.test: false`), so there is no test
+# phase and no test_res.csv here; a dataset with a test split gets one per test
+# pass. Add `overrides:` to an entry to set any config value by dotted path,
+# e.g. `overrides: {training_args.args.learning_rate: 1e-4}`.
 
 configs:
   finetune: ./xsc_finetune.yml
@@ -17,8 +19,6 @@ runs:
   - config: finetune
     name: seed_1
     seed: 1
-    overrides: {test.run: true, test.zero_shot_only: false}
   - config: finetune
     name: seed_2
     seed: 2
-    overrides: {test.run: true, test.zero_shot_only: false}

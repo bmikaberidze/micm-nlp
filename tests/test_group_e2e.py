@@ -1,8 +1,8 @@
 # tests/test_group_e2e.py
 """End to end through the CLI with a stub runner: init-examples ships a group
 that resolves beside its unit config; run-group creates one run dir per entry
-and each holds the config snapshot with the identity columns and the entry's
-overrides applied. No model is built."""
+and each holds the config snapshot with the identity columns. No model is
+built."""
 
 import yaml
 
@@ -39,4 +39,3 @@ def test_example_group_dispatches(tmp_path, monkeypatch):
     assert saved['results']['columns']['group'] == 'xsc_group'
     assert saved['results']['columns']['seed'] == 1
     assert saved['training_args']['args']['seed'] == 1
-    assert saved['test']['run'] is True and saved['test']['zero_shot_only'] is False
