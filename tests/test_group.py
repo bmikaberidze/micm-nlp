@@ -224,6 +224,8 @@ def test_load_runner_default_and_custom():
 def test_run_group_all_then_one(tmp_path, monkeypatch):
     nlpka_path.set_root(tmp_path)
     monkeypatch.delenv('SLURM_ARRAY_TASK_ID', raising=False)
+    stamps = (f'20260907_{i:06d}' for i in range(10))
+    monkeypatch.setattr(grp.utils, 'get_time_id', lambda: next(stamps))
     CALLS.clear()
     gp = _group(tmp_path, [{'config': 'u', 'name': 'a'}, {'config': 'u', 'name': 'b'}])
     assert run_group(gp, runner='tests.test_group:stub_runner', extras={'k': 'v'}) == [0, 1]
