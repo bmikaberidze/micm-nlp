@@ -38,6 +38,8 @@ from micm_nlp.evals.results import CONFIG_FILE, TEST_CONFIG_FILE, ResultsWriter
 from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, run_dir
 
 RESERVED_KEYS = ('config', 'overrides', 'seed', 'name', 'separate_test')
+# Columns the framework or the trainer stamps; an entry may not carry them.
+FRAMEWORK_COLUMNS = ('group', 'index', 'time_id', 'uuid4', 'prefix', 'metric_group', 'step', 'n')
 DEFAULT_RUNNER = 'micm_nlp.pipeline:run'
 
 
@@ -111,6 +113,9 @@ def load_group(path: str | Path) -> dict[str, Any]:
         if name in names:
             raise ValueError(f'{where} name {name!r} is not unique within the group')
         names.add(name)
+        clash = sorted(set(entry) & set(FRAMEWORK_COLUMNS))
+        if clash:
+            raise ValueError(f'{where} uses reserved column name(s) {clash}')
         seed = entry.get('seed')
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
             raise ValueError(f'{where}.seed must be an int')
@@ -236,8 +241,8 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     if dir_.exists():
         raise FileExistsError(f'{dir_} already exists: the same entry was dispatched twice within one second')
 
-    columns = {'group': group['group'], 'name': entry['name'], 'index': index,
-               'config': entry['config'], 'time_id': time_id, **scalar_columns(entry)}
+    columns = {**scalar_columns(entry), 'group': group['group'], 'name': entry['name'], 'index': index,
+               'config': entry['config'], 'time_id': time_id}
     effective = config_seed(config)          # after overrides, so the column is what the run uses
     if effective is not None:
         columns['seed'] = effective

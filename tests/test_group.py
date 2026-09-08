@@ -62,6 +62,8 @@ def test_load_group_resolves_paths_relative_to_file(tmp_path):
     ([{'config': 'u', 'name': 'a', 'overrides': ['x']}], 'overrides must be a mapping'),
     ([{'config': 'u', 'name': 'a', 'separate_test': {'config': 'nope'}}], "config 'nope'"),
     ([{'config': 'u', 'name': 'a', 'separate_test': {'config': 'e', 'overrides': 3}}], 'overrides must be a mapping'),
+    ([{'config': 'u', 'name': 'a', 'index': 7}], 'reserved column'),
+    ([{'config': 'u', 'name': 'a', 'time_id': 'x'}], 'reserved column'),
 ])
 def test_load_group_validation(tmp_path, runs, msg):
     with pytest.raises(ValueError, match=msg):
