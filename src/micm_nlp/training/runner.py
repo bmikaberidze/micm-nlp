@@ -42,7 +42,8 @@ import micm_nlp.utils as utils
 from micm_nlp.enums import DeviceSE, DsSplitSE, ModelArchSE, ModeSE, TaskCatSE
 from micm_nlp.evals.eval import get_compute_metrics, get_preprocess_logits_for_metrics
 from micm_nlp.evals.results import (
-    CONFIG_FILE, TEST_FILE, VALID_FILE, ResultsWriter, best_eval_record, rows_from_metrics,
+    CONFIG_FILE, TEST_FILE, VALID_FILE, ResultsWriter, best_eval_record, environment_info, rows_from_metrics,
+    wandb_info,
 )
 from micm_nlp.models.peft import PEFT
 from micm_nlp.models.xpe import is_xpe_config
@@ -106,6 +107,11 @@ class TRAINER:
         columns['uuid4'] = self._model.uuid4
         writer = ResultsWriter(self._model.eval_path, columns)
         writer.write_config(self._config, results.config_file if results is not None else CONFIG_FILE)
+        model_path = getattr(self._model, 'path', None)
+        writer.write_run_info(started=utils.get_time_id(),
+                              paths={'run_dir': self._model.eval_path, 'model': model_path},
+                              **environment_info())
+        writer.link('model', model_path)
         return writer
 
     def _stamp_effective_seed(self):
@@ -126,6 +132,13 @@ class TRAINER:
         for row in rows:
             row['step'] = self.trainer.state.global_step
         self._results.append(TEST_FILE, rows)
+
+    def _note_wandb(self):
+        """Record the wandb run's id, url and local dir in run.json, and link the dir."""
+        info = wandb_info(self._model.hf.wandb_run or wandb.run)
+        if info:
+            self._results.write_run_info(wandb=info)
+            self._results.link('wandb', info['dir'])
 
     # -- Run loop ----------------------------------------------------------
 
@@ -154,6 +167,7 @@ class TRAINER:
 
         # Initialize Weights and Biases
         self._model.hf.wandb_run = self._init_wandb() if not wandb.run else None
+        self._note_wandb()
         try:
             # Zero Shot Testing
             if run_test and zero_shot:
@@ -179,6 +193,7 @@ class TRAINER:
             return SimpleNamespace(full_shot=full_shot_res, zero_shot=zero_shot_res)
 
         finally:
+            self._results.write_run_info(finished=utils.get_time_id())
             if self._model.hf.wandb_run:
                 self._model.hf.wandb_run.finish()
 
@@ -263,11 +278,11 @@ class TRAINER:
             self._write_test_res(test_res.metrics, metric_key_prefix)
 
             if self._config.test.save_predictions:
-                self._save_predictions(test_res)
+                self._save_predictions(test_res, metric_key_prefix)
 
         return test_res
 
-    def _save_predictions(self, test_res):
+    def _save_predictions(self, test_res, prefix):
         predictions_to_save = []
         labels = test_res.label_ids
         predictions = test_res.predictions
@@ -309,7 +324,7 @@ class TRAINER:
                 print_num -= 1
                 utils.p('Predicted: ', prediction, 'True: ', label, 'Text: ', readable_tokens)
 
-        csv_file_path = f'{nlpka_path.evals_dir()}/predictions/{self._model.name}.csv'
+        csv_file_path = f'{self._model.eval_path}/predictions_{prefix}.csv'
 
         if self._config.task.category in [TaskCatSE.TEXT_CLASSIFICATION, TaskCatSE.TEXT_PAIR_CLASSIFICATION]:
             df = pd.DataFrame(predictions_to_save, columns=['Predicted', 'True', 'Text'])

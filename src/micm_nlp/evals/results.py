@@ -15,6 +15,10 @@ run killed part-way keeps what it had.
 from __future__ import annotations
 
 import csv
+import importlib.metadata
+import json
+import os
+import platform
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +28,50 @@ CONFIG_FILE = 'config.yml'
 TEST_CONFIG_FILE = 'test_config.yml'
 VALID_FILE = 'valid_res.csv'
 TEST_FILE = 'test_res.csv'
+RUN_INFO_FILE = 'run.json'
+
+# (distribution name, key in run.json). The packages that decide numerics.
+_VERSIONED = (('micm-nlp', 'micm_nlp'), ('torch', 'torch'), ('transformers', 'transformers'),
+              ('peft', 'peft'), ('datasets', 'datasets'))
+
+
+def environment_info() -> dict[str, Any]:
+    """What the run ran on: every ``SLURM*`` variable, host, interpreter, visible
+    GPUs, and the versions of the packages that decide numerics.
+
+    The scheduler block is one glob rather than a hand-kept list, so a variable
+    the scheduler adds tomorrow is recorded without a code change.
+    """
+    versions = {}
+    for dist, key in _VERSIONED:
+        try:
+            versions[key] = importlib.metadata.version(dist)
+        except importlib.metadata.PackageNotFoundError:
+            versions[key] = None
+    return {
+        'slurm': {k: v for k, v in sorted(os.environ.items()) if k.startswith('SLURM')},
+        'host': platform.node(),
+        'python': platform.python_version(),
+        'cuda_visible_devices': os.environ.get('CUDA_VISIBLE_DEVICES'),
+        'versions': versions,
+    }
+
+
+def wandb_info(run) -> dict[str, Any] | None:
+    """Identity and location of a wandb run, or ``None`` without one.
+
+    ``dir`` is the run directory (the parent of ``run.dir``, which is its
+    ``files/``); ``url`` is ``None`` offline, where some wandb versions raise
+    on the property.
+    """
+    if run is None:
+        return None
+    try:
+        url = run.url
+    except Exception:
+        url = None
+    return {'id': run.id, 'url': url, 'dir': str(Path(run.dir).parent), 'path': getattr(run, 'path', None)}
+
 
 # Bookkeeping keys the HuggingFace Trainer adds to every metrics dict. Not results.
 _HF_NOISE = frozenset({
@@ -115,6 +163,34 @@ class ResultsWriter:
         path = self.run_dir / filename
         utils.dict_to_yaml_file(config.model_dump(mode='json'), str(path))
         return path
+
+    def write_run_info(self, **sections) -> Path:
+        """Merge ``sections`` into ``run.json``.
+
+        Read-modify-write, so the file is built up as the run learns things:
+        environment and paths at setup, wandb once it exists, ``finished`` at
+        the end. Values must be JSON-serialisable.
+        """
+        path = self.run_dir / RUN_INFO_FILE
+        current = json.loads(path.read_text()) if path.exists() else {}
+        current.update(sections)
+        path.write_text(json.dumps(current, indent=2) + '\n')
+        return path
+
+    def link(self, name: str, target: str | Path | None) -> Path | None:
+        """A symlink ``run_dir/name -> target`` (absolute), so every artefact of
+        the run is reachable from its directory.
+
+        A target that does not exist yet still gets a link -- the checkpoint
+        directory appears only when the trainer saves. An existing link is left
+        alone; ``None`` is a no-op.
+        """
+        if target is None:
+            return None
+        link = self.run_dir / name
+        if not link.is_symlink() and not link.exists():
+            os.symlink(os.path.abspath(target), link)
+        return link
 
     def append(self, filename: str, rows: list[dict[str, Any]]) -> Path:
         """Append rows to ``filename``, creating it with a header on first use.
