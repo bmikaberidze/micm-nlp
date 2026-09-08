@@ -51,3 +51,9 @@ def test_init_examples_rejects_unknown_flags(tmp_path):
     # Regression guard for existing behaviour; passes before and after.
     with pytest.raises(SystemExit):
         cli.main(['init-examples', str(tmp_path), '--bogus'])
+
+
+def test_init_workspace_without_root_exits_with_a_message(monkeypatch):
+    monkeypatch.delenv('PROJECT_ROOT_PATH', raising=False)
+    with pytest.raises(SystemExit, match='PROJECT_ROOT_PATH'):
+        cli._init_workspace()

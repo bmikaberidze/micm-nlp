@@ -22,6 +22,7 @@ the Quickstart. What carries the content is the YAML.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from importlib import resources
 from pathlib import Path
@@ -103,7 +104,15 @@ def parse_extras(rest: list[str]) -> dict:
 
 
 def _init_workspace() -> None:
-    """``micm_nlp.init()`` once, before anything reads ``micm_nlp.path``."""
+    """``micm_nlp.init()`` once, before anything reads ``micm_nlp.path``.
+
+    The workspace root comes from ``PROJECT_ROOT_PATH`` (environment or the
+    ``.env`` that ``micm_nlp.bootstrap`` loaded on import); without it the
+    package cannot place ``artefacts/``, so say so instead of failing deep
+    inside ``pathlib``.
+    """
+    if not os.environ.get('PROJECT_ROOT_PATH'):
+        sys.exit('micm-nlp: set PROJECT_ROOT_PATH (environment or .env) to your workspace root')
     micm_nlp.init()
 
 
