@@ -31,8 +31,14 @@ def load_model(config):
     return MODEL(config)
 
 
-def run(config):
-    """CONFIG → TOKENIZER → DATASET → MODEL → TRAINER → results"""
+def run(config, ctx=None):
+    """CONFIG → TOKENIZER → DATASET → MODEL → TRAINER → results
+
+    ``ctx`` is the group runner's :class:`~micm_nlp.group.RunContext`; this
+    default runner is single-phase and ignores it, so a group runs with no
+    custom code. A ``separate_test`` in the entry is therefore not acted on
+    here -- that is a runner's decision.
+    """
 
     tokenizer = load_tokenizer(config)
     dataset = preprocess_dataset(config, tokenizer)
