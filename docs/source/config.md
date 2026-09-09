@@ -148,7 +148,7 @@ output:
 `dir` is used as given — pass an absolute path, or one relative to where the process
 runs, not to the workspace.
 
-`run-group` fills `dir`, `prefix` and the identity columns itself; a unit config
+`run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a unit config
 run on its own lands under `runs/<architecture>/_solo/`. Every evaluation event
 writes its own file (`eval_<split>_<stage>.csv`, `test_<stage>.csv`,
 `predictions_<stage>.csv`; stage is `zero_shot` or `final`); metrics rows carry

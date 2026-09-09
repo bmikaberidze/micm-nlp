@@ -176,7 +176,7 @@ class RunOutput:
         """Record the values the trainer derived from the config (the seed it
         drew, the prefixed ``metric_for_best_model``, ``fp16`` by device) in
         ``run.json`` -- under ``resolved``, or ``<prefix>resolved`` for a
-        prefixed (``separate_test``) trainer, so the two never overwrite each
+        prefixed trainer (a ``separate_test`` config, or a runner-set prefix), so two never overwrite each
         other -- and stamp ``seed`` as a column unless the config pinned one (a
         ``separate_test`` trainer stamps the seed its own process used; it
         inherits a pinned one through ``output.columns``).
