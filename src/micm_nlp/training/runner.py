@@ -105,7 +105,7 @@ class TRAINER:
 
         Zero-shot test, evaluation before training, training, evaluation after
         training, then the final test. ``test.zero_shot_only`` skips training
-        entirely, which is how a zero-shot baseline row is produced; each phase is
+        entirely, which is how a zero-shot baseline is produced; each phase is
         otherwise gated by its own flag in ``eval`` / ``test``.
 
         :returns: the test output -- both the full-shot and zero-shot results when
@@ -122,6 +122,11 @@ class TRAINER:
         run_eval_after_train = getattr(self._config.eval, 'after_training', False)
         run_eval_before_train_on_test = getattr(self._config.eval, 'before_training_on_test', False)
         run_eval_after_train_on_test = getattr(self._config.eval, 'after_training_on_test', False)
+        # Event files carry a stage only when the run has a training phase to be
+        # before or after; a test/evaluate run has one pass per event.
+        trains = self._config.mode in [ModeSE.TRAIN, ModeSE.FINETUNE]
+        before = 'before_training' if trains else None
+        after = 'after_training' if trains else None
 
         # Initialize Weights and Biases
         self._model.hf.wandb_run = self._init_wandb() if not wandb.run else None
@@ -129,20 +134,20 @@ class TRAINER:
             self._output.note_wandb(self._model.hf.wandb_run or wandb.run)
             # Zero Shot Testing
             if run_test and zero_shot:
-                zero_shot_res = self._test(test_z_pref, stage='zero_shot')
+                zero_shot_res = self._test(test_z_pref, stage=before)
 
             if not (run_test and zero_shot and zero_shot_only):
                 if self._config.mode in [ModeSE.TRAIN, ModeSE.FINETUNE]:
-                    self._evaluate(stage='zero_shot') if run_eval_before_train else None
-                    self._evaluate(DsSplitSE.TEST, test_z_pref, stage='zero_shot') if run_eval_before_train_on_test else None
+                    self._evaluate(stage=before) if run_eval_before_train else None
+                    self._evaluate(DsSplitSE.TEST, test_z_pref, stage=before) if run_eval_before_train_on_test else None
                     self._train()
-                    self._evaluate(stage='final') if run_eval_after_train else None
-                    self._evaluate(DsSplitSE.TEST, test_pref, stage='final') if run_eval_after_train_on_test else None
+                    self._evaluate(stage=after) if run_eval_after_train else None
+                    self._evaluate(DsSplitSE.TEST, test_pref, stage=after) if run_eval_after_train_on_test else None
                 elif self._config.mode == ModeSE.EVALUATE:
-                    self._evaluate(stage='final')
-                    self._evaluate(DsSplitSE.TEST, test_pref, stage='final')
+                    self._evaluate(stage=after)
+                    self._evaluate(DsSplitSE.TEST, test_pref, stage=after)
                 if run_test or self._config.mode == ModeSE.TEST:
-                    full_shot_res = self._test(test_pref, stage='final')
+                    full_shot_res = self._test(test_pref, stage=after)
 
             # Finish Weights and Biases
             if self._model.hf.wandb_run:
@@ -190,7 +195,7 @@ class TRAINER:
                 shutil.rmtree(self._model.path)
             self.trainer.save_model(self._model.path)
 
-    def _evaluate(self, ds_split_name=DsSplitSE.VALIDATION, metric_key_prefix='eval', stage='final'):
+    def _evaluate(self, ds_split_name=DsSplitSE.VALIDATION, metric_key_prefix='eval', stage=None):
         eval_res = None
         ds_split = self._dataset.validation if ds_split_name == DsSplitSE.VALIDATION else self._dataset.test
         if ds_split:
@@ -213,11 +218,11 @@ class TRAINER:
             )
             eval_res = self.trainer.evaluate(ds_split, metric_key_prefix=metric_key_prefix)
             utils.p(eval_res)
-            results.save_metrics(self._output, f'eval_{ds_split_name.value}_{stage}', eval_res, metric_key_prefix,
-                                 strip=self._metric_prefix, step=self.trainer.state.global_step)
+            results.save_metrics(self._output, results.event_name(f'eval_{ds_split_name.value}', stage), eval_res,
+                                 metric_key_prefix, strip=self._metric_prefix, step=self.trainer.state.global_step)
         return eval_res
 
-    def _test(self, metric_key_prefix='test', stage='final'):
+    def _test(self, metric_key_prefix='test', stage=None):
         test_res = None
         if self._dataset.test:
             utils.p('\n[green]Test Model...[/green]')
@@ -234,7 +239,7 @@ class TRAINER:
 
             test_res = self.trainer.predict(self._dataset.test, metric_key_prefix=metric_key_prefix)
             utils.p(test_res.metrics)
-            results.save_metrics(self._output, f'test_{stage}', test_res.metrics, metric_key_prefix,
+            results.save_metrics(self._output, results.event_name('test', stage), test_res.metrics, metric_key_prefix,
                                  strip=self._metric_prefix, step=self.trainer.state.global_step)
             results.save_predictions(self._output, stage, test_res, self._config, self._model.label_pad_id,
                                      self._tokenizer, self._aligned_ds_split(self._dataset.test, '_last_test_batch_sampler'),

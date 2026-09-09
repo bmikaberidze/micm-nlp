@@ -76,6 +76,12 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> Path:
     return path
 
 
+def event_name(base: str, stage: str | None = None) -> str:
+    """``base`` with the stage appended -- ``test_after_training`` -- or bare
+    (``test``) for a run without a training phase, which has one pass per event."""
+    return f'{base}_{stage}' if stage else base
+
+
 def save_metrics(output, event: str, metrics: dict[str, Any], hf_prefix: str,
                  strip: str = '', step: int | None = None) -> Path | None:
     """Write one event's metrics as ``<prefix><event>.csv`` in the run's output.
@@ -111,9 +117,10 @@ def _sample_rows(preds, labels, order, base: dict[str, Any]) -> list[dict[str, A
     return rows
 
 
-def save_predictions(output, stage: str, pred_out, config, label_pad_id, tokenizer, ds_split,
+def save_predictions(output, stage: str | None, pred_out, config, label_pad_id, tokenizer, ds_split,
                      order=None) -> Path:
-    """Write one test pass's predictions as ``<prefix>predictions_<stage>.csv``.
+    """Write one test pass's predictions as ``<prefix>predictions_<stage>.csv``
+    (``predictions.csv`` when ``stage`` is ``None``).
 
     One row per sample (per token position for token classification), after
     the same preprocessing the metric saw (:func:`preproc_preds_labels`), so
@@ -141,4 +148,4 @@ def save_predictions(output, stage: str, pred_out, config, label_pad_id, tokeniz
             rows.extend(_sample_rows(task_preds, labels[task_id], indices[task_id], {'task': task_id}))
     else:
         rows = _sample_rows(preds, labels, order, {})
-    return write_csv(output.file(f'predictions_{stage}.csv'), rows)
+    return write_csv(output.file(f'{event_name("predictions", stage)}.csv'), rows)

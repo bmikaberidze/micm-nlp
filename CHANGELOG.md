@@ -40,11 +40,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   `save_predictions` wrote nothing for most task categories).
 - The config is read-only for the trainer — what the run resolved is in
   `run.json`.
-- `eval_validation_final.csv` is written from the after-training evaluation of
-  the best checkpoint, and its `step` column is the final training step, not
-  the best checkpoint's own step (that is in HF's `trainer_state.json`, under
-  the checkpoint directory); the best checkpoint's path is recorded as
-  `run.json` → `paths.best_checkpoint`.
+- `eval_validation_after_training.csv` is written from the after-training
+  evaluation of the best checkpoint, and its `step` column is the final
+  training step, not the best checkpoint's own step (that is in HF's
+  `trainer_state.json`, under the checkpoint directory); the best checkpoint's
+  path is recorded as `run.json` → `paths.best_checkpoint`.
+- Event files carry `before_training` / `after_training`, or no stage for a
+  `test` / `evaluate` run, which has one pass per event.
 
 ### Removed
 - `test.save_predictions` is removed — predictions are always written.

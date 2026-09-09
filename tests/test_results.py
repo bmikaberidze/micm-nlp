@@ -48,6 +48,15 @@ def test_rows_ignore_other_prefixes():
     assert metric_rows({'eval_accuracy': 0.5}, 'test') == []
 
 
+# -- event_name ----------------------------------------------------------------
+
+def test_event_name():
+    from micm_nlp.evals.results import event_name
+    assert event_name('test', 'after_training') == 'test_after_training'
+    assert event_name('eval_validation', None) == 'eval_validation'
+    assert event_name('predictions', '') == 'predictions'
+
+
 # -- save_metrics --------------------------------------------------------------
 
 def test_save_metrics_writes_one_file_per_event_with_columns(tmp_path):
@@ -84,19 +93,21 @@ def test_predictions_one_row_per_sample_in_original_order(tmp_path):
     o = _output(tmp_path)
     cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
                  task={'preproc_rules': {}}, ds={'label': {'key': 'label', 'names': ['neg', 'pos']}})
-    path = save_predictions(o, 'final', _pred_out([1, 0, 1], [1, 1, 1]), cfg, -100, None, None, order=[2, 0, 1])
-    assert path == tmp_path / 'run' / 'predictions_final.csv'
+    path = save_predictions(o, 'after_training', _pred_out([1, 0, 1], [1, 1, 1]), cfg, -100, None, None, order=[2, 0, 1])
+    assert path == tmp_path / 'run' / 'predictions_after_training.csv'
     assert _read(path) == [{'sample': '2', 'prediction': '1', 'label': '1'},
                            {'sample': '0', 'prediction': '0', 'label': '1'},
                            {'sample': '1', 'prediction': '1', 'label': '1'}]
+    # a run without a training phase has one pass per event, so no stage suffix
+    assert save_predictions(o, None, _pred_out([1], [1]), cfg, -100, None, None).name == 'predictions.csv'
 
 
 def test_predictions_apply_the_metrics_preprocessing(tmp_path):
     o = _output(tmp_path, prefix='separate_')
     cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
                  task={'preproc_rules': {'label_id_to_name': True}}, ds={'label': {'key': 'label', 'names': ['neg', 'pos']}})
-    path = save_predictions(o, 'zero_shot', _pred_out([1, 0], [0, 0]), cfg, -100, None, None)
-    assert path == tmp_path / 'run' / 'separate_predictions_zero_shot.csv'
+    path = save_predictions(o, 'before_training', _pred_out([1, 0], [0, 0]), cfg, -100, None, None)
+    assert path == tmp_path / 'run' / 'separate_predictions_before_training.csv'
     assert _read(path) == [{'sample': '0', 'prediction': 'pos', 'label': 'neg'},
                            {'sample': '1', 'prediction': 'neg', 'label': 'neg'}]
 
@@ -106,7 +117,7 @@ def test_predictions_token_classification_one_row_per_position(tmp_path):
     cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
                  task={'category': 'token_classification', 'preproc_rules': {'filter_padded': True}})
     out = _pred_out([[3, 4, 9], [5, 9, 9]], [[3, 4, -100], [5, -100, -100]])
-    rows = _read(save_predictions(o, 'final', out, cfg, -100, None, None))
+    rows = _read(save_predictions(o, 'after_training', out, cfg, -100, None, None))
     assert rows == [{'sample': '0', 'position': '0', 'prediction': '3', 'label': '3'},
                     {'sample': '0', 'position': '1', 'prediction': '4', 'label': '4'},
                     {'sample': '1', 'position': '0', 'prediction': '5', 'label': '5'}]
@@ -117,7 +128,7 @@ def test_predictions_per_task_join_back_to_the_split(tmp_path):
     cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
                  task={'preproc_rules': {'per_task': 'task_ids'}})
     split = [{'task_ids': 0}, {'task_ids': 1}, {'task_ids': 0}]      # emit order
-    rows = _read(save_predictions(o, 'final', _pred_out([1, 0, 1], [1, 1, 1]), cfg, -100, None, split, order=[2, 0, 1]))
+    rows = _read(save_predictions(o, 'after_training', _pred_out([1, 0, 1], [1, 1, 1]), cfg, -100, None, split, order=[2, 0, 1]))
     assert rows == [{'task': '0', 'sample': '2', 'prediction': '1', 'label': '1'},
                     {'task': '0', 'sample': '1', 'prediction': '1', 'label': '1'},
                     {'task': '1', 'sample': '0', 'prediction': '0', 'label': '1'}]
