@@ -81,7 +81,7 @@ def test_two_run_outputs_one_dir_separate_test(tmp_path):
     assert saved['paths']['model'] == str(tmp_path / 'm')                              # first-wins
     assert saved['started'] == first.columns['time_id'] or saved['started']            # kept from the first
     assert os.readlink(tmp_path / 'x' / 'model') == str(tmp_path / 'm')
-    assert first.columns['seed'] == 7 and 'seed' not in second.columns
+    assert first.columns['seed'] == 7 and second.columns['seed'] == 99
     assert (tmp_path / 'x' / 'test_config.yml').exists() and (tmp_path / 'x' / CONFIG_FILE).exists()
     assert second.file('test_final.csv') == tmp_path / 'x' / 'separate_test_final.csv'
 

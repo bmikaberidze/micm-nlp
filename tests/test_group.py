@@ -1,4 +1,3 @@
-# tests/test_group.py
 """The group runner: loading/validation, entry selection, overrides, seed,
 resolution into a config + context, run-dir layout with its config snapshot,
 runner loading and dispatch. A stub runner records what it was called with; no

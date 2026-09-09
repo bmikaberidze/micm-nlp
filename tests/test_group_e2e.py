@@ -1,4 +1,3 @@
-# tests/test_group_e2e.py
 """End to end through the CLI with a stub runner: init-examples ships a group
 that resolves beside its unit config; run-group creates one run dir per entry
 and each holds the config snapshot with the identity columns. No model is
