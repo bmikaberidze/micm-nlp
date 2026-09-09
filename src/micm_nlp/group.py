@@ -51,9 +51,14 @@ class RunContext:
 
     A frozen dataclass rather than keyword arguments so that adding a field
     never breaks a runner written against an older version.
+
+    The runner's first argument is the run's config; ``test_config``, when set,
+    is the resolved second config a separate test phase runs under -- the
+    entry's ``separate_test`` block, loaded, overridden and given its own
+    ``output`` block (``test_config.yml``, prefix ``separate_``).
     """
 
-    separate_test: CONFIG | None
+    test_config: CONFIG | None
     entry: dict[str, Any]
     group: str
     name: str | None
@@ -270,7 +275,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
         write_config(dir_, separate_test, TEST_CONFIG_FILE)
 
     ctx = RunContext(
-        separate_test=separate_test,
+        test_config=separate_test,
         entry={k: v for k, v in entry.items() if k not in RESERVED_KEYS},
         group=group['group'], name=entry['name'], index=index,
         output_dir=str(dir_), extras=dict(extras or {}),
@@ -310,6 +315,6 @@ def run_solo(config_path: str | Path, runner: str | None = None,
     run under ``runs/{architecture}/_solo/`` -- so the context is built directly.
     """
     config = CONFIG.from_yaml(config_path)
-    ctx = RunContext(separate_test=None, entry={}, group=SOLO_GROUP, name=None, index=None,
+    ctx = RunContext(test_config=None, entry={}, group=SOLO_GROUP, name=None, index=None,
                      output_dir=None, extras=dict(extras or {}))
     load_runner(runner)(config, ctx)

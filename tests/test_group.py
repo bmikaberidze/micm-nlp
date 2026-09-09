@@ -155,12 +155,12 @@ def test_resolve_entry_full(tmp_path):
     assert config.peft.encoder_hidden_size == 192
     assert config.training_args.args.seed == 11          # entry beats CLI
     assert config.output.config_file == 'config.yml'
-    assert ctx.separate_test.peft.encoder_hidden_size == 8
-    assert config_seed(ctx.separate_test) is None                # no seed on the test config
-    assert ctx.separate_test.output.config_file == 'test_config.yml'
-    assert config.output.prefix == '' and ctx.separate_test.output.prefix == 'separate_'
-    assert ctx.separate_test.output.dir == config.output.dir
-    assert ctx.separate_test.output.columns == config.output.columns
+    assert ctx.test_config.peft.encoder_hidden_size == 8
+    assert config_seed(ctx.test_config) is None                # no seed on the test config
+    assert ctx.test_config.output.config_file == 'test_config.yml'
+    assert config.output.prefix == '' and ctx.test_config.output.prefix == 'separate_'
+    assert ctx.test_config.output.dir == config.output.dir
+    assert ctx.test_config.output.columns == config.output.columns
     cols = config.output.columns
     assert cols['group'] == 'g1' and cols['name'] == 'a' and cols['index'] == 0
     assert cols['config'] == 'u' and cols['seed'] == 11 and cols['source_group'] == 'joshi5'
@@ -168,7 +168,7 @@ def test_resolve_entry_full(tmp_path):
     assert cols['time_id'] and run.name == f"{cols['time_id']}_a"
     assert run.parent == tmp_path / 'artefacts' / 'runs' / 'toy' / 'g1'
     assert (run / 'config.yml').exists() and (run / 'test_config.yml').exists()   # the snapshot
-    assert ctx == RunContext(separate_test=ctx.separate_test, entry={'source_group': 'joshi5'},
+    assert ctx == RunContext(test_config=ctx.test_config, entry={'source_group': 'joshi5'},
                              group='g1', name='a', index=0, output_dir=str(run), extras={'fold': '0'})
 
 
@@ -200,7 +200,7 @@ def test_resolve_entry_keeps_a_configured_prefix_on_the_primary(tmp_path):
     gp = _group(tmp_path, [{'config': 'u', 'name': 'a', 'separate_test': {'config': 'e'}}])
     _unit(tmp_path, output={'prefix': 'mine_'})                                          # after _group
     config, ctx = resolve_entry(load_group(gp), 0)
-    assert config.output.prefix == 'mine_' and ctx.separate_test.output.prefix == 'separate_'
+    assert config.output.prefix == 'mine_' and ctx.test_config.output.prefix == 'separate_'
 
 
 def test_resolve_entry_writes_run_info(tmp_path):
@@ -262,7 +262,7 @@ def test_run_solo(tmp_path):
     run_solo(_unit(tmp_path), runner='tests.test_group:stub_runner', extras={'x': True})
     config, ctx = CALLS[0]
     assert isinstance(config, CONFIG) and config.output is None
-    assert ctx == RunContext(separate_test=None, entry={}, group='_solo', name=None, index=None,
+    assert ctx == RunContext(test_config=None, entry={}, group='_solo', name=None, index=None,
                              output_dir=None, extras={'x': True})
 
 
