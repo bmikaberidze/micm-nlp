@@ -26,8 +26,6 @@ import shutil
 from types import SimpleNamespace
 from typing import ClassVar
 
-import numpy as np
-import pandas as pd
 import torch
 import wandb
 from transformers import (
