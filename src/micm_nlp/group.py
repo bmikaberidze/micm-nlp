@@ -34,7 +34,7 @@ import yaml
 
 import micm_nlp.utils as utils
 from micm_nlp.config import CONFIG, OutputConfig, _Flex
-from micm_nlp.evals.results import CONFIG_FILE, TEST_CONFIG_FILE, ResultsWriter
+from micm_nlp.training.run_output import CONFIG_FILE, TEST_CONFIG_FILE, write_config
 from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, output_dir
 
 RESERVED_KEYS = ('config', 'overrides', 'seed', 'name', 'separate_test')
@@ -251,15 +251,14 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     if effective is not None:
         columns['seed'] = effective
     _fill_output(config, str(dir_), CONFIG_FILE, columns)
-    snapshot = ResultsWriter(dir_)           # creates the dir
-    snapshot.write_config(config, CONFIG_FILE)
+    write_config(dir_, config, CONFIG_FILE)  # creates the dir
 
     separate_test = None
     sep = entry.get('separate_test')
     if sep is not None:
         separate_test = _load_and_override(group['configs'][sep['config']], sep.get('overrides'), None)
         _fill_output(separate_test, str(dir_), TEST_CONFIG_FILE, columns, prefix='separate_')
-        snapshot.write_config(separate_test, TEST_CONFIG_FILE)
+        write_config(dir_, separate_test, TEST_CONFIG_FILE)
 
     ctx = RunContext(
         separate_test=separate_test,
