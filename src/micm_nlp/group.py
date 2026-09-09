@@ -212,18 +212,22 @@ def _load_and_override(path: str, overrides: dict[str, Any] | None, seed: int | 
 
 
 def _fill_output(config: CONFIG, dir_: str, config_file: str, columns: dict[str, Any],
-                  prefix: str = '') -> None:
+                  prefix: str | None = None) -> None:
     """Fill the ``output`` block in place -- never through dotted overrides.
 
     ``dir`` and ``config_file`` are set; the framework's columns are merged
-    over any the unit config declared (framework wins on a clash).
+    over any the unit config declared (framework wins on a clash). ``prefix``
+    is set only when given (the ``separate_test`` config gets ``separate_``);
+    otherwise the unit config's own value stays, so a runner or a config may
+    choose one.
     """
     if config.output is None:
         config.output = OutputConfig()
     config.output.dir = dir_
     config.output.config_file = config_file
     config.output.columns = {**(config.output.columns or {}), **columns}
-    config.output.prefix = prefix
+    if prefix is not None:
+        config.output.prefix = prefix
 
 
 def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None,

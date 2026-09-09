@@ -196,6 +196,14 @@ def test_resolve_entry_keeps_user_columns_framework_wins(tmp_path):
     assert config.output.dir != '/user/dir'
 
 
+def test_resolve_entry_keeps_a_configured_prefix_on_the_primary(tmp_path):
+    nlpka_path.set_root(tmp_path)
+    gp = _group(tmp_path, [{'config': 'u', 'name': 'a', 'separate_test': {'config': 'e'}}])
+    _unit(tmp_path, output={'prefix': 'mine_'})                                          # after _group
+    config, ctx = resolve_entry(load_group(gp), 0)
+    assert config.output.prefix == 'mine_' and ctx.separate_test.output.prefix == 'separate_'
+
+
 def test_resolve_entry_writes_run_info(tmp_path):
     nlpka_path.set_root(tmp_path)
     g = load_group(_group(tmp_path, [{'config': 'u', 'name': 'a'}]))

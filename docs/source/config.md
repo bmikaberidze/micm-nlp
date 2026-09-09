@@ -141,7 +141,7 @@ this block only decorates that.
 output:
   dir: artefacts/runs/xlmr/my_group/20260907_1431_spt   # overrides the run directory
   config_file: config.yml                                # name of the saved config copy
-  prefix: ''                                             # the framework sets separate_ on a separate_test config
+  prefix: ''                                             # 'separate_' is set by the framework on a separate_test config; a runner may set its own
   columns: {seed: 11, method: spt}                       # stamped onto every result row
 ```
 
