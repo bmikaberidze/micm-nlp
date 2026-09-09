@@ -125,8 +125,8 @@ class TRAINER:
         # Event files carry a stage only when the run has a training phase to be
         # before or after; a test/evaluate run has one pass per event.
         trains = self._config.mode in [ModeSE.TRAIN, ModeSE.FINETUNE]
-        before = 'before_training' if trains else None
-        after = 'after_training' if trains else None
+        before = 'before_train' if trains else None
+        after = 'after_train' if trains else None
 
         # Initialize Weights and Biases
         self._model.hf.wandb_run = self._init_wandb() if not wandb.run else None

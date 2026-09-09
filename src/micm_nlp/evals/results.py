@@ -77,7 +77,7 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> Path:
 
 
 def event_name(base: str, stage: str | None = None) -> str:
-    """``base`` with the stage appended -- ``test_after_training`` -- or bare
+    """``base`` with the stage appended -- ``test_after_train`` -- or bare
     (``test``) for a run without a training phase, which has one pass per event."""
     return f'{base}_{stage}' if stage else base
 

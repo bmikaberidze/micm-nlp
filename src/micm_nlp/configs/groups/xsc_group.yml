@@ -6,10 +6,10 @@
 #   python -m micm_nlp run-group --group-config micm-nlp-examples/groups/xsc_group.yml
 #
 # Each entry lands in artefacts/runs/bloom/xsc_group/<time>_<name>/ with
-# config.yml, run.json, eval_validation_before_training.csv,
-# eval_validation_after_training.csv and model/wandb links. The example dataset
+# config.yml, run.json, eval_validation_before_train.csv,
+# eval_validation_after_train.csv and model/wandb links. The example dataset
 # ships no test split (`comes_with_splits.test: false`), so there is no test
-# phase here and no test_after_training.csv / predictions_after_training.csv;
+# phase here and no test_after_train.csv / predictions_after_train.csv;
 # a dataset with a test split gets one metrics file and one predictions file
 # per test pass. Add `overrides:` to an entry to set any config value by dotted
 # path, e.g.

@@ -181,10 +181,10 @@ Under a SLURM array, `SLURM_ARRAY_TASK_ID` picks the entry. Each run gets
 `artefacts/runs/<architecture>/lr_sweep/<time>_<name>/` holding the resolved
 `config.yml`, `run.json` (environment, versions, the resolved seed and metric,
 wandb id/url/dir, paths), one metrics file per evaluation event
-(`eval_validation_after_training.csv`, `test_after_training.csv`, … — one row
+(`eval_validation_after_train.csv`, `test_after_train.csv`, … — one row
 per metric group, every row stamped with `group`, `name`, `index`, `config`,
 `seed`, `time_id`, `uuid4` and any other scalar key on the entry),
-`predictions_before_training.csv` / `predictions_after_training.csv` (one row
+`predictions_before_train.csv` / `predictions_after_train.csv` (one row
 per sample, always; no stage suffix for a `test` / `evaluate` run, which has
 one pass), and `model` / `wandb` symlinks — every artefact of a run is one `cd`
 away. Paths in `configs:`
