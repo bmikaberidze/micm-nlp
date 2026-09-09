@@ -88,6 +88,26 @@ def output_dir_for(config, model_name: str) -> str:
     return str(output_dir(architecture, SOLO_GROUP, model_name))
 
 
+def write_run_info(dir_: str | Path, **sections) -> Path:
+    """Merge ``sections`` into ``<dir_>/run.json`` (read-modify-write).
+
+    Dict-valued sections merge one level deep; ``started`` is kept from the
+    first write; everything else is latest-wins. Values must be
+    JSON-serialisable.
+    """
+    path = Path(dir_) / RUN_INFO_FILE
+    current = json.loads(path.read_text()) if path.exists() else {}
+    for key, value in sections.items():
+        if key == 'started':
+            current.setdefault(key, value)
+        elif isinstance(value, dict) and isinstance(current.get(key), dict):
+            current[key].update(value)
+        else:
+            current[key] = value
+    path.write_text(json.dumps(current, indent=2) + '\n')
+    return path
+
+
 def write_config(dir_: str | Path, config, filename: str = CONFIG_FILE) -> Path:
     """Save a config as plain YAML (enums as strings) into ``dir_``, creating it."""
     dir_ = Path(dir_)
@@ -128,24 +148,8 @@ class RunOutput:
         return self.dir / f'{self.prefix}{name}'
 
     def write_run_info(self, **sections) -> Path:
-        """Merge ``sections`` into ``run.json``.
-
-        Read-modify-write, so the file is built up as the run learns things.
-        Dict-valued sections merge one level deep; ``started`` is kept from the
-        first write; everything else is latest-wins. Values must be
-        JSON-serialisable.
-        """
-        path = self.dir / RUN_INFO_FILE
-        current = json.loads(path.read_text()) if path.exists() else {}
-        for key, value in sections.items():
-            if key == 'started':
-                current.setdefault(key, value)
-            elif isinstance(value, dict) and isinstance(current.get(key), dict):
-                current[key].update(value)
-            else:
-                current[key] = value
-        path.write_text(json.dumps(current, indent=2) + '\n')
-        return path
+        """Merge ``sections`` into this run's ``run.json``; see the module function."""
+        return write_run_info(self.dir, **sections)
 
     def link(self, name: str, target: str | Path | None) -> Path | None:
         """A symlink ``dir/name -> target`` (absolute), so every artefact of the

@@ -34,7 +34,9 @@ import yaml
 
 import micm_nlp.utils as utils
 from micm_nlp.config import CONFIG, OutputConfig, _Flex
-from micm_nlp.training.run_output import CONFIG_FILE, TEST_CONFIG_FILE, write_config
+from micm_nlp.training.run_output import (
+    CONFIG_FILE, TEST_CONFIG_FILE, environment_info, write_config, write_run_info,
+)
 from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, output_dir
 
 RESERVED_KEYS = ('config', 'overrides', 'seed', 'name', 'separate_test')
@@ -229,8 +231,10 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     """The selected entry as a resolved config plus its context.
 
     Order: load, seed (entry, else CLI), overrides, ``separate_test`` the same
-    way (no seed), ``output`` block, output dir created with a snapshot of the
-    resolved config(s). The output dir is
+    way (no seed), ``output`` block, run dir created with a snapshot of the
+    resolved config(s) and a ``run.json`` carrying ``started``, the output dir
+    and the environment, so a run that dies before the trainer exists still
+    says where and when it ran. The output dir is
     ``runs/{architecture}/{group}/{time_id}_{name}``; if it already exists
     (the same entry dispatched twice within one second) this raises rather
     than merging two runs into one directory.
@@ -252,6 +256,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
         columns['seed'] = effective
     _fill_output(config, str(dir_), CONFIG_FILE, columns)
     write_config(dir_, config, CONFIG_FILE)  # creates the dir
+    write_run_info(dir_, started=time_id, paths={'output_dir': str(dir_)}, **environment_info())
 
     separate_test = None
     sep = entry.get('separate_test')

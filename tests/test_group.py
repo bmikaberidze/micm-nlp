@@ -4,6 +4,7 @@ resolution into a config + context, run-dir layout with its config snapshot,
 runner loading and dispatch. A stub runner records what it was called with; no
 model is built."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -193,6 +194,15 @@ def test_resolve_entry_keeps_user_columns_framework_wins(tmp_path):
     config, _ = resolve_entry(load_group(gp), 0)
     assert config.output.columns['note'] == 'x' and config.output.columns['group'] == 'g1'
     assert config.output.dir != '/user/dir'
+
+
+def test_resolve_entry_writes_run_info(tmp_path):
+    nlpka_path.set_root(tmp_path)
+    g = load_group(_group(tmp_path, [{'config': 'u', 'name': 'a'}]))
+    config, ctx = resolve_entry(g, 0)
+    saved = json.loads((Path(ctx.output_dir) / 'run.json').read_text())
+    assert saved['started'] == config.output.columns['time_id']
+    assert saved['paths']['output_dir'] == ctx.output_dir and 'slurm' in saved and 'versions' in saved
 
 
 def test_resolve_entry_no_model_block(tmp_path):
