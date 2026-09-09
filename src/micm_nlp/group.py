@@ -14,7 +14,7 @@ A group config names unit configs and lists runs over them::
         source_group: joshi5                            # anything else -> the runner
 
 The file stem is the group name. For the selected entry this module loads the
-unit config, applies the seed, then the overrides, fills the ``results`` block
+unit config, applies the seed, then the overrides, fills the ``output`` block
 (run dir + identity columns), writes a snapshot of the resolved config into the
 run dir and calls the runner -- ``run(config, ctx)`` -- which does the science.
 Result rows are written by the trainer, never here. The only scheduler
@@ -33,13 +33,13 @@ from typing import Any, Callable
 import yaml
 
 import micm_nlp.utils as utils
-from micm_nlp.config import CONFIG, ResultsConfig, _Flex
+from micm_nlp.config import CONFIG, OutputConfig, _Flex
 from micm_nlp.evals.results import CONFIG_FILE, TEST_CONFIG_FILE, ResultsWriter
-from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, run_dir
+from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, output_dir
 
 RESERVED_KEYS = ('config', 'overrides', 'seed', 'name', 'separate_test')
 # Columns the framework or the trainer stamps; an entry may not carry them.
-FRAMEWORK_COLUMNS = ('group', 'index', 'time_id', 'uuid4', 'prefix', 'metric_group', 'step', 'n')
+FRAMEWORK_COLUMNS = ('group', 'index', 'time_id', 'uuid4', 'metric_group', 'step')
 DEFAULT_RUNNER = 'micm_nlp.pipeline:run'
 
 
@@ -56,7 +56,7 @@ class RunContext:
     group: str
     name: str | None
     index: int | None
-    run_dir: str | None
+    output_dir: str | None
     extras: dict[str, Any]
 
 
@@ -209,17 +209,19 @@ def _load_and_override(path: str, overrides: dict[str, Any] | None, seed: int | 
     return config
 
 
-def _fill_results(config: CONFIG, dir_: str, config_file: str, columns: dict[str, Any]) -> None:
-    """Fill the ``results`` block in place -- never through dotted overrides.
+def _fill_output(config: CONFIG, dir_: str, config_file: str, columns: dict[str, Any],
+                  prefix: str = '') -> None:
+    """Fill the ``output`` block in place -- never through dotted overrides.
 
     ``dir`` and ``config_file`` are set; the framework's columns are merged
     over any the unit config declared (framework wins on a clash).
     """
-    if config.results is None:
-        config.results = ResultsConfig()
-    config.results.dir = dir_
-    config.results.config_file = config_file
-    config.results.columns = {**(config.results.columns or {}), **columns}
+    if config.output is None:
+        config.output = OutputConfig()
+    config.output.dir = dir_
+    config.output.config_file = config_file
+    config.output.columns = {**(config.output.columns or {}), **columns}
+    config.output.prefix = prefix
 
 
 def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None,
@@ -227,8 +229,8 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     """The selected entry as a resolved config plus its context.
 
     Order: load, seed (entry, else CLI), overrides, ``separate_test`` the same
-    way (no seed), ``results`` block, run dir created with a snapshot of the
-    resolved config(s). The run dir is
+    way (no seed), ``output`` block, output dir created with a snapshot of the
+    resolved config(s). The output dir is
     ``runs/{architecture}/{group}/{time_id}_{name}``; if it already exists
     (the same entry dispatched twice within one second) this raises rather
     than merging two runs into one directory.
@@ -239,7 +241,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
 
     time_id = utils.get_time_id()
     architecture = config.model.architecture if config.model is not None else NO_MODEL_ARCH
-    dir_ = run_dir(architecture, group['group'], f"{time_id}_{entry['name']}")
+    dir_ = output_dir(architecture, group['group'], f"{time_id}_{entry['name']}")
     if dir_.exists():
         raise FileExistsError(f'{dir_} already exists: the same entry was dispatched twice within one second')
 
@@ -248,7 +250,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     effective = config_seed(config)          # after overrides, so the column is what the run uses
     if effective is not None:
         columns['seed'] = effective
-    _fill_results(config, str(dir_), CONFIG_FILE, columns)
+    _fill_output(config, str(dir_), CONFIG_FILE, columns)
     snapshot = ResultsWriter(dir_)           # creates the dir
     snapshot.write_config(config, CONFIG_FILE)
 
@@ -256,14 +258,14 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     sep = entry.get('separate_test')
     if sep is not None:
         separate_test = _load_and_override(group['configs'][sep['config']], sep.get('overrides'), None)
-        _fill_results(separate_test, str(dir_), TEST_CONFIG_FILE, columns)
+        _fill_output(separate_test, str(dir_), TEST_CONFIG_FILE, columns, prefix='separate_')
         snapshot.write_config(separate_test, TEST_CONFIG_FILE)
 
     ctx = RunContext(
         separate_test=separate_test,
         entry={k: v for k, v in entry.items() if k not in RESERVED_KEYS},
         group=group['group'], name=entry['name'], index=index,
-        run_dir=str(dir_), extras=dict(extras or {}),
+        output_dir=str(dir_), extras=dict(extras or {}),
     )
     return config, ctx
 
@@ -287,7 +289,7 @@ def run_group(group_path: str | Path, runner: str | None = None, task_id: int | 
     indices = select_indices(len(group['runs']), task_id)
     for i in indices:
         config, ctx = resolve_entry(group, i, cli_seed=seed, extras=extras)
-        print(f"[group] {group['group']} [{i}] {ctx.name} -> {ctx.run_dir}")
+        print(f"[group] {group['group']} [{i}] {ctx.name} -> {ctx.output_dir}")
         fn(config, ctx)
     return indices
 
@@ -296,10 +298,10 @@ def run_solo(config_path: str | Path, runner: str | None = None,
              extras: dict[str, Any] | None = None) -> None:
     """Run one unit config outside any group: the ``_solo`` context.
 
-    Nothing to resolve -- the trainer's default ``eval_path`` already puts the
+    Nothing to resolve -- the trainer's default output dir already puts the
     run under ``runs/{architecture}/_solo/`` -- so the context is built directly.
     """
     config = CONFIG.from_yaml(config_path)
     ctx = RunContext(separate_test=None, entry={}, group=SOLO_GROUP, name=None, index=None,
-                     run_dir=None, extras=dict(extras or {}))
+                     output_dir=None, extras=dict(extras or {}))
     load_runner(runner)(config, ctx)

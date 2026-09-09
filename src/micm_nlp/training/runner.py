@@ -101,12 +101,12 @@ class TRAINER:
         identity columns plus anything the user or runner added); the trainer
         contributes ``uuid4`` and, for a solo run, ``time_id``.
         """
-        results = getattr(self._config, 'results', None)
-        columns = dict(results.columns) if results is not None and results.columns else {}
+        output = getattr(self._config, 'output', None)
+        columns = dict(output.columns) if output is not None and output.columns else {}
         columns.setdefault('time_id', utils.get_time_id())
         columns['uuid4'] = self._model.uuid4
         writer = ResultsWriter(self._model.eval_path, columns)
-        writer.write_config(self._config, results.config_file if results is not None else CONFIG_FILE)
+        writer.write_config(self._config, output.config_file if output is not None else CONFIG_FILE)
         model_path = getattr(self._model, 'path', None)
         paths = {'run_dir': self._model.eval_path}
         if model_path is not None:

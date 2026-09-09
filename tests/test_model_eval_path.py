@@ -9,7 +9,7 @@ from micm_nlp.models.model import eval_path_for
 
 def test_results_dir_wins(tmp_path):
     nlpka_path.set_root(tmp_path)
-    cfg = CONFIG(mode='preprocess', model={'architecture': 'xlmr'}, results={'dir': '/runs/g/r'})
+    cfg = CONFIG(mode='preprocess', model={'architecture': 'xlmr'}, output={'dir': '/runs/g/r'})
     assert eval_path_for(cfg, 'ignored') == '/runs/g/r'
 
 
@@ -17,7 +17,7 @@ def test_solo_default(tmp_path):
     nlpka_path.set_root(tmp_path)
     cfg = CONFIG(mode='preprocess', model={'architecture': 'xlmr'})
     assert eval_path_for(cfg, 'uuid_bloom_1_2') == str(
-        tmp_path / 'artefacts' / 'evals' / 'runs' / 'xlmr' / '_solo' / 'uuid_bloom_1_2'
+        tmp_path / 'artefacts' / 'runs' / 'xlmr' / '_solo' / 'uuid_bloom_1_2'
     )
 
 

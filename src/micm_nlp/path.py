@@ -74,13 +74,15 @@ preprocessing-only group)."""
 
 
 def runs_dir() -> Path:
-    """``artefacts/evals/runs`` -- one directory per run, laid out as
-    ``{architecture}/{group}/{run}``."""
-    return evals_dir() / 'runs'
+    """``artefacts/runs`` -- one directory per run, laid out as
+    ``{architecture}/{group}/{run}``. A run is neither an eval nor a training;
+    it is the unit the trainer executes."""
+    return artefacts_dir() / 'runs'
 
 
-def run_dir(architecture: str, group: str, name: str) -> Path:
-    """The directory one run owns: config copy, result CSVs, logs."""
+def output_dir(architecture: str, group: str, name: str) -> Path:
+    """The directory one run writes into: config snapshot, ``run.json``,
+    metrics, predictions, links, logs."""
     return runs_dir() / architecture / group / name
 
 

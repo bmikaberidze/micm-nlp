@@ -154,21 +154,22 @@ def test_resolve_entry_full(tmp_path):
     config, ctx = resolve_entry(g, 0, cli_seed=99, extras={'fold': '0'})
     assert config.peft.encoder_hidden_size == 192
     assert config.training_args.args.seed == 11          # entry beats CLI
-    assert config.results.config_file == 'config.yml'
+    assert config.output.config_file == 'config.yml'
     assert ctx.separate_test.peft.encoder_hidden_size == 8
     assert config_seed(ctx.separate_test) is None                # no seed on the test config
-    assert ctx.separate_test.results.config_file == 'test_config.yml'
-    assert ctx.separate_test.results.dir == config.results.dir
-    assert ctx.separate_test.results.columns == config.results.columns
-    cols = config.results.columns
+    assert ctx.separate_test.output.config_file == 'test_config.yml'
+    assert config.output.prefix == '' and ctx.separate_test.output.prefix == 'separate_'
+    assert ctx.separate_test.output.dir == config.output.dir
+    assert ctx.separate_test.output.columns == config.output.columns
+    cols = config.output.columns
     assert cols['group'] == 'g1' and cols['name'] == 'a' and cols['index'] == 0
     assert cols['config'] == 'u' and cols['seed'] == 11 and cols['source_group'] == 'joshi5'
-    run = Path(config.results.dir)
+    run = Path(config.output.dir)
     assert cols['time_id'] and run.name == f"{cols['time_id']}_a"
-    assert run.parent == tmp_path / 'artefacts' / 'evals' / 'runs' / 'toy' / 'g1'
+    assert run.parent == tmp_path / 'artefacts' / 'runs' / 'toy' / 'g1'
     assert (run / 'config.yml').exists() and (run / 'test_config.yml').exists()   # the snapshot
     assert ctx == RunContext(separate_test=ctx.separate_test, entry={'source_group': 'joshi5'},
-                             group='g1', name='a', index=0, run_dir=str(run), extras={'fold': '0'})
+                             group='g1', name='a', index=0, output_dir=str(run), extras={'fold': '0'})
 
 
 def test_resolve_entry_seed_column_follows_overrides(tmp_path):
@@ -176,22 +177,22 @@ def test_resolve_entry_seed_column_follows_overrides(tmp_path):
     g = load_group(_group(tmp_path, [{'config': 'u', 'name': 'a', 'overrides': {'training_args.args.seed': 5}}]))
     config, _ = resolve_entry(g, 0, cli_seed=99)
     assert config.training_args.args.seed == 5           # override beats seed
-    assert config.results.columns['seed'] == 5           # and the column says what the run uses
+    assert config.output.columns['seed'] == 5           # and the column says what the run uses
     g = load_group(_group(tmp_path, [{'config': 'u', 'name': 'b'}]))
     config, _ = resolve_entry(g, 0, cli_seed=99)
-    assert config.training_args.args.seed == 99 and config.results.columns['seed'] == 99
+    assert config.training_args.args.seed == 99 and config.output.columns['seed'] == 99
     g = load_group(_group(tmp_path, [{'config': 'u', 'name': 'c'}]))
     config, _ = resolve_entry(g, 0)
-    assert 'seed' not in config.results.columns          # unpinned: the trainer stamps it later
+    assert 'seed' not in config.output.columns          # unpinned: the trainer stamps it later
 
 
 def test_resolve_entry_keeps_user_columns_framework_wins(tmp_path):
     nlpka_path.set_root(tmp_path)
     gp = _group(tmp_path, [{'config': 'u', 'name': 'a'}])
-    _unit(tmp_path, results={'columns': {'note': 'x', 'group': 'user'}, 'dir': '/user/dir'})   # after _group
+    _unit(tmp_path, output={'columns': {'note': 'x', 'group': 'user'}, 'dir': '/user/dir'})   # after _group
     config, _ = resolve_entry(load_group(gp), 0)
-    assert config.results.columns['note'] == 'x' and config.results.columns['group'] == 'g1'
-    assert config.results.dir != '/user/dir'
+    assert config.output.columns['note'] == 'x' and config.output.columns['group'] == 'g1'
+    assert config.output.dir != '/user/dir'
 
 
 def test_resolve_entry_no_model_block(tmp_path):
@@ -199,7 +200,7 @@ def test_resolve_entry_no_model_block(tmp_path):
     gp = _group(tmp_path, [{'config': 'u', 'name': 'a'}])
     (tmp_path / 'unit.yml').write_text(yaml.safe_dump({'mode': 'preprocess'}))
     config, ctx = resolve_entry(load_group(gp), 0)
-    assert '/runs/_nomodel/g1/' in ctx.run_dir
+    assert '/runs/_nomodel/g1/' in ctx.output_dir
 
 
 def test_two_dispatches_two_dirs_same_second_raises(tmp_path, monkeypatch):
@@ -209,7 +210,7 @@ def test_two_dispatches_two_dirs_same_second_raises(tmp_path, monkeypatch):
     monkeypatch.setattr(grp.utils, 'get_time_id', lambda: next(stamps))
     _, c1 = resolve_entry(g, 0)
     _, c2 = resolve_entry(g, 0)
-    assert c1.run_dir != c2.run_dir and Path(c1.run_dir).is_dir() and Path(c2.run_dir).is_dir()
+    assert c1.output_dir != c2.output_dir and Path(c1.output_dir).is_dir() and Path(c2.output_dir).is_dir()
     with pytest.raises(FileExistsError):
         resolve_entry(g, 0)
 
@@ -243,9 +244,9 @@ def test_run_solo(tmp_path):
     CALLS.clear()
     run_solo(_unit(tmp_path), runner='tests.test_group:stub_runner', extras={'x': True})
     config, ctx = CALLS[0]
-    assert isinstance(config, CONFIG) and config.results is None
+    assert isinstance(config, CONFIG) and config.output is None
     assert ctx == RunContext(separate_test=None, entry={}, group='_solo', name=None, index=None,
-                             run_dir=None, extras={'x': True})
+                             output_dir=None, extras={'x': True})
 
 
 def test_pipeline_run_accepts_ctx():

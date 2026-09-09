@@ -32,10 +32,10 @@ def test_example_group_dispatches(tmp_path, monkeypatch):
                    '--runner', 'tests.test_group_e2e:stub_runner'])
     assert rc == 0 and SEEN == ['seed_1', 'seed_2']
 
-    group_dir = tmp_path / 'artefacts' / 'evals' / 'runs' / 'bloom' / 'xsc_group'
+    group_dir = tmp_path / 'artefacts' / 'runs' / 'bloom' / 'xsc_group'
     run_dirs = sorted(group_dir.iterdir())
     assert [d.name.split('_', 2)[-1] for d in run_dirs] == ['seed_1', 'seed_2']
     saved = yaml.safe_load((run_dirs[0] / 'config.yml').read_text())
-    assert saved['results']['columns']['group'] == 'xsc_group'
-    assert saved['results']['columns']['seed'] == 1
+    assert saved['output']['columns']['group'] == 'xsc_group'
+    assert saved['output']['columns']['seed'] == 1
     assert saved['training_args']['args']['seed'] == 1

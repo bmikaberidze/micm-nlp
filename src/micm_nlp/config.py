@@ -101,19 +101,21 @@ def _wrap_value(v):
 # ---------------------------------------------------------------------------
 
 
-class ResultsConfig(_Flex):
-    """Where a run's files go and what every result row is stamped with.
+class OutputConfig(_Flex):
+    """Where a run writes and what every metrics row is stamped with.
 
-    Result files are always written (``config.yml``, ``valid_res.csv``,
-    ``test_res.csv``); this block only decorates that. ``dir`` overrides the
-    run directory (the group runner sets it), ``config_file`` names the saved
-    copy of the resolved config, and ``columns`` is copied into every row --
-    the framework's identity columns plus anything the user or runner adds.
-    Declared as ``dict`` so it stays a plain mapping rather than a ``_Flex``.
+    A run always writes its output (config snapshot, ``run.json``, one metrics
+    file per evaluation event, predictions); this block only decorates that.
+    ``dir`` overrides the run directory (the group runner sets it),
+    ``config_file`` names the saved copy of the resolved config, and
+    ``columns`` is copied into every row -- the framework's identity columns
+    plus anything the user or runner adds. Declared as ``dict`` so it stays a
+    plain mapping rather than a ``_Flex``.
     """
 
     dir: str | None = None
     config_file: str = 'config.yml'
+    prefix: str = ''   # set by the framework on a separate_test config, so its files sit beside the primary's
     columns: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -142,7 +144,7 @@ class CONFIG(_Flex):
     cuda: CudaConfig | None = None
     env: dict[str, str | None] | None = None
     generation_config: _Flex | None = None
-    results: ResultsConfig | None = None
+    output: OutputConfig | None = None
 
     # -- Convenience loaders ------------------------------------------------
 
@@ -336,8 +338,8 @@ class ModelConfig(_Flex):
     Exactly one of ``init`` (build from scratch) or ``pretrained`` (load) is used,
     decided by ``mode``. ``architecture`` is a free-form string used for
     run-directory naming -- deliberately *not* validated against
-    :class:`~micm_nlp.enums.ModelArchSE`. The ``uuid4``, ``name``, ``path`` and
-    ``param_size`` fields are filled in at runtime, not by YAML.
+    :class:`~micm_nlp.enums.ModelArchSE`. The ``uuid4`` and ``param_size``
+    fields are filled in at runtime, not by YAML.
     """
 
     architecture: str
@@ -345,8 +347,6 @@ class ModelConfig(_Flex):
     pretrained: PretrainedConfig | None = None
     # Runtime-assigned fields (kept optional so YAML doesn't need them)
     uuid4: str | None = None
-    name: str | None = None   # the generated run name, see MODEL._set_name
-    path: str | None = None   # checkpoint dir, when the mode has one
     param_size: str | None = None
     trainable_param_size: str | None = None
     trainable_param_size_ratio: str | None = None

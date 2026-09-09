@@ -12,8 +12,8 @@ from micm_nlp.evals.results import CONFIG_FILE, TEST_FILE, VALID_FILE
 from micm_nlp.training.runner import TRAINER
 
 
-def _bare(tmp_path, results=None):
-    cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'}, results=results)
+def _bare(tmp_path, output=None):
+    cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'}, output=output)
     t = object.__new__(TRAINER)
     t._config = cfg
     t._model = SimpleNamespace(eval_path=str(tmp_path / 'run'), uuid4='u-1')
@@ -29,7 +29,7 @@ def _rows(path):
 
 
 def test_setup_results_writes_config_and_stamps_identity(tmp_path):
-    t = _bare(tmp_path, results={'columns': {'group': 'g', 'name': 'r'}, 'config_file': 'test_config.yml'})
+    t = _bare(tmp_path, output={'columns': {'group': 'g', 'name': 'r'}, 'config_file': 'test_config.yml'})
     w = t._setup_results()
     assert (tmp_path / 'run' / 'test_config.yml').exists()
     assert w.columns['group'] == 'g' and w.columns['uuid4'] == 'u-1' and 'time_id' in w.columns
@@ -42,7 +42,7 @@ def test_setup_results_without_block_uses_defaults(tmp_path):
 
 
 def test_stamp_effective_seed_only_when_absent(tmp_path):
-    t = _bare(tmp_path, results={'columns': {'seed': 11}})
+    t = _bare(tmp_path, output={'columns': {'seed': 11}})
     t._results = t._setup_results()
     t._stamp_effective_seed()
     assert t._results.columns['seed'] == 11          # pinned by the group: kept
