@@ -183,6 +183,7 @@ class TRAINER:
         )
         self.trainer.train()
         self._load_best_model()
+        self._output.write_run_info(paths={'best_checkpoint': self.trainer.state.best_model_checkpoint})
 
         if getattr(self._config.custom_training_args, 'save_final_model', False):
             if getattr(self._config.custom_training_args, 'keep_only_final_model', False):

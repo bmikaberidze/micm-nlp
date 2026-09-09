@@ -1,4 +1,3 @@
-# tests/test_results.py
 """``evals/results.py``: one HuggingFace metrics dict -> one metrics file per
 event; one ``predict()`` output -> one predictions file. Pure file I/O over a
 real ``RunOutput``; no model, no GPU."""
@@ -127,3 +126,7 @@ def test_predictions_per_task_join_back_to_the_split(tmp_path):
 def test_write_csv_header_is_union_in_first_seen_order(tmp_path):
     path = write_csv(tmp_path / 'x.csv', [{'a': 1}, {'a': 2, 'b': 3}])
     assert _read(path) == [{'a': '1', 'b': ''}, {'a': '2', 'b': '3'}]
+
+
+def test_write_csv_writes_nothing_for_no_rows(tmp_path):
+    assert not write_csv(tmp_path / 'e.csv', []).exists()

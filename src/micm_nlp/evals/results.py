@@ -59,8 +59,13 @@ def metric_rows(metrics: dict[str, Any], hf_prefix: str, strip: str = '') -> lis
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> Path:
-    """Write ``rows`` to ``path`` -- header = the union of keys in first-seen order."""
+    """Write ``rows`` to ``path`` -- header = the union of keys in first-seen order.
+
+    Nothing is written for an empty ``rows``.
+    """
     path = Path(path)
+    if not rows:
+        return path
     header: list[str] = []
     for r in rows:
         header.extend(k for k in r if k not in header)

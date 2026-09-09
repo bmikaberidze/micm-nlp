@@ -19,13 +19,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Every run writes its resolved `config.yml`, `run.json`, one metrics file per
   evaluation event and always-on predictions into its run directory, through
   `training/run_output.py` (`RunOutput`) and `evals/results.py`
-  (`save_metrics` / `save_predictions`). An `output:` config block (`dir`,
-  `config_file`, `prefix`, `columns`) redirects the directory, renames the
-  saved config, sets a filename prefix and stamps static columns onto every
-  row.
-- Every run directory also gets `run.json` — `started`/`finished`, every `SLURM*`
-  variable, host, Python, `CUDA_VISIBLE_DEVICES`, package versions, the wandb
-  id/url/dir — and `model` / `wandb` symlinks to the checkpoint and the wandb run.
+  (`save_metrics` / `save_predictions`). `run.json` carries `started`/`finished`,
+  every `SLURM*` variable, host, Python, `CUDA_VISIBLE_DEVICES`, package
+  versions and the wandb id/url/dir, and the directory also gets
+  `model` / `wandb` symlinks to the checkpoint and the wandb run. An `output:`
+  config block (`dir`, `config_file`, `prefix`, `columns`) redirects the
+  directory, renames the saved config, sets a filename prefix and stamps static
+  columns onto every row.
 
 ### Changed
 - The run directory is `artefacts/runs/{architecture}/{group}/{run}`; solo
@@ -38,13 +38,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Predictions are always written, `predictions_<stage>.csv` in the run
   directory, one row per sample after the metric's preprocessing (the old
   `save_predictions` wrote nothing for most task categories).
-- `test.save_predictions` is removed — predictions are always written.
 - The config is read-only for the trainer — what the run resolved is in
   `run.json`.
 - `eval_validation_final.csv` is written from the after-training evaluation of
   the best checkpoint, and its `step` column is the final training step, not
   the best checkpoint's own step (that is in HF's `trainer_state.json`, under
-  the checkpoint directory).
+  the checkpoint directory); the best checkpoint's path is recorded as
+  `run.json` → `paths.best_checkpoint`.
+
+### Removed
+- `test.save_predictions` is removed — predictions are always written.
 
 ## [0.3.1] - 2026-09-04
 
