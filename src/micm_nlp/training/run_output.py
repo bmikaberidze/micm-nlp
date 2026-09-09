@@ -171,10 +171,13 @@ class RunOutput:
     def resolved(self, **values) -> None:
         """Record the values the trainer derived from the config (the seed it
         drew, the prefixed ``metric_for_best_model``, ``fp16`` by device) in
-        ``run.json``, and stamp ``seed`` as a column unless the config pinned one.
+        ``run.json`` -- under ``resolved``, or ``<prefix>resolved`` for a
+        prefixed (``separate_test``) trainer, so the two never overwrite each
+        other -- and, for the primary trainer only, stamp ``seed`` as a column
+        unless the config pinned one.
         """
-        self.write_run_info(resolved=values)
-        if values.get('seed') is not None:
+        self.write_run_info(**{f'{self.prefix}resolved': values})
+        if not self.prefix and values.get('seed') is not None:
             self.columns.setdefault('seed', values['seed'])
 
     def note_wandb(self, run) -> None:

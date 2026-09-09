@@ -70,6 +70,22 @@ def test_resolved_records_values_and_stamps_seed_only_when_absent(tmp_path):
     assert o2.columns['seed'] == 7                                   # unpinned: what the trainer drew
 
 
+def test_two_run_outputs_one_dir_separate_test(tmp_path):
+    first = RunOutput(_cfg(dir=str(tmp_path / 'x')), _model(tmp_path))                 # tune phase
+    first.resolved(seed=7, fp16=False)
+    second = RunOutput(_cfg(dir=str(tmp_path / 'x'), prefix='separate_', config_file='test_config.yml'),
+                       _model(tmp_path, path=None))                                     # test phase
+    second.resolved(seed=99, fp16=False)
+    saved = json.loads((tmp_path / 'x' / RUN_INFO_FILE).read_text())
+    assert saved['resolved']['seed'] == 7 and saved['separate_resolved']['seed'] == 99
+    assert saved['paths']['model'] == str(tmp_path / 'm')                              # first-wins
+    assert saved['started'] == first.columns['time_id'] or saved['started']            # kept from the first
+    assert os.readlink(tmp_path / 'x' / 'model') == str(tmp_path / 'm')
+    assert first.columns['seed'] == 7 and 'seed' not in second.columns
+    assert (tmp_path / 'x' / 'test_config.yml').exists() and (tmp_path / 'x' / CONFIG_FILE).exists()
+    assert second.file('test_final.csv') == tmp_path / 'x' / 'separate_test_final.csv'
+
+
 def test_note_wandb(tmp_path):
     o = RunOutput(_cfg(dir=str(tmp_path / 'x')), _model(tmp_path))
     files = tmp_path / 'w' / 'run-1' / 'files'
