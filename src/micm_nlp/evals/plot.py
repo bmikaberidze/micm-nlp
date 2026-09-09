@@ -11,8 +11,8 @@ import numpy as np
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 
-def calc_confusion_matrix(predictions, true_labels, config, eval_path):
-    """Compute a confusion matrix and write it to ``<eval_path>/confusion_matrix.png``.
+def calc_confusion_matrix(predictions, true_labels, config, output_dir):
+    """Compute a confusion matrix and write it to ``<output_dir>/confusion_matrix.png``.
 
     Both arrays are flattened first, so this works for per-token and per-example
     predictions alike. The label axis comes from ``config.ds.label.names``: integer
@@ -22,7 +22,7 @@ def calc_confusion_matrix(predictions, true_labels, config, eval_path):
     :param predictions: predicted labels.
     :param true_labels: gold labels, same shape.
     :param config: the run config; ``ds.label.names`` supplies the axis.
-    :param eval_path: directory to write the PNG into.
+    :param output_dir: directory to write the PNG into.
     """
     # # Flatten the lists for confusion matrix computation
     predictions = predictions.flatten()
@@ -35,6 +35,6 @@ def calc_confusion_matrix(predictions, true_labels, config, eval_path):
     cm = confusion_matrix(true_labels, predictions, labels=labels)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
     disp.plot(include_values=True, cmap='viridis', ax=None, xticks_rotation='horizontal')
-    cm_path = f'{eval_path}/confusion_matrix.png'
+    cm_path = f'{output_dir}/confusion_matrix.png'
     plt.savefig(cm_path)
     plt.close()

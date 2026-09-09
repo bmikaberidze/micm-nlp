@@ -26,22 +26,7 @@ import micm_nlp.utils as utils
 from micm_nlp.datasets.dataset import DATASET
 from micm_nlp.enums import DeviceSE, ModeSE, PretSourceSE
 from micm_nlp.models.peft import PEFT
-from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, find_dirs_by_prefix, models_dir, output_dir
-
-
-def eval_path_for(config, model_name: str) -> str:
-    """The directory a run's files go to.
-
-    ``output.dir`` wins when set -- the group runner puts the run there.
-    Otherwise the run is a solo one and lands under the reserved ``_solo``
-    group: ``runs/{architecture}/_solo/{model_name}``. ``model_name`` is the
-    generated name (uuid first), unique and equal to the wandb run name.
-    """
-    output = getattr(config, 'output', None)
-    if output is not None and output.dir:
-        return str(output.dir)
-    architecture = config.model.architecture if config.model is not None else NO_MODEL_ARCH
-    return str(output_dir(architecture, SOLO_GROUP, model_name))
+from micm_nlp.path import find_dirs_by_prefix, models_dir
 
 
 class MODEL:
@@ -105,9 +90,6 @@ class MODEL:
     def _set_paths(self):
 
         self._set_name()
-
-        self.eval_path = eval_path_for(self._config, self.name)
-        self.logs_path = f'{self.eval_path}/logs'
 
         mode = self._config.mode
         if mode in [ModeSE.FINETUNE, ModeSE.EVALUATE, ModeSE.TEST]:
