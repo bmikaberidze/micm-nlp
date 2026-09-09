@@ -84,7 +84,7 @@ def _pred_out(preds, labels):
 def test_predictions_one_row_per_sample_in_original_order(tmp_path):
     o = _output(tmp_path)
     cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
-                 task={'preproc_rules': {}}, ds={'label': {'names': ['neg', 'pos']}})
+                 task={'preproc_rules': {}}, ds={'label': {'key': 'label', 'names': ['neg', 'pos']}})
     path = save_predictions(o, 'final', _pred_out([1, 0, 1], [1, 1, 1]), cfg, -100, None, None, order=[2, 0, 1])
     assert path == tmp_path / 'run' / 'predictions_final.csv'
     assert _read(path) == [{'sample': '2', 'prediction': '1', 'label': '1'},
@@ -95,7 +95,7 @@ def test_predictions_one_row_per_sample_in_original_order(tmp_path):
 def test_predictions_apply_the_metrics_preprocessing(tmp_path):
     o = _output(tmp_path, prefix='separate_')
     cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
-                 task={'preproc_rules': {'label_id_to_name': True}}, ds={'label': {'names': ['neg', 'pos']}})
+                 task={'preproc_rules': {'label_id_to_name': True}}, ds={'label': {'key': 'label', 'names': ['neg', 'pos']}})
     path = save_predictions(o, 'zero_shot', _pred_out([1, 0], [0, 0]), cfg, -100, None, None)
     assert path == tmp_path / 'run' / 'separate_predictions_zero_shot.csv'
     assert _read(path) == [{'sample': '0', 'prediction': 'pos', 'label': 'neg'},
