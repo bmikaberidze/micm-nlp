@@ -141,11 +141,11 @@ def main(argv: list[str] | None = None) -> int:
 
     run = sub.add_parser('run', help='run one unit config', allow_abbrev=False)
     run.add_argument('--config', required=True, help='path to a unit config')
-    run.add_argument('--runner', default=None, help='module:attr of the runner (default: micm_nlp.pipeline:run)')
+    run.add_argument('--runner', default=None, help='module:attr or path/to/script.py[:fn] of the runner (default: micm_nlp.pipeline:run)')
 
     rg = sub.add_parser('run-group', help='run the entries of a group config', allow_abbrev=False)
     rg.add_argument('--group-config', required=True, help='path to a group config; its stem is the group name')
-    rg.add_argument('--runner', default=None, help='module:attr of the runner (default: micm_nlp.pipeline:run)')
+    rg.add_argument('--runner', default=None, help='module:attr or path/to/script.py[:fn] of the runner (default: micm_nlp.pipeline:run)')
     rg.add_argument('--task-id', type=int, default=None,
                     help='entry index to run; ignored under SLURM_ARRAY_TASK_ID; omit to run every entry')
     rg.add_argument('--seed', type=int, default=None, help='seed for entries that do not set their own')

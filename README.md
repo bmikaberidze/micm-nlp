@@ -196,7 +196,8 @@ the runner's business — the default one is single-phase). Anything else is
 passed to the runner in `ctx.entry` and stamped as a column.
 
 Bring your own science with `--runner package.module:function`, a callable
-`run(config, ctx)`; unknown flags reach it as `ctx.extras`
+`run(config, ctx)` — or `--runner path/to/script.py`, whose `run(config, ctx)`
+is called (add `:fn` for another name); unknown flags reach it as `ctx.extras`
 (`--source-group joshi5` → `{'source_group': 'joshi5'}`). The default runner is
 `micm_nlp.pipeline:run`. A `run --config unit.yml` is the same machinery with
 one implicit entry; its files land under `…/runs/<architecture>/_solo/`.

@@ -234,12 +234,18 @@ def test_two_dispatches_two_dirs_same_second_raises(tmp_path, monkeypatch):
 
 # -- load_runner / dispatch ------------------------------------------------------
 
-def test_load_runner_default_and_custom():
+def test_load_runner_default_and_custom(tmp_path):
     from micm_nlp import pipeline
     assert load_runner(None) is pipeline.run
     assert load_runner('tests.test_group:stub_runner') is stub_runner
     with pytest.raises(ValueError, match='module:attr'):
         load_runner('no_colon')
+    script = tmp_path / 'my_runner.py'
+    script.write_text('def run(config, ctx):\n    return "ran"\n\ndef other(config, ctx):\n    return "other"\n')
+    assert load_runner(str(script))(None, None) == 'ran'
+    assert load_runner(f'{script}:other')(None, None) == 'other'
+    with pytest.raises(ValueError, match='not found'):
+        load_runner(str(tmp_path / 'missing.py'))
 
 
 def test_run_group_all_then_one(tmp_path, monkeypatch):

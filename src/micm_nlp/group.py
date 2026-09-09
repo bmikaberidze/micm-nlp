@@ -25,6 +25,7 @@ Result rows are written by the trainer, never here. The only scheduler
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -286,12 +287,27 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
 # -- Dispatch ------------------------------------------------------------------
 
 def load_runner(spec: str | None) -> Callable:
-    """Import ``'package.module:attr'``; ``None`` means the default runner."""
+    """The runner callable from ``'package.module:attr'`` or ``'path/to/script.py[:attr]'``.
+
+    A path is loaded as a module by location (so the script must not do work at
+    import time -- the usual ``if __name__ == '__main__':`` guard); ``attr``
+    defaults to ``run``. ``None`` means the default runner.
+    """
     spec = spec or DEFAULT_RUNNER
-    if ':' not in spec:
-        raise ValueError(f'runner must be given as module:attr, got {spec!r}')
-    module, attr = spec.split(':', 1)
-    return getattr(importlib.import_module(module), attr)
+    target, _, attr = spec.partition(':')
+    if target.endswith('.py') or '/' in target:
+        path = Path(target)
+        module_spec = importlib.util.spec_from_file_location(path.stem, path)
+        # spec_from_file_location happily builds a loader for a path that does not
+        # exist -- it only opens the file in exec_module -- so check it here.
+        if not path.is_file() or module_spec is None or module_spec.loader is None:
+            raise ValueError(f'runner script not found: {target!r}')
+        module = importlib.util.module_from_spec(module_spec)
+        module_spec.loader.exec_module(module)
+        return getattr(module, attr or 'run')
+    if not attr:
+        raise ValueError(f'runner must be given as module:attr or path/to/script.py[:attr], got {spec!r}')
+    return getattr(importlib.import_module(target), attr)
 
 
 def run_group(group_path: str | Path, runner: str | None = None, task_id: int | None = None,
