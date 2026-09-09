@@ -25,10 +25,10 @@ def test_example_group_dispatches(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, '_init_workspace', lambda: nlpka_path.set_root(tmp_path))
     dest = tmp_path / 'examples'
     assert cli.main(['init-examples', str(dest)]) == 0
-    assert (dest / 'xsc_group.yml').exists()
+    assert (dest / 'groups' / 'xsc_group.yml').exists()
 
     SEEN.clear()
-    rc = cli.main(['run-group', '--group-config', str(dest / 'xsc_group.yml'),
+    rc = cli.main(['run-group', '--group-config', str(dest / 'groups' / 'xsc_group.yml'),
                    '--runner', 'tests.test_group_e2e:stub_runner'])
     assert rc == 0 and SEEN == ['seed_1', 'seed_2']
 

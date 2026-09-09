@@ -483,7 +483,6 @@ class TestConfig(_Flex):
     run: bool = False
     zero_shot: bool = False
     zero_shot_only: bool = False
-    save_predictions: bool = False
     report_to_wandb: bool = False
 
 

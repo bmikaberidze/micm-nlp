@@ -166,6 +166,7 @@ _SUBMODULE_ORDER = {
     'models': ['model', 'architectures', 'peft', 'xpe'],
     'training': [
         'runner',
+        'run_output',
         'trainers',
         'callbacks',
         'batching',

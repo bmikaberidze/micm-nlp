@@ -7,7 +7,7 @@ can edit. Flags the parser does not know are forwarded to the runner as
 ``ctx.extras`` (``--source-group joshi5`` -> ``{'source_group': 'joshi5'}``)::
 
     python -m micm_nlp run       --config micm-nlp-examples/xsc_finetune.yml
-    python -m micm_nlp run-group --group-config micm-nlp-examples/xsc_group.yml
+    python -m micm_nlp run-group --group-config micm-nlp-examples/groups/xsc_group.yml
     python -m micm_nlp init-examples
 
 The configs ship *inside* the package rather than being downloaded, so the copy you
@@ -35,11 +35,17 @@ DEFAULT_DEST = 'micm-nlp-examples'
 
 
 def _available_configs():
-    """Every ``.yml`` shipped in the example-config package, sorted by name."""
-    return sorted(
-        (p for p in resources.files(_CONFIG_PACKAGE).iterdir() if p.name.endswith('.yml')),
-        key=lambda p: p.name,
-    )
+    """Every ``.yml`` shipped in the example-config package, as ``(relative path,
+    traversable)`` pairs -- the package root and one level of subdirectories
+    (``groups/``), sorted by path."""
+    root = resources.files(_CONFIG_PACKAGE)
+    found = []
+    for entry in root.iterdir():
+        if entry.name.endswith('.yml'):
+            found.append((Path(entry.name), entry))
+        elif entry.is_dir() and not entry.name.startswith('_'):
+            found.extend((Path(entry.name) / sub.name, sub) for sub in entry.iterdir() if sub.name.endswith('.yml'))
+    return sorted(found, key=lambda pair: str(pair[0]))
 
 
 def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
@@ -57,8 +63,9 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
     dest.mkdir(parents=True, exist_ok=True)
 
     written, skipped = [], []
-    for src in _available_configs():
-        target = dest / src.name
+    for rel, src in _available_configs():
+        target = dest / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists() and not force:
             skipped.append(target)
             continue
@@ -74,7 +81,7 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
         print(
             f'\nRun one with:\n'
             f'  python -m micm_nlp run --config {dest / "xsc_preprocess.yml"}\n'
-            f'  python -m micm_nlp run-group --group-config {dest / "xsc_group.yml"}'
+            f'  python -m micm_nlp run-group --group-config {dest / "groups" / "xsc_group.yml"}'
         )
     return 0
 

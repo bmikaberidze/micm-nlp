@@ -178,16 +178,15 @@ sbatch --array=0-1 my_wrapper.sh "python -m micm_nlp run-group --group-config co
 ```
 
 Under a SLURM array, `SLURM_ARRAY_TASK_ID` picks the entry. Each run gets
-`artefacts/evals/runs/<architecture>/lr_sweep/<time>_<name>/` holding the
-resolved `config.yml`, `valid_res.csv` (one row per metric group at the best
-checkpoint) and `test_res.csv` (one row per metric group per test pass), every
-row stamped with `group`, `name`, `index`, `config`, `seed`, `time_id`,
-`uuid4` and any other scalar key on the entry — so a later aggregation only
-ever groups by columns. Paths in `configs:` resolve relative to the group file.
-Beside them, `run.json` records where and on what the run happened (every
-`SLURM*` variable, host, Python, package versions, the wandb id/url/dir) and
-`model` / `wandb` symlinks point at the checkpoint and the wandb run — every
-artefact of a run is one `cd` away.
+`artefacts/runs/<architecture>/lr_sweep/<time>_<name>/` holding the resolved
+`config.yml`, `run.json` (environment, versions, the resolved seed and metric,
+wandb id/url/dir, paths), one metrics file per evaluation event
+(`eval_validation_final.csv`, `test_final.csv`, … — one row per metric group,
+every row stamped with `group`, `name`, `index`, `config`, `seed`, `time_id`,
+`uuid4` and any other scalar key on the entry), `predictions_zero_shot.csv` /
+`predictions_final.csv` (one row per sample, always), and `model` / `wandb`
+symlinks — every artefact of a run is one `cd` away. Paths in `configs:`
+resolve relative to the group file.
 
 Entry keys the framework reserves: `config`, `overrides`, `seed`, `name`, and
 `separate_test` (a second config for the test phase; whether a runner uses it is
