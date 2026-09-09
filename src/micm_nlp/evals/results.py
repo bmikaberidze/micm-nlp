@@ -98,7 +98,7 @@ def _sample_rows(preds, labels, order, base: dict[str, Any]) -> list[dict[str, A
     rows = []
     for i, (p, l) in enumerate(zip(preds, labels, strict=True)):
         sample = order[i] if order is not None else i
-        if isinstance(p, (list, np.ndarray)) and not isinstance(p, str):   # token classification
+        if isinstance(p, (list, np.ndarray)):                              # token classification
             for pos, (pp, ll) in enumerate(zip(p, l, strict=True)):
                 rows.append({**base, 'sample': sample, 'position': pos, 'prediction': _scalar(pp), 'label': _scalar(ll)})
         else:
@@ -114,15 +114,26 @@ def save_predictions(output, stage: str, pred_out, config, label_pad_id, tokeniz
     the same preprocessing the metric saw (:func:`preproc_preds_labels`), so
     every metric is recomputable from the file. ``sample`` is the index into
     the test split -- the original index when ``order`` (the dataloader's emit
-    order) is given, else the emit position. Under ``eval.per_task`` the rows
-    carry ``task`` and ``sample`` counts within the task. No static columns:
+    order) is given, else the emit position. Under ``task.preproc_rules.per_task``
+    the rows carry ``task`` as well, and ``sample`` is still the split index: the
+    per-task groups are re-joined to the split's order (and to ``order`` when
+    given), and the ``'all'`` copy the metrics use is skipped. No static columns:
     the file lives in the run's directory, which identifies the run.
     """
     preds, labels = preproc_preds_labels(pred_out.predictions, pred_out.label_ids, config, label_pad_id, tokenizer, ds_split)
     if isinstance(preds, dict):
+        # per_task: grouped by task id, in the split's emit order, plus an 'all'
+        # copy of the ungrouped arrays that the metrics use and this file does not.
+        group_by = config.task.preproc_rules.per_task
+        positions = list(order) if order is not None else list(range(len(ds_split)))
+        indices: dict[Any, list[int]] = {}
+        for i, sample in enumerate(ds_split):
+            indices.setdefault(sample[group_by], []).append(positions[i])
         rows = []
-        for task_id in preds:
-            rows.extend(_sample_rows(preds[task_id], labels[task_id], None, {'task': task_id}))
+        for task_id, task_preds in preds.items():
+            if task_id == 'all':
+                continue
+            rows.extend(_sample_rows(task_preds, labels[task_id], indices[task_id], {'task': task_id}))
     else:
         rows = _sample_rows(preds, labels, order, {})
     return write_csv(output.file(f'predictions_{stage}.csv'), rows)

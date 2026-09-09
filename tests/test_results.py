@@ -113,6 +113,17 @@ def test_predictions_token_classification_one_row_per_position(tmp_path):
                     {'sample': '1', 'position': '0', 'prediction': '5', 'label': '5'}]
 
 
+def test_predictions_per_task_join_back_to_the_split(tmp_path):
+    o = _output(tmp_path)
+    cfg = CONFIG(mode='preprocess', model={'architecture': 'toy'},
+                 task={'preproc_rules': {'per_task': 'task_ids'}})
+    split = [{'task_ids': 0}, {'task_ids': 1}, {'task_ids': 0}]      # emit order
+    rows = _read(save_predictions(o, 'final', _pred_out([1, 0, 1], [1, 1, 1]), cfg, -100, None, split, order=[2, 0, 1]))
+    assert rows == [{'task': '0', 'sample': '2', 'prediction': '1', 'label': '1'},
+                    {'task': '0', 'sample': '1', 'prediction': '1', 'label': '1'},
+                    {'task': '1', 'sample': '0', 'prediction': '0', 'label': '1'}]
+
+
 def test_write_csv_header_is_union_in_first_seen_order(tmp_path):
     path = write_csv(tmp_path / 'x.csv', [{'a': 1}, {'a': 2, 'b': 3}])
     assert _read(path) == [{'a': '1', 'b': ''}, {'a': '2', 'b': '3'}]
