@@ -28,10 +28,10 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from micm_nlp.enums import ModeSE
 
@@ -101,6 +101,24 @@ def _wrap_value(v):
 # ---------------------------------------------------------------------------
 
 
+class OutputConfig(_Flex):
+    """Where a run writes and what every metrics row is stamped with.
+
+    A run always writes its output (config snapshot, ``run.json``, one metrics
+    file per evaluation event, predictions); this block only decorates that.
+    ``dir`` overrides the run directory (the group runner sets it),
+    ``config_file`` names the saved copy of the resolved config, and
+    ``columns`` is copied into every row -- the framework's identity columns
+    plus anything the user or runner adds. Declared as ``dict`` so it stays a
+    plain mapping rather than a ``_Flex``.
+    """
+
+    dir: str | None = None
+    config_file: str = 'config.yml'
+    prefix: str = ''   # set by the framework on a separate_test config, so its files sit beside the primary's
+    columns: dict[str, Any] = Field(default_factory=dict)
+
+
 class CONFIG(_Flex):
     """One run, fully described.
 
@@ -126,6 +144,7 @@ class CONFIG(_Flex):
     cuda: CudaConfig | None = None
     env: dict[str, str | None] | None = None
     generation_config: _Flex | None = None
+    output: OutputConfig | None = None
 
     # -- Convenience loaders ------------------------------------------------
 
@@ -319,8 +338,8 @@ class ModelConfig(_Flex):
     Exactly one of ``init`` (build from scratch) or ``pretrained`` (load) is used,
     decided by ``mode``. ``architecture`` is a free-form string used for
     run-directory naming -- deliberately *not* validated against
-    :class:`~micm_nlp.enums.ModelArchSE`. The ``param_size`` fields are filled in at
-    runtime, not by YAML.
+    :class:`~micm_nlp.enums.ModelArchSE`. The ``uuid4`` and ``param_size``
+    fields are filled in at runtime, not by YAML.
     """
 
     architecture: str
@@ -464,7 +483,6 @@ class TestConfig(_Flex):
     run: bool = False
     zero_shot: bool = False
     zero_shot_only: bool = False
-    save_predictions: bool = False
     report_to_wandb: bool = False
 
 

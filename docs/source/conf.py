@@ -166,13 +166,14 @@ _SUBMODULE_ORDER = {
     'models': ['model', 'architectures', 'peft', 'xpe'],
     'training': [
         'runner',
+        'run_output',
         'trainers',
         'callbacks',
         'batching',
         'data_collators',
         'logits_processors',
     ],
-    'evals': ['eval', 'plot', 'metrics'],
+    'evals': ['eval', 'results', 'plot', 'metrics'],
 }
 """Sidebar order for each package's submodules, by leaf name.
 

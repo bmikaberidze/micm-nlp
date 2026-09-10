@@ -5,6 +5,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-XX
+
+### Added
+- `python -m micm_nlp` reaches the CLI (`__main__.py`), so the commands work on
+  `--target` installs that have no `bin/`.
+- `run --config` and `run-group --group-config`: a group config names unit configs
+  and lists runs over them (reserved keys `config`, `overrides`, `seed`, `name`,
+  `separate_test`; every other scalar key becomes a result column). The entry is
+  picked by `SLURM_ARRAY_TASK_ID`, then `--task-id`, else every entry runs.
+  `--runner module:attr` supplies the science; unknown flags reach it as
+  `ctx.extras`. Example shipped as `xsc_group.yml`.
+- Every run writes its resolved `config.yml`, `run.json`, one metrics file per
+  evaluation event and always-on predictions into its run directory, through
+  `training/run_output.py` (`RunOutput`) and `evals/results.py`
+  (`save_metrics` / `save_predictions`). `run.json` carries `started`/`finished`,
+  every `SLURM*` variable, host, Python, `CUDA_VISIBLE_DEVICES`, package
+  versions and the wandb id/url/dir, and the directory also gets
+  `model` / `wandb` symlinks to the checkpoint and the wandb run. An `output:`
+  config block (`dir`, `config_file`, `prefix`, `columns`) redirects the
+  directory, renames the saved config, sets a filename prefix and stamps static
+  columns onto every row.
+
+### Changed
+- The run directory is `artefacts/runs/{architecture}/{group}/{run}`; solo
+  runs use the reserved group `_solo` and keep the generated model name. This
+  replaces `evals/runs/{model name}`, which every test run left behind empty.
+- `pipeline.run(config, ctx=None)` accepts and ignores a run context, so it is the
+  default runner.
+- The CLI no longer accepts abbreviated options (`allow_abbrev=False`), so an
+  unknown flag is forwarded to the runner instead of being matched to a prefix.
+- Predictions are always written, `predictions_<stage>.csv` in the run
+  directory, one row per sample after the metric's preprocessing (the old
+  `save_predictions` wrote nothing for most task categories).
+- The config is read-only for the trainer — what the run resolved is in
+  `run.json`.
+- `eval_validation_after_train.csv` is written from the after-training
+  evaluation of the best checkpoint, and its `step` column is the final
+  training step, not the best checkpoint's own step (that is in HF's
+  `trainer_state.json`, under the checkpoint directory); the best checkpoint's
+  path is recorded as `run.json` → `paths.best_checkpoint`.
+- Event files carry `before_train` / `after_train`, or no stage for a
+  `test` / `evaluate` run, which has one pass per event.
+
+### Removed
+- `test.save_predictions` is removed — predictions are always written.
+
 ## [0.3.1] - 2026-09-04
 
 ### Fixed

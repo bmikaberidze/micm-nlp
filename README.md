@@ -156,6 +156,53 @@ test_output = trainer.run()
 ```
 <!-- end:stages -->
 
+<!-- start:groups -->
+### Run a group of runs
+
+One YAML describes several runs over your unit configs; its file stem is the
+group name, and every run it produces carries that name.
+
+```yaml
+# config/groups/lr_sweep.yml
+configs:
+  base: ../tune.yml
+runs:
+  - {config: base, name: lr1e-4, seed: 1, overrides: {training_args.args.learning_rate: 1e-4}}
+  - {config: base, name: lr5e-5, seed: 1, overrides: {training_args.args.learning_rate: 5e-5}}
+```
+
+```bash
+python -m micm_nlp run-group --group-config config/groups/lr_sweep.yml            # every entry, in order
+python -m micm_nlp run-group --group-config config/groups/lr_sweep.yml --task-id 1
+sbatch --array=0-1 my_wrapper.sh "python -m micm_nlp run-group --group-config config/groups/lr_sweep.yml"
+```
+
+Under a SLURM array, `SLURM_ARRAY_TASK_ID` picks the entry. Each run gets
+`artefacts/runs/<architecture>/lr_sweep/<time>_<name>/` holding the resolved
+`config.yml`, `run.json` (environment, versions, the resolved seed and metric,
+wandb id/url/dir, paths), one metrics file per evaluation event
+(`eval_validation_after_train.csv`, `test_after_train.csv`, … — one row
+per metric group, every row stamped with `group`, `name`, `index`, `config`,
+`seed`, `time_id`, `uuid4` and any other scalar key on the entry),
+`predictions_before_train.csv` / `predictions_after_train.csv` (one row
+per sample, always; no stage suffix for a `test` / `evaluate` run, which has
+one pass), and `model` / `wandb` symlinks — every artefact of a run is one `cd`
+away. Paths in `configs:`
+resolve relative to the group file.
+
+Entry keys the framework reserves: `config`, `overrides`, `seed`, `name`, and
+`separate_test` (a second config for the test phase; whether a runner uses it is
+the runner's business — the default one is single-phase). Anything else is
+passed to the runner in `ctx.entry` and stamped as a column.
+
+Bring your own science with `--runner package.module:function`, a callable
+`run(config, ctx)` — or `--runner path/to/script.py`, whose `run(config, ctx)`
+is called (add `:fn` for another name); unknown flags reach it as `ctx.extras`
+(`--source-group joshi5` → `{'source_group': 'joshi5'}`). The default runner is
+`micm_nlp.pipeline:run`. A `run --config unit.yml` is the same machinery with
+one implicit entry; its files land under `…/runs/<architecture>/_solo/`.
+<!-- end:groups -->
+
 ## Examples
 
 <!-- start:examples -->

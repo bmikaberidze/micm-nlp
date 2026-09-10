@@ -63,6 +63,29 @@ def evals_dir() -> Path:
     return artefacts_dir() / 'evals'
 
 
+SOLO_GROUP = '_solo'
+"""Reserved run-group name for runs started outside any group config. The
+leading underscore sorts it first and keeps it clear of real group stems, which
+must not start with ``_``."""
+
+NO_MODEL_ARCH = '_nomodel'
+"""Architecture segment for runs whose config has no ``model`` block (e.g. a
+preprocessing-only group)."""
+
+
+def runs_dir() -> Path:
+    """``artefacts/runs`` -- one directory per run, laid out as
+    ``{architecture}/{group}/{run}``. A run is neither an eval nor a training;
+    it is the unit the trainer executes."""
+    return artefacts_dir() / 'runs'
+
+
+def output_dir(architecture: str, group: str, name: str) -> Path:
+    """The directory one run writes into: config snapshot, ``run.json``,
+    metrics, predictions, links, logs."""
+    return runs_dir() / architecture / group / name
+
+
 def wandb_dir() -> Path:
     """Parent directory for wandb's own ``wandb/`` folder.
 

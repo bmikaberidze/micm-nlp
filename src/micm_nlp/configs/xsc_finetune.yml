@@ -115,7 +115,6 @@ test:
     run: false
     zero_shot: true
     zero_shot_only: true
-    save_predictions: false
     report_to_wandb: true
 
 trainer:

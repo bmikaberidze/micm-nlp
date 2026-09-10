@@ -8,6 +8,7 @@ Usage:
 """
 
 from micm_nlp.datasets.dataset import DATASET
+from micm_nlp.enums import ModeSE
 from micm_nlp.models.model import MODEL
 from micm_nlp.tokenizers.tokenizer import load as load_tokenizer
 from micm_nlp.training.runner import TRAINER
@@ -31,11 +32,21 @@ def load_model(config):
     return MODEL(config)
 
 
-def run(config):
-    """CONFIG → TOKENIZER → DATASET → MODEL → TRAINER → results"""
+def run(config, ctx=None):
+    """CONFIG → TOKENIZER → DATASET → MODEL → TRAINER → results
+
+    ``ctx`` is the group runner's :class:`~micm_nlp.group.RunContext`; this
+    default runner is single-phase and ignores it, so a group runs with no
+    custom code. A ``separate_test`` in the entry is therefore not acted on
+    here -- that is a runner's decision. A ``mode: preprocess`` config stops
+    after the dataset is tokenised and saved -- no model, no trainer -- and
+    returns ``(None, None)``.
+    """
 
     tokenizer = load_tokenizer(config)
     dataset = preprocess_dataset(config, tokenizer)
+    if config.mode == ModeSE.PREPROCESS:
+        return None, None          # a preprocessing config has no model to build
     model = load_model(config)
 
     trainer = TRAINER(model, dataset, tokenizer)

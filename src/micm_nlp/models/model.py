@@ -26,7 +26,7 @@ import micm_nlp.utils as utils
 from micm_nlp.datasets.dataset import DATASET
 from micm_nlp.enums import DeviceSE, ModeSE, PretSourceSE
 from micm_nlp.models.peft import PEFT
-from micm_nlp.path import evals_dir, find_dirs_by_prefix, models_dir
+from micm_nlp.path import find_dirs_by_prefix, models_dir
 
 
 class MODEL:
@@ -90,9 +90,6 @@ class MODEL:
     def _set_paths(self):
 
         self._set_name()
-
-        self.eval_path = str(evals_dir() / 'runs' / self.name)
-        self.logs_path = f'{self.eval_path}/logs'
 
         mode = self._config.mode
         if mode in [ModeSE.FINETUNE, ModeSE.EVALUATE, ModeSE.TEST]:

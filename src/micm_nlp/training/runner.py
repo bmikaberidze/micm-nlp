@@ -26,8 +26,6 @@ import shutil
 from types import SimpleNamespace
 from typing import ClassVar
 
-import numpy as np
-import pandas as pd
 import torch
 import wandb
 from transformers import (
@@ -40,6 +38,7 @@ from wandb.sdk.wandb_settings import Settings
 import micm_nlp.path as nlpka_path
 import micm_nlp.utils as utils
 from micm_nlp.enums import DeviceSE, DsSplitSE, ModelArchSE, ModeSE, TaskCatSE
+from micm_nlp.evals import results
 from micm_nlp.evals.eval import get_compute_metrics, get_preprocess_logits_for_metrics
 from micm_nlp.models.peft import PEFT
 from micm_nlp.models.xpe import is_xpe_config
@@ -50,6 +49,7 @@ from micm_nlp.training.callbacks import (
     NormalizePromptEncoderEmbeddings,
     ParamNormLogger,
 )
+from micm_nlp.training.run_output import RunOutput
 from micm_nlp.training.trainers import custom_trainer_class_factory
 
 
@@ -83,8 +83,20 @@ class TRAINER:
         self._config = model._config
         self._tokenizer = tokenizer if tokenizer else dataset._tokenizer
         self._dataset = dataset
+        self._setup_output()
         self._setup_trainer()
         self.print_details()
+
+    # -- Output ------------------------------------------------------------
+
+    def _setup_output(self):
+        """The run's output directory: created, snapshotted, linked (see RunOutput)."""
+        self._output = RunOutput(self._config, self._model)
+
+    def _emit_order(self, sampler_attr: str):
+        """The most recent dataloader's emit order, if its batch sampler exposes one."""
+        sampler = getattr(self.trainer, sampler_attr, None)
+        return getattr(sampler, 'order', None) if sampler is not None else None
 
     # -- Run loop ----------------------------------------------------------
 
@@ -93,7 +105,7 @@ class TRAINER:
 
         Zero-shot test, evaluation before training, training, evaluation after
         training, then the final test. ``test.zero_shot_only`` skips training
-        entirely, which is how a zero-shot baseline row is produced; each phase is
+        entirely, which is how a zero-shot baseline is produced; each phase is
         otherwise gated by its own flag in ``eval`` / ``test``.
 
         :returns: the test output -- both the full-shot and zero-shot results when
@@ -110,26 +122,32 @@ class TRAINER:
         run_eval_after_train = getattr(self._config.eval, 'after_training', False)
         run_eval_before_train_on_test = getattr(self._config.eval, 'before_training_on_test', False)
         run_eval_after_train_on_test = getattr(self._config.eval, 'after_training_on_test', False)
+        # Event files carry a stage only when the run has a training phase to be
+        # before or after; a test/evaluate run has one pass per event.
+        trains = self._config.mode in [ModeSE.TRAIN, ModeSE.FINETUNE]
+        before = 'before_train' if trains else None
+        after = 'after_train' if trains else None
 
         # Initialize Weights and Biases
         self._model.hf.wandb_run = self._init_wandb() if not wandb.run else None
         try:
+            self._output.note_wandb(self._model.hf.wandb_run or wandb.run)
             # Zero Shot Testing
             if run_test and zero_shot:
-                zero_shot_res = self._test(test_z_pref)
+                zero_shot_res = self._test(test_z_pref, stage=before)
 
             if not (run_test and zero_shot and zero_shot_only):
                 if self._config.mode in [ModeSE.TRAIN, ModeSE.FINETUNE]:
-                    self._evaluate() if run_eval_before_train else None
-                    self._evaluate(DsSplitSE.TEST, test_z_pref) if run_eval_before_train_on_test else None
+                    self._evaluate(stage=before) if run_eval_before_train else None
+                    self._evaluate(DsSplitSE.TEST, test_z_pref, stage=before) if run_eval_before_train_on_test else None
                     self._train()
-                    self._evaluate() if run_eval_after_train else None
-                    self._evaluate(DsSplitSE.TEST, test_pref) if run_eval_after_train_on_test else None
+                    self._evaluate(stage=after) if run_eval_after_train else None
+                    self._evaluate(DsSplitSE.TEST, test_pref, stage=after) if run_eval_after_train_on_test else None
                 elif self._config.mode == ModeSE.EVALUATE:
-                    self._evaluate()
-                    self._evaluate(DsSplitSE.TEST, test_pref)
+                    self._evaluate(stage=after)
+                    self._evaluate(DsSplitSE.TEST, test_pref, stage=after)
                 if run_test or self._config.mode == ModeSE.TEST:
-                    full_shot_res = self._test(test_pref)
+                    full_shot_res = self._test(test_pref, stage=after)
 
             # Finish Weights and Biases
             if self._model.hf.wandb_run:
@@ -138,6 +156,7 @@ class TRAINER:
             return SimpleNamespace(full_shot=full_shot_res, zero_shot=zero_shot_res)
 
         finally:
+            self._output.write_run_info(finished=utils.get_time_id())
             if self._model.hf.wandb_run:
                 self._model.hf.wandb_run.finish()
 
@@ -151,8 +170,7 @@ class TRAINER:
         view such that ``ds_split[i]`` lines up with ``predictions[i]``.
         Returns the dataset unchanged on the SequentialSampler path.
         """
-        sampler = getattr(self.trainer, sampler_attr, None)
-        order = getattr(sampler, 'order', None) if sampler is not None else None
+        order = self._emit_order(sampler_attr)
         return ds_split.select(order) if order is not None else ds_split
 
     def _train(self):
@@ -164,19 +182,20 @@ class TRAINER:
             self._config,
             self._model.label_pad_id,
             self._metric_prefix,
-            self._model.eval_path,
+            str(self._output.dir),
             self._tokenizer,
             lambda: self._aligned_ds_split(self._dataset.validation, '_last_eval_batch_sampler'),
         )
         self.trainer.train()
         self._load_best_model()
+        self._output.write_run_info(paths={'best_checkpoint': self.trainer.state.best_model_checkpoint})
 
         if getattr(self._config.custom_training_args, 'save_final_model', False):
             if getattr(self._config.custom_training_args, 'keep_only_final_model', False):
                 shutil.rmtree(self._model.path)
             self.trainer.save_model(self._model.path)
 
-    def _evaluate(self, ds_split_name=DsSplitSE.VALIDATION, metric_key_prefix='eval'):
+    def _evaluate(self, ds_split_name=DsSplitSE.VALIDATION, metric_key_prefix='eval', stage=None):
         eval_res = None
         ds_split = self._dataset.validation if ds_split_name == DsSplitSE.VALIDATION else self._dataset.test
         if ds_split:
@@ -193,15 +212,17 @@ class TRAINER:
                 self._config,
                 self._model.label_pad_id,
                 self._metric_prefix,
-                self._model.eval_path,
+                str(self._output.dir),
                 self._tokenizer,
                 lambda: self._aligned_ds_split(ds_split, '_last_eval_batch_sampler'),
             )
             eval_res = self.trainer.evaluate(ds_split, metric_key_prefix=metric_key_prefix)
             utils.p(eval_res)
+            results.save_metrics(self._output, results.event_name(f'eval_{ds_split_name.value}', stage), eval_res,
+                                 metric_key_prefix, strip=self._metric_prefix, step=self.trainer.state.global_step)
         return eval_res
 
-    def _test(self, metric_key_prefix='test'):
+    def _test(self, metric_key_prefix='test', stage=None):
         test_res = None
         if self._dataset.test:
             utils.p('\n[green]Test Model...[/green]')
@@ -211,72 +232,20 @@ class TRAINER:
                 self._config,
                 self._model.label_pad_id,
                 self._metric_prefix,
-                self._model.eval_path,
+                str(self._output.dir),
                 self._tokenizer,
                 lambda: self._aligned_ds_split(self._dataset.test, '_last_test_batch_sampler'),
             )
 
             test_res = self.trainer.predict(self._dataset.test, metric_key_prefix=metric_key_prefix)
             utils.p(test_res.metrics)
-
-            if self._config.test.save_predictions:
-                self._save_predictions(test_res)
+            results.save_metrics(self._output, results.event_name('test', stage), test_res.metrics, metric_key_prefix,
+                                 strip=self._metric_prefix, step=self.trainer.state.global_step)
+            results.save_predictions(self._output, stage, test_res, self._config, self._model.label_pad_id,
+                                     self._tokenizer, self._aligned_ds_split(self._dataset.test, '_last_test_batch_sampler'),
+                                     order=self._emit_order('_last_test_batch_sampler'))
 
         return test_res
-
-    def _save_predictions(self, test_res):
-        predictions_to_save = []
-        labels = test_res.label_ids
-        predictions = test_res.predictions
-
-        if self._config.task.preproc_rules.filter_padded:
-            masked_preds, masked_labs = [], []
-            for preds, labs in zip(predictions, labels, strict=True):
-                mask = labs != self._model.label_pad_id
-                masked_preds.append(preds[mask])
-                masked_labs.append(labs[mask])
-            predictions, labels = masked_preds, masked_labs
-
-        if self._config.task.preproc_rules.label_id_to_name:
-            label_names = np.array(self._config.ds.label.names)
-            named_preds, named_labs = [], []
-            for preds, labs in zip(predictions, labels, strict=True):
-                named_preds.append(label_names[preds])
-                named_labs.append(label_names[labs])
-            predictions, labels = named_preds, named_labs
-
-        # predictions/labels arrived in the test dataloader's emit order;
-        # align ds_split to match so per-sample zips don't cross wires.
-        aligned_test = self._aligned_ds_split(self._dataset.test, '_last_test_batch_sampler')
-
-        print_num = 5
-        for prediction, label, sample in zip(predictions, labels, aligned_test, strict=True):
-            input_ids = sample[self._dataset.keys.input_ids]
-            readable_tokens = [self._tokenizer.decode(tok_id) for tok_id in input_ids]
-
-            if self._config.task.category in [TaskCatSE.TEXT_CLASSIFICATION, TaskCatSE.TEXT_PAIR_CLASSIFICATION]:
-                readable_tokens = ' '.join(readable_tokens)
-            elif self._config.task.category == TaskCatSE.TOKEN_CLASSIFICATION:
-                predictions_row = prediction.tolist() if isinstance(prediction, np.ndarray) else list(prediction)
-                labels_row = label.tolist() if isinstance(label, np.ndarray) else list(label)
-                tokens_row = readable_tokens[1:-1]
-                predictions_to_save.extend([predictions_row, labels_row, tokens_row, []])
-
-            if print_num:
-                print_num -= 1
-                utils.p('Predicted: ', prediction, 'True: ', label, 'Text: ', readable_tokens)
-
-        csv_file_path = f'{nlpka_path.evals_dir()}/predictions/{self._model.name}.csv'
-
-        if self._config.task.category in [TaskCatSE.TEXT_CLASSIFICATION, TaskCatSE.TEXT_PAIR_CLASSIFICATION]:
-            df = pd.DataFrame(predictions_to_save, columns=['Predicted', 'True', 'Text'])
-            df.to_csv(csv_file_path, index=False)
-        elif self._config.task.category == TaskCatSE.TOKEN_CLASSIFICATION:
-            max_len = max(len(row) for row in predictions_to_save)
-            standardized_rows = [row + [''] * (max_len - len(row)) for row in predictions_to_save]
-            df = pd.DataFrame(standardized_rows)
-            df.to_csv(csv_file_path, index=False)
-        print(f'Predictions data to {csv_file_path}')
 
     def _load_best_model(self):
         best_checkpoint_path = self.trainer.state.best_model_checkpoint
@@ -330,6 +299,9 @@ class TRAINER:
             custom_args=self._config.custom_training_args,
             **trainer_init_args,
         )
+        self._output.resolved(seed=self.trainer.args.seed,
+                              metric_for_best_model=self.training_args.metric_for_best_model,
+                              fp16=self.training_args.fp16)
 
     # -- Data collator -----------------------------------------------------
 
@@ -386,7 +358,7 @@ class TRAINER:
             self._config,
             self._model.label_pad_id,
             self._metric_prefix,
-            self._model.eval_path,
+            str(self._output.dir),
             self._tokenizer,
             self._dataset.validation,
         )
@@ -570,11 +542,11 @@ class TRAINER:
                 targs.generation_config = GenerationConfig(**dict(self._config.generation_config))
 
         targs_kwargs = {k: v for k, v in dict(targs).items() if v is not None}
-        output_dir = self._model.path if self._config.mode != ModeSE.TEST else self._model.eval_path
+        output_dir = self._model.path if self._config.mode != ModeSE.TEST else str(self._output.dir)
         self.training_args = TArgs(
             run_name=self._model.name,
             output_dir=output_dir,
-            logging_dir=self._model.logs_path,
+            logging_dir=str(self._output.dir / 'logs'),
             **targs_kwargs,
         )
 

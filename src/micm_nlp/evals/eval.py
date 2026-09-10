@@ -33,7 +33,7 @@ labels_k = 'references'
 predictions_k = 'predictions'
 
 
-def get_compute_metrics(config, label_pad_id, metric_prefix, eval_path, tokenizer, ds_split):
+def get_compute_metrics(config, label_pad_id, metric_prefix, output_dir, tokenizer, ds_split):
     """Build the ``compute_metrics`` callable the HuggingFace ``Trainer`` expects.
 
     A closure rather than a method, because ``Trainer`` calls it with only
@@ -42,7 +42,7 @@ def get_compute_metrics(config, label_pad_id, metric_prefix, eval_path, tokenize
     :param config: the run config; supplies the metric groups and preprocessing rules.
     :param label_pad_id: label padding id, excluded from scoring.
     :param metric_prefix: prefix for the returned metric names (``eval_``, ``test_``).
-    :param eval_path: directory for artefacts such as the confusion matrix.
+    :param output_dir: directory for artefacts such as the confusion matrix.
     :param tokenizer: needed when the rules ask for decoding.
     :param ds_split: the split being scored. May be a **thunk**, so ordering
         decisions can be deferred until the dataloader exists -- a length-sorted
@@ -81,7 +81,7 @@ def get_compute_metrics(config, label_pad_id, metric_prefix, eval_path, tokenize
         ) else None
 
         # Calculate the confusion matrix
-        calc_confusion_matrix(predictions, labels, config, eval_path) if getattr(
+        calc_confusion_matrix(predictions, labels, config, output_dir) if getattr(
             config.task.preproc_rules, 'calc_confusion_matrix', False
         ) else None
 
