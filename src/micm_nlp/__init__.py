@@ -1,4 +1,7 @@
-"""micm-nlp — a config-driven NLP research toolkit built on HuggingFace Transformers.
+"""micm-nlp — a research framework for NLP.
+
+The whole pipeline in a single YAML, run alone or in groups. Builds on the
+HuggingFace stack and adds a layer of features of its own.
 
 Re-exports the two names needed at startup: ``env`` (settings loaded from ``.env``)
 and ``init()`` (sets the workspace root and, optionally, Rich output). ``init()`` is

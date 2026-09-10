@@ -6,7 +6,7 @@
 [![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://micm-nlp.readthedocs.io/en/latest/)
 
 <!-- start:tagline -->
-NLP research toolkit for tokenization, pretraining, fine-tuning, and PEFT across encoder-only, decoder-only, and encoder-decoder architectures. Built on top of HuggingFace `transformers`, `peft`, and `datasets`.
+A research framework for NLP: the whole pipeline in a single YAML, run alone or in groups. Builds on the HuggingFace stack and adds a layer of features of its own.
 <!-- end:tagline -->
 
 <!--
@@ -19,11 +19,11 @@ grep for the marker name in docs/source/ before editing.
 ## About
 
 <!-- start:about -->
-`micm-nlp` is a config-driven research toolkit for multilingual NLP work. It wraps the HuggingFace stack with a small set of high-level building blocks — `CONFIG`, `TOKENIZER`, `DATASET`, `MODEL`, and a unified `TRAINER` — that compose into reproducible training, fine-tuning, and evaluation pipelines.
+`micm-nlp` is a research framework for NLP, developed at the Muskhelishvili Institute of Computational Mathematics (MICM, Georgian Technical University). One YAML file describes a whole pipeline — data preprocessing, tokenization, model, PEFT, training, evaluation — and a second describes a group of runs over it. Underneath sits a set of high-level building blocks — `CONFIG`, `TOKENIZER`, `DATASET`, `MODEL`, and a unified `TRAINER` — built on the HuggingFace stack.
 
 It has backed two peer-reviewed publications: *Cross-Prompt Encoder for Low-Performing Languages* (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)) and *A Comparison of Different Tokenization Methods for the Georgian Language* (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/)).
 
-The package currently ships **three examples** that exercise a single use case end-to-end: preprocessing, decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub, and running that fine-tune as a group. The toolkit's underlying surface is broader than these three examples demonstrate.
+The package currently ships **three examples** that exercise a single use case end-to-end: preprocessing, decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub, and running that fine-tune as a group. The package's underlying surface is broader than these three examples demonstrate.
 
 Additional examples covering encoder-only text classification, encoder-decoder seq2seq, and MLM pretraining will land in subsequent releases. Contributions and issue reports are welcome.
 <!-- end:about -->
@@ -240,7 +240,7 @@ difference is checkable rather than asserted, and links to the module behind it.
 
 | Area | Some of what is there |
 |---|---|
-| **Data** | One `DATASET` over local files, the Hub and saved directories; concatenation across a path template; column standardisation; length statistics for choosing `max_length` from evidence |
+| **Data** | One `DATASET` over local files, the Hub and saved directories; tokenization in three configurable stages; subsetting and splitting from config; concatenation across a path template; column standardisation; length statistics for choosing `max_length` from evidence |
 | **PEFT** | The Cross-Prompt Encoder (a published method, not a wrapper); XPE / SPT / DUAL as one class separated by a ratio; three reparameterisation heads; XPE-aware state-dict save/load |
 | **Training** | Token-budget batching with an `'auto'` GPU probe; early stopping decoupled from model selection; per-parameter-group optimizer settings from YAML; collators HuggingFace lacks; closed-set generation |
 | **Evaluation** | Label-restricted likelihood; length-normalised log-likelihood accuracy; a declarative post-processing chain; per-task metric grouping |
@@ -270,13 +270,13 @@ repository; `run_model.py` is the Quickstart snippet above, and
 `preprocess_dataset.py` is the same with `preprocess_dataset(config)` in place of
 `run(config)`. A `pip install` is enough to run any of the three.
 
-The toolkit's surface is broader than these three demonstrate. Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
+The package's surface is broader than these three demonstrate. Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
 <!-- end:examples -->
 
 ## Supported architectures
 
 <!-- start:architectures -->
-| Architecture | Toolkit support | Covered by a shipped example |
+| Architecture | Framework support | Covered by a shipped example |
 |---|---|---|
 | Decoder-only (BLOOM, Aya) | yes | yes |
 | Encoder-only (BERT, XLM-R, mDeBERTa) | yes | planned |
@@ -301,7 +301,7 @@ Pull requests are welcome. For non-trivial changes, please open an issue first t
 ## Acknowledgements
 
 <!-- start:acknowledgements -->
-`micm-nlp` was developed at the Muskhelishvili Institute of Computational Mathematics (MICM, Georgian Technical University), in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the toolkit's design and validation.
+`micm-nlp` was developed at the Muskhelishvili Institute of Computational Mathematics (MICM, Georgian Technical University), in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
 
 This work was partially supported by the European Union under Horizon Europe project "GAIN" (GA #101078950) and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
 <!-- end:acknowledgements -->
@@ -314,7 +314,8 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 ```bibtex
 @software{micm_nlp,
   author = {Mikaberidze, Beso},
-  title = {micm-nlp: NLP research toolkit for multilingual fine-tuning and PEFT},
+  title = {micm-nlp: a research framework for NLP},
+  organization = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url = {https://github.com/bmikaberidze/micm-nlp},
   version = {0.4.0},
   year = {2026},

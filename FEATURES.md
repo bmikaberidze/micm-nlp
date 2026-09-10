@@ -21,6 +21,17 @@ the framework, documented separately.
   mechanism behind multilingual source groups; `datasets` gives you `concatenate_datasets`
   but no path-template layer above it.
   → [`DATASET.get_concatenated_dataset`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
+- **Tokenization in three configurable stages** — `tokenize.pre_rules` (sentence
+  splitting, EOS appending, text-to-text reframing), `tokenize.rules` (handed to the
+  tokenizer verbatim), and `tokenize.post_rules` (EOS-aware truncation, sample
+  concatenation, length sorting). HuggingFace gives you the tokenizer call in the
+  middle; everything on either side of it is normally yours to write.
+  → [`DATASET.preprocess`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
+- **Subsetting and splitting as configuration** — use a fixed fraction of a corpus
+  (`preproc_rules.subset`), carve train / validation / test by ratio
+  (`preproc_rules.split`), or separate a split by token length
+  (`preproc_rules.split_by_tokens_len`) — all seeded, so the same config gives the same
+  partition.
 - **Column standardisation** — `ds.input.standardize_key` renames a corpus's own
   column names onto the canonical `inputs` / `labels` / `task_ids`, so downstream code
   never learns any corpus's vocabulary.

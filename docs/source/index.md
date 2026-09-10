@@ -17,8 +17,8 @@
 
 ## What it is
 
-A **library with a thin run harness**. It contributes three things, which fall into
-two kinds:
+A **framework in two halves**: the functionality on top of HuggingFace, and the
+structure that reaches it. It contributes three things, which fall into two kinds:
 
 ```{include} ../../README.md
 :start-after: <!-- start:contributions -->

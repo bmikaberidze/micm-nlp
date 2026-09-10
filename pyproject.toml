@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "micm-nlp"
 version = "0.4.0"
-description = "NLP research toolkit built on HuggingFace Transformers"
+description = "A research framework for NLP: the whole pipeline in a single YAML, run alone or in groups. Builds on the HuggingFace stack and adds a layer of features of its own."
 authors = [
     { name = "Beso Mikaberidze", email = "beso.mikaberidze@gmail.com" },
 ]
