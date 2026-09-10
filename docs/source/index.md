@@ -17,7 +17,21 @@
 
 ## What it is
 
-A **library with a thin run harness**. The building blocks compose into one chain:
+A **library with a thin run harness**. It contributes three things, which fall into
+two kinds:
+
+```{include} ../../README.md
+:start-after: <!-- start:contributions -->
+:end-before: <!-- end:contributions -->
+```
+
+The **framework** is the part to internalise first, because the features are described
+in its vocabulary: a feature like *per-parameter-group optimizer settings* is a key in
+a YAML block, and that only means something once you know a run is a YAML file. Read
+{doc}`config` and {doc}`groups`, then browse {doc}`features` for what you can do
+inside them.
+
+The building blocks compose into one chain:
 
 ```
 CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER → compute_metrics
@@ -96,7 +110,21 @@ repository behind the IJCNLP–AACL paper.
 Home <self>
 install
 quickstart
+```
+
+```{toctree}
+:caption: Framework
+:hidden:
+
 config
+groups
+```
+
+```{toctree}
+:caption: Features
+:hidden:
+
+features
 ```
 
 ```{toctree}

@@ -1,8 +1,15 @@
-# YAML configuration
+# Unit run · one config
 
-Every run is described by a single YAML file loaded with `CONFIG.from_yaml`. The
-schema is a set of pydantic models in
+Every run is described by a single YAML file loaded with `CONFIG.from_yaml` — the
+**unit config**, the first half of the framework. One of these is one run; a
+{doc}`group config <groups>` is many of them.
+
+The schema is a set of pydantic models in
 {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
+
+The concrete HuggingFace classes are selected here by name: `model.pretrained.cls`,
+`trainer.cls`, `data_collator.cls` and `training_args.cls` are resolved at runtime, so
+adding a backbone or a head normally needs no code change at all.
 
 Two properties are worth knowing before reading the reference below.
 

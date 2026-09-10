@@ -30,6 +30,24 @@ Additional examples covering encoder-only text classification, encoder-decoder s
 
 📖 **Full documentation: [micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/)**
 
+## What micm-nlp contributes
+
+<!-- start:contributions -->
+Three things, of two kinds — the same split any framework has between the ready-made
+functionality it hands you and the structure it asks you to work inside.
+
+| Kind | Contribution | Answers |
+|---|---|---|
+| **Features** | Functionality on top of HuggingFace | *What can I do here that `transformers`, `datasets`, `evaluate` and `peft` do not already do?* |
+| **Framework** | One config → one run | *How is a single run assembled, and where does it land?* |
+| **Framework** | One group config → many runs | *How do I repeat that across the axes an experiment varies, and find the outputs afterwards?* |
+
+The two framework rows are one idea at two scales: a group is made of unit runs, so
+the second stands on the first. The features are usable without either — they are
+ordinary classes and functions — but the configuration is how they are meant to be
+reached.
+<!-- end:contributions -->
+
 ## Install
 
 <!-- start:install-requires -->
@@ -123,7 +141,12 @@ you installed.
 `run(config)` chains: load tokenizer → load and preprocess dataset → load model (with PEFT if configured) → train → evaluate. Every stage is configured by YAML; no plumbing code required.
 <!-- end:quickstart -->
 
-## Package tour
+## Framework
+
+The structure the package asks you to work inside: a run is a YAML file, and a group
+of runs is a YAML file listing runs over unit configs.
+
+### Package tour
 
 ```
 micm_nlp/
@@ -139,6 +162,8 @@ micm_nlp/
 │                   #   RunOutput — the run's output directory and run.json
 └── evals/          # Metrics, confusion matrices, plotting; one result file per event
 ```
+
+### One config, one run
 
 <!-- start:stages -->
 The same flow, unwrapped — useful when a consumer repository needs to intervene between stages (swap a dataset, concatenate languages, reuse one tokenizer):
@@ -160,9 +185,9 @@ test_output = trainer.run()
 ```
 <!-- end:stages -->
 
-<!-- start:groups -->
 ### Run a group of runs
 
+<!-- start:groups -->
 One YAML describes several runs over your unit configs; its file stem is the
 group name, and every run it produces carries that name.
 
@@ -206,6 +231,20 @@ is called (add `:fn` for another name); unknown flags reach it as `ctx.extras`
 `micm_nlp.pipeline:run`. A `run --config unit.yml` is the same machinery with
 one implicit entry; its files land under `…/runs/<architecture>/_solo/`.
 <!-- end:groups -->
+
+## Features
+
+What the package adds on top of the HuggingFace stack, by area. Each entry in
+**[FEATURES.md](FEATURES.md)** says what HuggingFace does on its own, so the
+difference is checkable rather than asserted, and links to the module behind it.
+
+| Area | Some of what is there |
+|---|---|
+| **Data** | One `DATASET` over local files, the Hub and saved directories; concatenation across a path template; column standardisation; length statistics for choosing `max_length` from evidence |
+| **PEFT** | The Cross-Prompt Encoder (a published method, not a wrapper); XPE / SPT / DUAL as one class separated by a ratio; three reparameterisation heads; XPE-aware state-dict save/load |
+| **Training** | Token-budget batching with an `'auto'` GPU probe; early stopping decoupled from model selection; per-parameter-group optimizer settings from YAML; collators HuggingFace lacks; closed-set generation |
+| **Evaluation** | Label-restricted likelihood; length-normalised log-likelihood accuracy; a declarative post-processing chain; per-task metric grouping |
+| **Tokenizers** | An architecture-aware factory; SentencePiece / WordPiece / byte-level BPE training; a Georgian sentence splitter with 885 abbreviations |
 
 ## Examples
 
