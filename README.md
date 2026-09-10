@@ -23,7 +23,7 @@ grep for the marker name in docs/source/ before editing.
 
 It has backed two peer-reviewed publications: *Cross-Prompt Encoder for Low-Performing Languages* (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)) and *A Comparison of Different Tokenization Methods for the Georgian Language* (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/)).
 
-The package currently ships **two examples** that exercise a single use case end-to-end: preprocessing and decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub. The toolkit's underlying surface is broader than these two examples demonstrate.
+The package currently ships **three examples** that exercise a single use case end-to-end: preprocessing, decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub, and running that fine-tune as a group. The toolkit's underlying surface is broader than these three examples demonstrate.
 
 Additional examples covering encoder-only text classification, encoder-decoder seq2seq, and MLM pretraining will land in subsequent releases. Contributions and issue reports are welcome.
 <!-- end:about -->
@@ -86,7 +86,7 @@ cp .env.example .env          # from a clone
 
 | Variable | Purpose |
 |---|---|
-| `PROJECT_ROOT_PATH` | Workspace directory; `artefacts/` (datasets, models, evals, wandb) is created under it. Used as the fallback when `init()` is called without `root_path`. |
+| `PROJECT_ROOT_PATH` | Workspace directory; `artefacts/` (datasets, models, runs, wandb) is created under it. Used as the fallback when `init()` is called without `root_path`. |
 | `WANDB_API_KEY` | Needed to log a run to the W&B service. The shipped example configs set `WANDB_MODE: offline` in their `env:` block, so they write to `artefacts/wandb/` on disk and need no account; set it to `online` once you have run `wandb login`. |
 | `HF_TOKEN` | Required only for gated HuggingFace models or datasets. |
 <!-- end:install-env -->
@@ -127,13 +127,17 @@ you installed.
 
 ```
 micm_nlp/
+├── cli.py          # micm-nlp / python -m micm_nlp: run, run-group, init-examples
 ├── pipeline.py     # Top-level wiring: load_dataset, preprocess_dataset, load_model, run
+├── group.py        # Group config → runs: entry selection, overrides, RunContext
 ├── config.py       # CONFIG.from_yaml; resolves nested namespaces
+├── path.py         # The artefact tree: models, datasets, tokenizers, runs
 ├── tokenizers/     # Tokenizer factory, custom tokenizer classes, Georgian sentence splitter
 ├── datasets/       # DATASET class — local + HF Hub + HF saved + CSV/TXT/JSON
 ├── models/         # MODEL wrapper, PEFT dispatch, Cross-Prompt Encoder
-├── training/       # TRAINER — wraps HF Trainer with custom callbacks + WandB
-└── evals/          # Metrics, confusion matrices, plotting helpers
+├── training/       # TRAINER — wraps HF Trainer with custom callbacks + WandB;
+│                   #   RunOutput — the run's output directory and run.json
+└── evals/          # Metrics, confusion matrices, plotting; one result file per event
 ```
 
 <!-- start:stages -->
@@ -206,27 +210,28 @@ one implicit entry; its files land under `…/runs/<architecture>/_solo/`.
 ## Examples
 
 <!-- start:examples -->
-Two runnable examples ship with the repository. Together they cover one use case end to end — preprocessing and decoder-only PEFT fine-tuning on an FTP-reframed multilingual dataset from the HuggingFace Hub.
+Three runnable examples ship with the package. Together they cover one use case end to end — preprocessing, decoder-only PEFT fine-tuning on an FTP-reframed multilingual dataset from the HuggingFace Hub, and the same fine-tune run as a group.
 
-| Script | Config | What it does |
+| Run it with | Config | What it does |
 |---|---|---|
 | `examples/preprocess_dataset.py` | `xsc_preprocess.yml` | Loads FTP-reframed XStoryCloze (English) from the Hub, tokenizes it for BLOOM-560M, saves the result locally. |
 | `examples/run_model.py` | `xsc_finetune.yml` | Fine-tunes BLOOM-560M with Cross-Prompt Encoder PEFT on the Arabic split, then evaluates. |
-
-Both scripts take the config as a flag:
+| `micm-nlp run-group` | `groups/xsc_group.yml` | The same fine-tune at two seeds, one run directory each. No script — the CLI is the runner. |
 
 ```bash
 micm-nlp init-examples
 python examples/preprocess_dataset.py --config micm-nlp-examples/xsc_preprocess.yml
 python examples/run_model.py          --config micm-nlp-examples/xsc_finetune.yml
+python -m micm_nlp run-group --group-config micm-nlp-examples/groups/xsc_group.yml
 ```
 
 The configs ship inside the package — `micm-nlp init-examples` writes them to
-`micm-nlp-examples/`. The scripts are four lines each and live in the repository;
-both are reproduced in the Quickstart above, so a `pip install` is enough to run
-either one.
+`micm-nlp-examples/`. The two scripts are four lines each and live in the
+repository; `run_model.py` is the Quickstart snippet above, and
+`preprocess_dataset.py` is the same with `preprocess_dataset(config)` in place of
+`run(config)`. A `pip install` is enough to run any of the three.
 
-The toolkit's surface is broader than these two demonstrate. Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
+The toolkit's surface is broader than these three demonstrate. Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
 <!-- end:examples -->
 
 ## Supported architectures
@@ -272,7 +277,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
   author = {Mikaberidze, Beso},
   title = {micm-nlp: NLP research toolkit for multilingual fine-tuning and PEFT},
   url = {https://github.com/bmikaberidze/micm-nlp},
-  version = {0.3.1},
+  version = {0.4.0},
   year = {2026},
 }
 

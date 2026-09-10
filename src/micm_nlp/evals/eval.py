@@ -41,7 +41,10 @@ def get_compute_metrics(config, label_pad_id, metric_prefix, output_dir, tokeniz
 
     :param config: the run config; supplies the metric groups and preprocessing rules.
     :param label_pad_id: label padding id, excluded from scoring.
-    :param metric_prefix: prefix for the returned metric names (``eval_``, ``test_``).
+    :param metric_prefix: prefix prepended to the returned metric names -- the unit
+        config's file name plus ``/``, or ``''`` for language modelling. Not
+        HuggingFace's ``metric_key_prefix`` (``eval_`` / ``test_``), which the
+        ``Trainer`` adds on top.
     :param output_dir: directory for artefacts such as the confusion matrix.
     :param tokenizer: needed when the rules ask for decoding.
     :param ds_split: the split being scored. May be a **thunk**, so ordering
@@ -380,10 +383,19 @@ def compute_metrics_by_metric_groups(predictions, labels, config):
 
 
 def postproc_metrics(results, config, add_prefix):
-    """Make a metrics dict JSON-safe and prefix its keys.
+    """Make a metrics dict JSON-safe, drop what the rules filter out, prefix the rest.
 
     numpy arrays become lists and numpy scalars become Python scalars, so the
     result survives being written to disk and logged.
+
+    When ``task.preproc_rules.filter_by_prefixes`` is set, this step is **lossy**:
+    metrics whose key does not carry one of those prefixes are dropped, and the
+    prefix is stripped from the keys that remain.
+
+    :param results: the metrics dict to clean.
+    :param config: supplies ``task.preproc_rules.filter_by_prefixes`` and the config
+        name used as the key prefix.
+    :param add_prefix: whether to prepend the config name to every key.
     """
     # cast np.ndarray to list and np.generic to item
     def cast_value(value):

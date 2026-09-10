@@ -5,6 +5,7 @@ A group config names unit configs and lists runs over them::
 
     configs:
       spt: ./tune.spt.yml
+      eval: ./test.eval.yml
     runs:
       - config: spt
         name: spt_s11
@@ -12,6 +13,9 @@ A group config names unit configs and lists runs over them::
         overrides: {peft.encoder_hidden_size: 192}
         separate_test: {config: eval, overrides: {}}   # rare
         source_group: joshi5                            # anything else -> the runner
+
+Every name a ``separate_test`` block references must itself be a key of
+``configs:`` -- loading raises otherwise.
 
 The file stem is the group name. For the selected entry this module loads the
 unit config, applies the seed, then the overrides, fills the ``output`` block
@@ -240,11 +244,11 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
                   extras: dict[str, Any] | None = None) -> tuple[CONFIG, RunContext]:
     """The selected entry as a resolved config plus its context.
 
-    Order: load, seed (entry, else CLI), overrides, ``separate_test`` the same
-    way (no seed), ``output`` block, run dir created with a snapshot of the
-    resolved config(s) and a ``run.json`` carrying ``started``, the output dir
-    and the environment, so a run that dies before the trainer exists still
-    says where and when it ran. The output dir is
+    Order: load, seed (entry, else CLI), overrides, ``output`` block, output dir
+    created with a snapshot of the resolved config and a ``run.json`` carrying
+    ``started``, the output dir and the environment, so a run that dies before
+    the trainer exists still says where and when it ran; then ``separate_test``
+    the same way (no seed), with its own ``output`` block. The output dir is
     ``runs/{architecture}/{group}/{time_id}_{name}``; if it already exists
     (the same entry dispatched twice within one second) this raises rather
     than merging two runs into one directory.

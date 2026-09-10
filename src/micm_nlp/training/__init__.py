@@ -3,6 +3,9 @@
 - :mod:`.runner` — :class:`~micm_nlp.training.runner.TRAINER`: builds the HuggingFace
   ``Trainer`` from the config — arguments, collator, callbacks, evaluation — and runs
   it.
+- :mod:`.run_output` — :class:`~micm_nlp.training.run_output.RunOutput`: the run's
+  output directory, the resolved ``config.yml``, ``run.json`` and the ``model`` /
+  ``wandb`` links. The trainer is the only writer.
 - :mod:`.trainers` — ``CustomTrainerMixin`` and ``RandomTaskExclusionBatchSampler``;
   ``custom_trainer_class_factory`` mixes the former into whichever ``Trainer`` class
   ``trainer.cls`` names.

@@ -4,7 +4,8 @@ The top-level modules: the pipeline and everything it needs before a tokenizer,
 dataset or model is involved. They carry no assumptions about any particular task
 or study.
 
-Ordered as the pipeline uses them — `bootstrap` resolves the workspace, `pipeline`
+Ordered as the pipeline uses them — `cli` is the command-line entry point,
+`bootstrap` resolves the workspace, `pipeline`
 chains the stages, `group` runs many of them from one file, `config` validates
 the YAML that drives them, and `path`, `enums` and `utils` are the shared
 vocabulary underneath.
@@ -12,6 +13,7 @@ vocabulary underneath.
 ```{toctree}
 :hidden:
 
+/autoapi/micm_nlp/cli/index
 /autoapi/micm_nlp/bootstrap/index
 /autoapi/micm_nlp/pipeline/index
 /autoapi/micm_nlp/group/index

@@ -35,13 +35,15 @@ resolver once at import, so `learning_rate: 5e-5` is a float everywhere.
 | `tokenizer` | Tokenizer source and behaviour |
 | `ds` | Dataset location, input/label keys, preprocessing and tokenization rules |
 | `eval` | When to evaluate (before/during/after training), per-task grouping |
-| `test` | Whether to run the test split, zero-shot behaviour, prediction saving |
+| `test` | Whether to run the test split, and zero-shot behaviour |
 | `trainer` | Which HuggingFace `Trainer` subclass to instantiate |
 | `training_args` | Which HuggingFace `TrainingArguments` dataclass, plus its kwargs |
 | `data_collator` | Which collator to instantiate, plus its kwargs |
 | `custom_training_args` | Behaviour this package adds on top of HuggingFace |
 | `cuda` | `empty_cache_steps` |
 | `env` | Environment variables set at config-load time |
+| `output` | Where the run writes and what every result row carries — see [`output`](#output) |
+| `generation_config` | Kwargs for the HuggingFace `GenerationConfig`, for generative evaluation |
 
 ## `peft`
 
@@ -115,14 +117,13 @@ differ in length by an order of magnitude.
 | `'auto'` | Probe the GPU at runtime for the largest budget that does not run out of memory |
 | an integer | Skip the probe and use this budget exactly |
 
-Two constraints are validated at config load:
+One constraint is validated at config load: the budget is mutually exclusive with the
+matching `*_force_sequential` flag — token-budget mode needs length-sorted batching,
+which a sequential sampler overrides. Booleans are rejected, and integers must be
+positive.
 
-- Mutually exclusive with the matching `*_force_sequential` flag — token-budget mode
-  needs length-sorted batching, which a sequential sampler overrides.
-- Mutually exclusive with HuggingFace's `LengthGroupedSampler`; the token-budget
-  sampler already sorts by length.
-
-Booleans are rejected, and integers must be positive.
+HuggingFace's `training_args.group_by_length` is **not** rejected — it is ignored on
+this path, because the token-budget sampler always length-sorts internally.
 
 :::{warning}
 The token-budget sampler yields samples in globally length-sorted order, not dataset

@@ -1,7 +1,7 @@
 """Confusion-matrix rendering for classification evaluations.
 
 ``calc_confusion_matrix`` runs when ``task.preproc_rules.calc_confusion_matrix`` is
-set and writes ``confusion_matrix.png`` into the run's evaluation directory. Axis
+set and writes ``confusion_matrix.png`` into the run's output directory. Axis
 labels come from ``ds.label.names``, or from integer ids when the true labels are
 integers.
 """

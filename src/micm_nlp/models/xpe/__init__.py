@@ -2,13 +2,13 @@
 
 Post-Phase-9 the XPE integration is exposed entirely through submodules:
 
-- :mod:`.config` — :class:`CrossPromptEncoderConfig`
+- :mod:`.config` — :class:`~micm_nlp.models.xpe.config.CrossPromptEncoderConfig`
 - :mod:`.encoder` — :class:`CrossPromptEncoder` (the prompt encoder nn.Module)
 - :mod:`.enums` — :class:`CrossPromptEncoderReparameterizationType`
 - :mod:`.heads` — :class:`LSTMWrapper`, :class:`LightweightSelfAttentionHead`
 - :mod:`.save_load` — XPE-aware state-dict (de)serialization helpers
 - :mod:`.peft_models` — :class:`XPEPeftModelForSequenceClassification`,
-  :data:`TASK_TYPE_TO_XPE_MODEL`, :func:`xpe_model_for`
+  :data:`TASK_TYPE_TO_XPE_MODEL`, :func:`~micm_nlp.models.xpe.peft_models.xpe_model_for`
 - :mod:`.factory` — :func:`get_xpe_model`, :func:`load_xpe_pretrained`,
   :func:`is_xpe_config`, :func:`is_xpe_adapter_dir`
 

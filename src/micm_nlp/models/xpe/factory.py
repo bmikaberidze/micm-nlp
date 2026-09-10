@@ -1,7 +1,7 @@
 """XPE factory — single entry point for building an XPE-wrapped model.
 
 Replaces ``get_cross_prompt_encoder`` from the legacy path. Picks the
-task-type-specific XPE subclass via :func:`xpe_model_for`, constructs it
+task-type-specific XPE subclass via :func:`~micm_nlp.models.xpe.peft_models.xpe_model_for`, constructs it
 directly (no dispatch via ``MODEL_TYPE_TO_PEFT_MODEL_MAPPING``), primes grad
 requirements, logs the layer summary, and optionally restores a classifier
 head from a prior checkpoint (SEQ_CLS-only — a no-op for other task types).
@@ -22,7 +22,7 @@ from micm_nlp.models.xpe.peft_models import xpe_model_for
 def _filtered_kwargs(peft_config_vars):
     """Turn a mapping-like config into a kwargs dict, dropping None values.
 
-    :class:`CrossPromptEncoderConfig.__init__` does not accept every field
+    :meth:`CrossPromptEncoderConfig.__init__` does not accept every field
     declared on the calling-site ``PeftConfig`` (e.g. ``num_tasks``). Upstream
     PEFT's constructor used to raise TypeError when a None-valued kwarg for
     an unknown field was splatted in. Stripping None values at the factory
@@ -43,7 +43,7 @@ def get_xpe_model(base_model, peft_config_vars):
 
     :param base_model: the backbone to wrap.
     :param peft_config_vars: mapping of config fields; ``None`` values are stripped
-        before they reach :class:`CrossPromptEncoderConfig` (see
+        before they reach :class:`~micm_nlp.models.xpe.config.CrossPromptEncoderConfig` (see
         ``_filtered_kwargs``).
     :returns: the wrapped PEFT model, adapter name ``'default'``.
     """

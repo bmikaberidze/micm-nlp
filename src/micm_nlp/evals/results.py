@@ -123,7 +123,7 @@ def save_predictions(output, stage: str | None, pred_out, config, label_pad_id, 
     (``predictions.csv`` when ``stage`` is ``None``).
 
     One row per sample (per token position for token classification), after
-    the same preprocessing the metric saw (:func:`preproc_preds_labels`), so
+    the same preprocessing the metric saw (:func:`~micm_nlp.evals.eval.preproc_preds_labels`), so
     every metric is recomputable from the file. ``sample`` is the index into
     the test split -- the original index when ``order`` (the dataloader's emit
     order) is given, else the emit position. Under ``task.preproc_rules.per_task``

@@ -93,8 +93,15 @@ class DownstreamFineTuningCallback(TrainerCallback):
             self.finetune_on_downstream_tasks(state.global_step)
 
     def finetune_on_downstream_tasks(self, state_global_step):
-        """
-        Finetune the model on all downstream tasks.
+        """Finetune the model on all downstream tasks.
+
+        .. warning::
+
+           **Non-functional.** The import below names ``micm_nlp.models.scripts``,
+           a package that does not exist, so any run with
+           ``eval.downstream_tasks`` set raises ``ModuleNotFoundError`` at the
+           first evaluation. This describes the intended behaviour, not the
+           current one.
         """
 
         from micm_nlp.config import CONFIG

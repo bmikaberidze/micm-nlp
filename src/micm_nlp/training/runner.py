@@ -105,7 +105,8 @@ class TRAINER:
 
         Zero-shot test, evaluation before training, training, evaluation after
         training, then the final test. ``test.zero_shot_only`` skips training
-        entirely, which is how a zero-shot baseline is produced; each phase is
+        entirely, which is how a zero-shot baseline is produced -- but only when
+        ``test.run`` and ``test.zero_shot`` are also true; each phase is
         otherwise gated by its own flag in ``eval`` / ``test``.
 
         :returns: the test output -- both the full-shot and zero-shot results when

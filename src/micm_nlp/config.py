@@ -2,8 +2,8 @@
 
 ``CONFIG.from_yaml`` loads a run description into typed sections: ``task``, ``peft``,
 ``model``, ``tokenizer``, ``ds``, ``eval``, ``test``, ``trainer``, ``training_args``,
-``data_collator``, ``custom_training_args``, ``cuda`` and ``env``. Loading also
-applies the ``env`` block to ``os.environ``.
+``data_collator``, ``custom_training_args``, ``cuda``, ``env``, ``output`` and
+``generation_config``. Loading also applies the ``env`` block to ``os.environ``.
 
 Two design points shape everything here.
 
@@ -107,10 +107,15 @@ class OutputConfig(_Flex):
     A run always writes its output (config snapshot, ``run.json``, one metrics
     file per evaluation event, predictions); this block only decorates that.
     ``dir`` overrides the run directory (the group runner sets it),
-    ``config_file`` names the saved copy of the resolved config, and
-    ``columns`` is copied into every row -- the framework's identity columns
-    plus anything the user or runner adds. Declared as ``dict`` so it stays a
-    plain mapping rather than a ``_Flex``.
+    ``config_file`` names the saved copy of the resolved config, ``prefix`` is
+    prepended to every file the run writes, and ``columns`` is copied into every
+    row -- the framework's identity columns plus anything the user or runner
+    adds. ``columns`` is declared as ``dict`` so it stays a plain mapping rather
+    than a ``_Flex``.
+
+    The framework sets ``prefix`` to ``separate_`` on a ``separate_test``
+    config, so that phase's files sit beside the primary's instead of over them;
+    it is ``''`` otherwise.
     """
 
     dir: str | None = None
@@ -477,7 +482,8 @@ class TestConfig(_Flex):
     """The ``test`` block: whether and how the held-out test split is scored.
 
     ``zero_shot`` adds an untrained baseline pass; ``zero_shot_only`` skips training
-    altogether, which is how a zero-shot row is produced.
+    altogether, which is how a zero-shot row is produced -- but only in combination
+    with ``run`` and ``zero_shot``: all three must be true, or the run still trains.
     """
 
     run: bool = False

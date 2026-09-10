@@ -6,7 +6,7 @@ behaviour while non-XPE ``peft_type`` values still reach the stock upstream
 path via ``super()``.
 
 Supported task types are registered in :data:`TASK_TYPE_TO_XPE_MODEL` and
-resolved by :func:`xpe_model_for`. The factory (:mod:`xpe.factory`) uses this
+resolved by :func:`~micm_nlp.models.xpe.peft_models.xpe_model_for`. The factory (:mod:`~micm_nlp.models.xpe.factory`) uses this
 registry to pick the right subclass for ``get_xpe_model`` /
 ``load_xpe_pretrained`` — no hardcoded SEQ_CLS assumption.
 """

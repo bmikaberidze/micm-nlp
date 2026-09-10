@@ -17,7 +17,7 @@
 
 ## What it is
 
-A **library, not an experiment runner**. The building blocks compose into one chain:
+A **library with a thin run harness**. The building blocks compose into one chain:
 
 ```
 CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER → compute_metrics
@@ -26,8 +26,11 @@ CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER �
 Everything above is selected from YAML — including the concrete HuggingFace classes.
 `model.pretrained.cls`, `trainer.cls`, `data_collator.cls` and `training_args.cls` are
 resolved by name at runtime, so adding a backbone or a head normally needs no code
-change. Experiment logic — language groups, run-tree layouts, result aggregation,
-cluster dispatch — lives in consumer repositories that import this package, never here.
+change.
+
+The package owns how a run is assembled and where it lands: one config → one run, one
+group config → many. Study-specific meaning — what a language group is, what a result
+table should look like — stays in the consumer repositories that import it.
 
 | Symbol | Role |
 |---|---|
@@ -37,6 +40,10 @@ cluster dispatch — lives in consumer repositories that import this package, ne
 | `MODEL` | `from_pretrained` via `model.pretrained.cls`; injects `num_labels` for classification |
 | `PEFT` | Routes to stock PEFT methods or the Cross-Prompt Encoder path |
 | `TRAINER` | Builds the HuggingFace `Trainer`: arguments, collator, callbacks, evaluation |
+| `RunOutput` | The run's output directory: config snapshot, `run.json`, result files, links |
+| `run_group()` | Expands a group config into runs and picks the one this process runs |
+| `RunContext` | What a custom runner receives beside the config: the entry, output dir, extras, `test_config` |
+| `cli` | `micm-nlp` / `python -m micm_nlp`: `run`, `run-group`, `init-examples` |
 
 ## Scope
 

@@ -5,7 +5,7 @@ is read-only. Everything else hangs off the *workspace* — the user's project
 directory — which must be set once via ``set_root()`` before any accessor is called;
 they raise otherwise. ``micm_nlp.init()`` does that for you::
 
-    workspace()/artefacts/{models,datasets,tokenizers,evals}
+    workspace()/artefacts/{models,datasets,tokenizers,runs,wandb}
 """
 
 import os
@@ -59,7 +59,11 @@ def tokenizers_dir() -> Path:
 
 
 def evals_dir() -> Path:
-    """``artefacts/evals`` — evaluation runs: metrics, predictions, plots."""
+    """``artefacts/evals`` — legacy location, no longer written to.
+
+    Runs live under :func:`runs_dir` since 0.4.0; this function has no callers and
+    is kept only so an existing tree stays addressable.
+    """
     return artefacts_dir() / 'evals'
 
 

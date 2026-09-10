@@ -12,10 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   `--target` installs that have no `bin/`.
 - `run --config` and `run-group --group-config`: a group config names unit configs
   and lists runs over them (reserved keys `config`, `overrides`, `seed`, `name`,
-  `separate_test`; every other scalar key becomes a result column). The entry is
-  picked by `SLURM_ARRAY_TASK_ID`, then `--task-id`, else every entry runs.
-  `--runner module:attr` supplies the science; unknown flags reach it as
-  `ctx.extras`. Example shipped as `xsc_group.yml`.
+  `separate_test`; every other scalar key becomes a result column, except the
+  framework's own column names — `group`, `index`, `time_id`, `uuid4`,
+  `metric_group`, `step` — which an entry may not use). The entry is
+  picked by `SLURM_ARRAY_TASK_ID`, then `--task-id`, else every entry runs;
+  `--seed` supplies a seed for entries that do not set their own.
+  `--runner module:attr` or `--runner path/to/script.py[:fn]` supplies the
+  science (the attribute defaults to `run`); unknown flags reach it as
+  `ctx.extras`. Example shipped as `groups/xsc_group.yml`.
 - Every run writes its resolved `config.yml`, `run.json`, one metrics file per
   evaluation event and always-on predictions into its run directory, through
   `training/run_output.py` (`RunOutput`) and `evals/results.py`
@@ -26,18 +30,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   config block (`dir`, `config_file`, `prefix`, `columns`) redirects the
   directory, renames the saved config, sets a filename prefix and stamps static
   columns onto every row.
+- A `separate_test` entry resolves a second config into the same directory as
+  `test_config.yml` with `output.prefix` set to `separate_`, so its files sit
+  beside the primary's rather than over them. The runner receives it as
+  `ctx.test_config`, and its resolved values land under `separate_resolved` in
+  `run.json`.
 
 ### Changed
-- The run directory is `artefacts/runs/{architecture}/{group}/{run}`; solo
-  runs use the reserved group `_solo` and keep the generated model name. This
-  replaces `evals/runs/{model name}`, which every test run left behind empty.
+- The run directory is `artefacts/runs/{architecture}/{group}/{time_id}_{name}`;
+  solo runs use the reserved group `_solo` and keep the generated model name.
+  Re-dispatching one entry within the same second raises `FileExistsError`
+  rather than merging into the existing directory. This replaces
+  `evals/runs/{model name}`, which a test run typically left empty.
+- **Breaking:** the shipped-config package `micm_nlp.example_configs` is now
+  `micm_nlp.configs`, with no compatibility shim.
+- **Breaking:** `get_compute_metrics` and `calc_confusion_matrix` take
+  `output_dir` where they took `eval_path`. Keyword callers must be updated;
+  positional callers are unaffected.
 - `pipeline.run(config, ctx=None)` accepts and ignores a run context, so it is the
   default runner.
 - The CLI no longer accepts abbreviated options (`allow_abbrev=False`), so an
   unknown flag is forwarded to the runner instead of being matched to a prefix.
 - Predictions are always written, `predictions_<stage>.csv` in the run
-  directory, one row per sample after the metric's preprocessing (the old
-  `save_predictions` wrote nothing for most task categories).
+  directory, one row per sample after the metric's preprocessing. The old
+  writer produced a real file only for token classification, an empty
+  three-column one for text classification, and none at all otherwise.
 - The config is read-only for the trainer — what the run resolved is in
   `run.json`.
 - `eval_validation_after_train.csv` is written from the after-training
@@ -47,9 +64,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   path is recorded as `run.json` → `paths.best_checkpoint`.
 - Event files carry `before_train` / `after_train`, or no stage for a
   `test` / `evaluate` run, which has one pass per event.
+- The dockerfile builds on `python:3.12-slim`; the CUDA runtime comes from
+  torch's own `nvidia-*` wheels rather than a CUDA base image.
+
+### Fixed
+- `pipeline.run` stops after tokenising for a `mode: preprocess` config and
+  returns `(None, None)`. It previously went on to build a model and a trainer,
+  so the shipped `xsc_preprocess.yml` could not be run through it.
 
 ### Removed
 - `test.save_predictions` is removed — predictions are always written.
+- **Breaking:** `MODEL.eval_path` and `MODEL.logs_path` are removed. The trainer
+  owns the output directory (`RunOutput`) and derives the logging directory from
+  it; `MODEL` keeps `path` (the checkpoint location) only.
 
 ## [0.3.1] - 2026-09-04
 
