@@ -1,13 +1,11 @@
 # Features
 
 <!-- start:features-intro -->
-What `micm-nlp` gives you that the HuggingFace stack does not. Every entry says what
-HuggingFace does on its own, so the difference is checkable rather than asserted, and
-links to the module that implements it.
+What `micm-nlp` gives you that the HuggingFace stack does not.
 
-This is the *functionality* half of the package. The other half — how a run is
-assembled from one config, and how many runs are assembled from one group config — is
-the framework, documented separately.
+Every entry says what HuggingFace does on its own, so the difference is checkable rather than asserted, and links to the module that implements it.
+
+These are the package's *features*. Its other two contributions — one unit config describing one run, one group config describing many — are documented separately.
 <!-- end:features-intro -->
 
 ## Data

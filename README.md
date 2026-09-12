@@ -151,8 +151,7 @@ python -m micm_nlp run-group \
 ```
 `--run-index` selects one run; skip it to run everything.  
 `--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.  
-`--runner` allows your own custom `run(config, ctx)`, or can be skipped — resolved config, run entry, and unknown CLI flags are passed.  
-Append `:fn` to name a function other than `run`.
+`--runner` allows your own custom `run(config, ctx)`, or can be skipped — resolved config, run entry, and unknown CLI flags are passed. Append `:fn` to name a function other than `run`.
 
 ```bash
 sbatch --array=0-1 my_wrapper.sh \
@@ -198,10 +197,10 @@ python -m micm_nlp run       --config       configs/examples/xsc_finetune.yml
 python -m micm_nlp run-group --group-config configs/examples/groups/xsc_tune_across_seeds.yml
 ```
 
-The preprocessing phase can run in every unit run, whatever the mode, but we expose `mode: preprocess` separately for tokenizing once and reusing across many runs.  
 `init-examples` writes editable copies to `configs/examples/`; `example()` reaches the same files in place.  
-The package's surface is broader than these three demonstrate.  
+The package's surface is broader than these three demonstrate.
 Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
+>Note: The preprocessing phase can run in every unit run, whatever the mode, but we expose `mode: preprocess` separately for tokenizing once and reusing across many runs.  
 <!-- end:examples -->
 
 ## Contributing

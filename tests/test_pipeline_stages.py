@@ -27,22 +27,25 @@ _STAGES_BLOCK = re.compile(r'## Drive the stages yourself.*?```python\n(.*?)```'
 _LISTING_ONLY = ('from ', 'import ', 'config = CONFIG.from_yaml', 'output = trainer.output')
 
 
+def _statements(text: str) -> list[str]:
+    """The executable lines of a listing: comments and blanks dropped.
+
+    Both sides are normalised the same way, so a stage comment on one and not the
+    other is not drift -- only a statement that differs is.
+    """
+    return [stripped for line in text.splitlines() if (stripped := line.split('#')[0].strip())]
+
+
 def docs_stage_lines() -> list[str]:
     """The executable statements of the docs listing, in order."""
     match = _STAGES_BLOCK.search(QUICKSTART.read_text())
     assert match, 'the docs quickstart no longer has a python block under Drive the stages yourself'
-    return [
-        line.strip()
-        for line in match.group(1).splitlines()
-        if line.strip() and not line.strip().startswith(_LISTING_ONLY)
-    ]
+    return [line for line in _statements(match.group(1)) if not line.startswith(_LISTING_ONLY)]
 
 
 def run_body_lines() -> list[str]:
     """``pipeline.run``'s statements, docstring and comments stripped."""
-    source = inspect.getsource(pipeline.run)
-    body = source.split('"""')[2]                       # everything after the docstring
-    return [line.split('#')[0].strip() for line in body.splitlines() if line.split('#')[0].strip()]
+    return _statements(inspect.getsource(pipeline.run).split('"""')[2])
 
 
 def test_the_docs_listing_is_not_empty():

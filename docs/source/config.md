@@ -11,31 +11,17 @@ The whole file, at a glance:
 :end-before: <!-- end:blocks -->
 ```
 
-The rest of this page is those blocks in full. The schema behind them is a set of
-pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
+The rest of this page is those blocks in full; the schema behind them is a set of pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
 
-The concrete HuggingFace classes are selected here by name: `model.pretrained.cls`,
-`trainer.cls`, `data_collator.cls` and `training_args.cls` are resolved at runtime, so
-adding a backbone or a head normally needs no code change at all.
+Two properties are worth knowing before the reference below.
 
-Two properties are worth knowing before reading the reference below.
+**Class selection lives in YAML.** `model.pretrained.cls`, `trainer.cls`, `data_collator.cls` and `training_args.cls` are resolved by name at runtime against `transformers` — and, for trainers and collators, against this package's own modules too.  
+Adding a backbone or a head should need no code here. Where a class needs an unusual keyword argument, reach for the passthrough dictionaries before new code: `model.pretrained.args` and `tokenizer.args` are splatted verbatim into the constructor.
 
-**Every section accepts extra keys.** All config sections inherit from a permissive
-base, so a YAML file can carry keys the schema does not declare and runtime code can
-attach computed attributes. Validation catches the fields that matter without
-blocking the rest.
-
-**Class selection lives in YAML.** `model.pretrained.cls`, `trainer.cls`,
-`data_collator.cls` and `training_args.cls` are resolved by name against
-`transformers` (and, for collators, `micm_nlp.training.data_collators`). Adding a new
-backbone or head should need no change to this package. Where a class needs an
-unusual keyword argument, prefer the passthrough dictionaries — `model.pretrained.args`
-and `tokenizer.args` are splatted verbatim into the constructor — over new code.
+**Every section accepts extra keys.** All sections inherit from a permissive base, so a file can carry keys the schema does not declare and runtime code can attach computed attributes. Validation catches the fields that matter without blocking the rest.
 
 :::{note}
-Scientific notation works without a decimal point. PyYAML's `SafeLoader` follows
-YAML 1.1, where `5e-5` parses as a *string*; `micm_nlp.config` widens the float
-resolver once at import, so `learning_rate: 5e-5` is a float everywhere.
+Scientific notation works without a decimal point. PyYAML's `SafeLoader` follows YAML 1.1, where `5e-5` parses as a *string*; `micm_nlp.config` widens the float resolver once at import, so `learning_rate: 5e-5` is a float everywhere.
 :::
 
 ## Top-level sections
@@ -160,16 +146,12 @@ output:
   columns: {seed: 11, method: spt}                       # stamped onto every result row
 ```
 
-`dir` is used as given — pass an absolute path, or one relative to where the process
-runs, not to the workspace.
+`dir` is used as given — an absolute path, or one relative to where the process runs, not to the workspace.  
+`run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a config run on its own lands under `runs/units/`.
 
-`run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a unit config
-run on its own lands under `runs/units/`. Every evaluation event
-writes its own file (`eval_<split>_<stage>.csv`, `test_<stage>.csv`,
-`predictions_<stage>.csv`; stage is `before_train` or `after_train`, and
-absent for a run without a training phase); metrics rows carry
-`metric_group`, the metrics and `step`, plus the static columns. The directory
-also holds `info.json` and `model` / `wandb` symlinks.
+Every evaluation event writes its own file — `eval_<split>_<stage>.csv`, `test_<stage>.csv`, `predictions_<stage>.csv`, where stage is `before_train` or `after_train` and absent for a run that never trains.  
+Metrics rows carry `metric_group`, the metrics and `step`, plus the static columns.  
+The directory also holds `info.json` and the `model` / `wandb` symlinks.
 
 ## `optimizer_grouped_parameters`
 

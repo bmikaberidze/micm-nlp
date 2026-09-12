@@ -23,11 +23,8 @@ The package contributes three things:
 :end-before: <!-- end:contributions -->
 ```
 
-Read them in the reverse of the order they are listed in. The features are described
-in the vocabulary of the other two: *per-parameter-group optimizer settings* is a key
-in a YAML block, and that only means something once you know a run is a YAML file.
-So start with {doc}`config` for the unit run, then {doc}`groups` for running many of
-them, and browse {doc}`features` for what you can do inside them.
+Read them in the reverse of the order they are listed in — a feature is written in the vocabulary of the other two, and *per-parameter-group optimizer settings* means nothing until you know a run is a YAML file.  
+Start with {doc}`config` for the unit run, then {doc}`groups` for running many of them, and browse {doc}`features` for what you can do inside them.
 
 The building blocks compose into one chain:
 
@@ -35,27 +32,21 @@ The building blocks compose into one chain:
 CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER → compute_metrics
 ```
 
-Everything above is selected from YAML — including the concrete HuggingFace classes.
-`model.pretrained.cls`, `trainer.cls`, `data_collator.cls` and `training_args.cls` are
-resolved by name at runtime, so adding a backbone or a head normally needs no code
-change.
-
-The package owns how a run is assembled and where it lands: one config → one run, one
-group config → many. Study-specific meaning — what a language group is, what a result
-table should look like — stays in the consumer repositories that import it.
-
 | Symbol | Role |
 |---|---|
-| `CONFIG` | Loads and validates YAML (`CONFIG.from_yaml`) |
+| `CONFIG` | loads and validates YAML (`CONFIG.from_yaml`) |
 | `tokenizer.load()` | `AutoTokenizer` factory |
-| `DATASET` | Loads and preprocesses HuggingFace, CSV or TXT datasets; concatenation |
+| `DATASET` | loads and preprocesses local, Hub, CSV or TXT datasets; concatenation |
 | `MODEL` | `from_pretrained` via `model.pretrained.cls`; injects `num_labels` for classification |
-| `PEFT` | Routes to stock PEFT methods or the Cross-Prompt Encoder path |
-| `TRAINER` | Builds the HuggingFace `Trainer`: arguments, collator, callbacks, evaluation |
-| `RunOutput` | The run's output directory: config snapshot, `info.json`, result files, links |
-| `run_group()` | Expands a group config into runs and picks the one this process runs |
-| `RunContext` | What a custom runner receives beside the config: the entry, output dir, extras, `test_config` |
+| `PEFT` | routes to stock PEFT methods or the Cross-Prompt Encoder path |
+| `TRAINER` | builds the HuggingFace `Trainer`: arguments, collator, callbacks, evaluation |
+| `RunOutput` | the run's output directory: config snapshot, `info.json`, result files, links |
+| `run_group()` | expands a group config into runs and picks the one this process runs |
+| `RunContext` | what a custom runner receives beside the config: the entry, output dir, extras, `test_config` |
 | `cli` | `micm-nlp` / `python -m micm_nlp`: `run`, `run-group`, `init-examples` |
+
+Every link in the chain is named in YAML, the concrete HuggingFace classes included, so a new backbone or head needs no code.  
+The package owns how a run is assembled and where it lands; study-specific meaning — what a language group is, what a result table should look like — stays in the repositories that import it.
 
 ## Scope
 
@@ -65,18 +56,10 @@ table should look like — stays in the consumer repositories that import it.
 | Encoder-only (BERT, XLM-R, mDeBERTa) | yes | planned |
 | Encoder-decoder (T5) | yes | planned |
 
-PEFT methods: LoRA, Prefix Tuning, P-Tuning / soft prompt tuning, and the
-Cross-Prompt Encoder. The shipped examples demonstrate the Cross-Prompt Encoder only.
+PEFT methods: LoRA, Prefix Tuning, P-Tuning / soft prompt tuning, and the Cross-Prompt Encoder — the shipped examples demonstrate the last only.  
+Configuration, datasets, models, PEFT dispatch, training and evaluation carry no assumptions about any particular study.
 
-Configuration, datasets, models, PEFT dispatch, training and evaluation carry no
-assumptions about any particular study.
-
-Published work is not partitioned off into a "research" corner — it sits in the
-package where it belongs, and each module's own page cites the paper behind it. The
-Cross-Prompt Encoder is {doc}`models.xpe </autoapi/micm_nlp/models/xpe/index>`; the
-Georgian tokenization work is
-{doc}`tokenizers.architectures </autoapi/micm_nlp/tokenizers/architectures/index>`
-and {doc}`tokenizers.ka_sen_tok </autoapi/micm_nlp/tokenizers/ka_sen_tok/index>`.
+Published work is not partitioned off into a "research" corner. It sits in the package where it belongs, and each module's page cites the paper behind it — the Cross-Prompt Encoder is {doc}`models.xpe </autoapi/micm_nlp/models/xpe/index>`, the Georgian tokenization work is {doc}`tokenizers.architectures </autoapi/micm_nlp/tokenizers/architectures/index>` and {doc}`tokenizers.ka_sen_tok </autoapi/micm_nlp/tokenizers/ka_sen_tok/index>`.  
 None of it is required to use the rest.
 
 ## Links
