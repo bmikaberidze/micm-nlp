@@ -21,24 +21,6 @@ pip install micm-nlp
 :end-before: <!-- end:contributions -->
 ```
 
-{doc}`quickstart` runs one. {doc}`config` is the unit config in full, {doc}`groups` the group config, and {doc}`features` what you can do inside them.
-
-The package owns how a run is assembled and where it lands; study-specific meaning — what a language group is, what a result table should look like — stays in the repositories that import it.
-
-## Scope
-
-| Architecture | Supported | Covered by a shipped example |
-|---|---|---|
-| Decoder-only (BLOOM, Aya) | yes | yes |
-| Encoder-only (BERT, XLM-R, mDeBERTa) | yes | planned |
-| Encoder-decoder (T5) | yes | planned |
-
-PEFT methods: LoRA, Prefix Tuning, P-Tuning / soft prompt tuning, and the Cross-Prompt Encoder — the shipped examples demonstrate the last only.  
-Configuration, datasets, models, PEFT dispatch, training and evaluation carry no assumptions about any particular study.
-
-Published work is not partitioned off into a "research" corner. It sits in the package where it belongs, and each module's page cites the paper behind it — the Cross-Prompt Encoder is {doc}`models.xpe </autoapi/micm_nlp/models/xpe/index>`, the Georgian tokenization work is {doc}`tokenizers.architectures </autoapi/micm_nlp/tokenizers/architectures/index>` and {doc}`tokenizers.ka_sen_tok </autoapi/micm_nlp/tokenizers/ka_sen_tok/index>`.  
-None of it is required to use the rest.
-
 ## Links
 
 | | |
@@ -53,7 +35,7 @@ None of it is required to use the rest.
 | **MICM** | [micm.edu.ge](https://micm.edu.ge/) |
 | **Contact** | beso.mikaberidze@gmail.com |
 
-## Provenance
+## Acknowledgements
 
 ```{include} ../../README.md
 :start-after: <!-- start:acknowledgements -->

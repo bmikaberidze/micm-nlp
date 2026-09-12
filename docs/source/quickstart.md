@@ -7,7 +7,7 @@
 
 ## Drive the stages yourself
 
-This is `run()`'s own body — it calls the core classes directly, so a consumer intervening between two stages (swap a dataset, concatenate languages, reuse one tokenizer) copies it and changes one line:
+The chain, unwrapped — this is what run() does. Copy it and change the stage you need: swap a dataset, concatenate languages, reuse one tokenizer.
 
 ```python
 from micm_nlp import CONFIG
@@ -36,8 +36,6 @@ trainer.run()
 # Output
 output = trainer.output
 ```
-
-A test pins this listing against `pipeline.run`'s source, so the two cannot drift.
 
 ## Worked examples
 
