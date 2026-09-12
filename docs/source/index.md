@@ -14,38 +14,15 @@ pip install micm-nlp
 :end-before: <!-- end:about -->
 ```
 
-## What it is
-
-The package contributes three things:
+## What micm-nlp offers
 
 ```{include} ../../README.md
 :start-after: <!-- start:contributions -->
 :end-before: <!-- end:contributions -->
 ```
 
-Read them in the reverse of the order they are listed in — a feature is written in the vocabulary of the other two, and *per-parameter-group optimizer settings* means nothing until you know a run is a YAML file.  
-Start with {doc}`config` for the unit run, then {doc}`groups` for running many of them, and browse {doc}`features` for what you can do inside them.
+{doc}`quickstart` runs one. {doc}`config` is the unit config in full, {doc}`groups` the group config, and {doc}`features` what you can do inside them.
 
-The building blocks compose into one chain:
-
-```
-CONFIG (YAML) → tokenizer.load() → DATASET → MODEL → PEFT → TRAINER → compute_metrics
-```
-
-| Symbol | Role |
-|---|---|
-| `CONFIG` | loads and validates YAML (`CONFIG.from_yaml`) |
-| `tokenizer.load()` | `AutoTokenizer` factory |
-| `DATASET` | loads and preprocesses local, Hub, CSV or TXT datasets; concatenation |
-| `MODEL` | `from_pretrained` via `model.pretrained.cls`; injects `num_labels` for classification |
-| `PEFT` | routes to stock PEFT methods or the Cross-Prompt Encoder path |
-| `TRAINER` | builds the HuggingFace `Trainer`: arguments, collator, callbacks, evaluation |
-| `RunOutput` | the run's output directory: config snapshot, `info.json`, result files, links |
-| `run_group()` | expands a group config into runs and picks the one this process runs |
-| `RunContext` | what a custom runner receives beside the config: the entry, output dir, extras, `test_config` |
-| `cli` | `micm-nlp` / `python -m micm_nlp`: `run`, `run-group`, `init-examples` |
-
-Every link in the chain is named in YAML, the concrete HuggingFace classes included, so a new backbone or head needs no code.  
 The package owns how a run is assembled and where it lands; study-specific meaning — what a language group is, what a result table should look like — stays in the repositories that import it.
 
 ## Scope
