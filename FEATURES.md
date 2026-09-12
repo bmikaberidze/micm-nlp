@@ -35,7 +35,7 @@ the framework, documented separately.
 - **Column standardisation** — `ds.input.standardize_key` renames a corpus's own
   column names onto the canonical `inputs` / `labels` / `task_ids`, so downstream code
   never learns any corpus's vocabulary.
-- **Splits for datasets that have none** — `ds.comes_with_splits` handles corpora that
+- **Splits for datasets that have none** — `ds.splits` handles corpora that
   ship splits under non-standard names, or ship none at all.
 - **Length statistics** — `analyze_lengths` reports the real token-length distribution
   of a split, so `max_length` is chosen from evidence rather than guessed. Truncating

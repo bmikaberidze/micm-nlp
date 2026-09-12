@@ -15,15 +15,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   `separate_test`; every other scalar key becomes a result column, except the
   framework's own column names — `group`, `index`, `time_id`, `uuid4`,
   `metric_group`, `step` — which an entry may not use). The entry is
-  picked by `SLURM_ARRAY_TASK_ID`, then `--task-id`, else every entry runs;
-  `--seed` supplies a seed for entries that do not set their own.
+  picked by `SLURM_ARRAY_TASK_ID`, then `--run-index`, else every entry runs;
+  `--seed` supplies a seed for entries that do not set their own, and `--root-path`
+  gives the workspace root.
   `--runner module:attr` or `--runner path/to/script.py[:fn]` supplies the
   science (the attribute defaults to `run`); unknown flags reach it as
-  `ctx.extras`. Example shipped as `groups/xsc_group.yml`.
-- Every run writes its resolved `config.yml`, `run.json`, one metrics file per
+  `ctx.extras`. Example shipped as `groups/xsc_tune_across_seeds.yml`.
+- Every run writes its resolved `config.yml`, `info.json`, one metrics file per
   evaluation event and always-on predictions into its run directory, through
   `training/run_output.py` (`RunOutput`) and `evals/results.py`
-  (`save_metrics` / `save_predictions`). `run.json` carries `started`/`finished`,
+  (`save_metrics` / `save_predictions`). `info.json` carries `started`/`finished`,
   every `SLURM*` variable, host, Python, `CUDA_VISIBLE_DEVICES`, package
   versions and the wandb id/url/dir, and the directory also gets
   `model` / `wandb` symlinks to the checkpoint and the wandb run. An `output:`
@@ -34,11 +35,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   `test_config.yml` with `output.prefix` set to `separate_`, so its files sit
   beside the primary's rather than over them. The runner receives it as
   `ctx.test_config`, and its resolved values land under `separate_resolved` in
-  `run.json`.
+  `info.json`.
 
 ### Changed
-- The run directory is `artefacts/runs/{architecture}/{group}/{time_id}_{name}`;
-  solo runs use the reserved group `_solo` and keep the generated model name.
+- The run directory is `artefacts/runs/groups/{group}/{time_id}_{name}`;
+  a run outside any group lands in `artefacts/runs/units/{name}`, keeping the
+  generated model name. No segment above the group varies with the run, so a
+  group that varies the backbone stays one directory.
   Re-dispatching one entry within the same second raises `FileExistsError`
   rather than merging into the existing directory. This replaces
   `evals/runs/{model name}`, which a test run typically left empty.
@@ -49,6 +52,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   positional callers are unaffected.
 - `pipeline.run(config, ctx=None)` accepts and ignores a run context, so it is the
   default runner.
+- **Breaking:** `pipeline.run()` returns the run's `RunOutput` instead of
+  `(model, test_output)`, and `None` instead of `(None, None)` for a
+  `mode: preprocess` config. One object whose shape is the run directory:
+  `output.dir`, plus `output.results` and `output.predictions` holding the rows
+  of every file written, keyed by event name (`test_after_train`,
+  `eval_validation_before_train`, …) and in the same shape the CSV holds. The old
+  pair named its two results `full_shot` / `zero_shot` — a second vocabulary for
+  the same events — and dropped the four `_evaluate` results entirely, which were
+  reachable only by reading the files back.
+- **Breaking:** `micm_nlp.init()` takes the workspace root positionally —
+  `init('/path/to/workspace', pretty_output=True)`. The dict and `MicmNlpConfig`
+  forms still work, so `init({'root_path': ...})` is unaffected.
+- `micm_nlp` re-exports `CONFIG` and `run`, so a script needs one import line.
+  `run` resolves on first access (PEP 562) rather than at import, keeping
+  `import micm_nlp` — and therefore `init()` — clear of torch.
+- `pipeline.run()` accepts a path to a config's YAML as well as a `CONFIG`, so a
+  script needs no separate load step.
+- `pipeline.run()` calls the core classes directly instead of the single-stage
+  functions beside it, so its body is the pipeline written out and a consumer
+  intervening between two stages copies it and changes one line. The single-stage
+  functions are unchanged and still exported. `tests/test_pipeline_stages.py`
+  pins the docs' copy of the sequence against `run`'s source.
+- **Breaking:** `ds.comes_with_splits` is now `ds.splits`. A config still using the
+  old name raises rather than being kept as an unknown extra while `splits`
+  silently takes its default.
+- **Breaking:** `group.run_solo()` is `group.run_unit()`, and `RunContext.group` is
+  `None` for such a run rather than the sentinel `_solo`. The vocabulary is unit
+  config / unit run / group config throughout.
+- **Breaking:** the run-info file is `info.json`, not `run.json` — it pairs with
+  `output.info`, and in a directory where everything describes the run, "info" is
+  what distinguishes it.
+- `RunOutput.info` holds the run details as written, alongside `results` and
+  `predictions`, so `output` answers for the whole run directory in memory.
+- `micm-nlp run` / `run-group` take `--root-path`, the workspace root the Python
+  API takes as `init()`'s first argument; `PROJECT_ROOT_PATH` stays the default.
+  With neither, the command exits naming both — it never falls back to the working
+  directory, which would scatter one experiment across as many trees as the
+  directories it was launched from.
+- `micm_nlp.example(name)` returns the path of a config shipped inside the package,
+  so a script can run one without `init-examples` copying it out first.
 - The CLI no longer accepts abbreviated options (`allow_abbrev=False`), so an
   unknown flag is forwarded to the runner instead of being matched to a prefix.
 - Predictions are always written, `predictions_<stage>.csv` in the run
@@ -56,12 +99,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   writer produced a real file only for token classification, an empty
   three-column one for text classification, and none at all otherwise.
 - The config is read-only for the trainer — what the run resolved is in
-  `run.json`.
+  `info.json`.
 - `eval_validation_after_train.csv` is written from the after-training
   evaluation of the best checkpoint, and its `step` column is the final
   training step, not the best checkpoint's own step (that is in HF's
   `trainer_state.json`, under the checkpoint directory); the best checkpoint's
-  path is recorded as `run.json` → `paths.best_checkpoint`.
+  path is recorded as `info.json` → `paths.best_checkpoint`.
 - Event files carry `before_train` / `after_train`, or no stage for a
   `test` / `evaluate` run, which has one pass per event.
 - The dockerfile builds on `python:3.12-slim`; the CUDA runtime comes from
@@ -69,10 +112,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Fixed
 - `pipeline.run` stops after tokenising for a `mode: preprocess` config and
-  returns `(None, None)`. It previously went on to build a model and a trainer,
-  so the shipped `xsc_preprocess.yml` could not be run through it.
+  returns `None`. It previously went on to build a model and a trainer, so the
+  shipped `xsc_preprocess.yml` could not be run through it.
 
 ### Removed
+- **Breaking:** `init-examples` writes to `configs/examples/` instead of
+  `micm-nlp-examples/` — beside where real configs live, not a package-named
+  directory at the repo root. A destination argument still overrides it.
+- **Breaking:** the `examples/` scripts are removed. `run_model.py` was
+  `micm-nlp run --config …` and `preprocess_dataset.py` was the same command on a
+  `mode: preprocess` config, so both were a third path to what the CLI already does
+  and `init-examples` already prints. The configs they ran still ship.
 - `test.save_predictions` is removed — predictions are always written.
 - **Breaking:** `MODEL.eval_path` and `MODEL.logs_path` are removed. The trainer
   owns the output directory (`RunOutput`) and derives the logging directory from

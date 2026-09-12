@@ -5,9 +5,8 @@
 :end-before: <!-- end:tagline -->
 ```
 
-```{include} ../../README.md
-:start-after: <!-- start:install-pypi -->
-:end-before: <!-- end:install-pypi -->
+```bash
+pip install micm-nlp
 ```
 
 ```{include} ../../README.md
@@ -17,19 +16,18 @@
 
 ## What it is
 
-A **framework in two halves**: the functionality on top of HuggingFace, and the
-structure that reaches it. It contributes three things, which fall into two kinds:
+The package contributes three things:
 
 ```{include} ../../README.md
 :start-after: <!-- start:contributions -->
 :end-before: <!-- end:contributions -->
 ```
 
-The **framework** is the part to internalise first, because the features are described
-in its vocabulary: a feature like *per-parameter-group optimizer settings* is a key in
-a YAML block, and that only means something once you know a run is a YAML file. Read
-{doc}`config` and {doc}`groups`, then browse {doc}`features` for what you can do
-inside them.
+Read them in the reverse of the order they are listed in. The features are described
+in the vocabulary of the other two: *per-parameter-group optimizer settings* is a key
+in a YAML block, and that only means something once you know a run is a YAML file.
+So start with {doc}`config` for the unit run, then {doc}`groups` for running many of
+them, and browse {doc}`features` for what you can do inside them.
 
 The building blocks compose into one chain:
 
@@ -54,12 +52,21 @@ table should look like — stays in the consumer repositories that import it.
 | `MODEL` | `from_pretrained` via `model.pretrained.cls`; injects `num_labels` for classification |
 | `PEFT` | Routes to stock PEFT methods or the Cross-Prompt Encoder path |
 | `TRAINER` | Builds the HuggingFace `Trainer`: arguments, collator, callbacks, evaluation |
-| `RunOutput` | The run's output directory: config snapshot, `run.json`, result files, links |
+| `RunOutput` | The run's output directory: config snapshot, `info.json`, result files, links |
 | `run_group()` | Expands a group config into runs and picks the one this process runs |
 | `RunContext` | What a custom runner receives beside the config: the entry, output dir, extras, `test_config` |
 | `cli` | `micm-nlp` / `python -m micm_nlp`: `run`, `run-group`, `init-examples` |
 
 ## Scope
+
+| Architecture | Supported | Covered by a shipped example |
+|---|---|---|
+| Decoder-only (BLOOM, Aya) | yes | yes |
+| Encoder-only (BERT, XLM-R, mDeBERTa) | yes | planned |
+| Encoder-decoder (T5) | yes | planned |
+
+PEFT methods: LoRA, Prefix Tuning, P-Tuning / soft prompt tuning, and the
+Cross-Prompt Encoder. The shipped examples demonstrate the Cross-Prompt Encoder only.
 
 Configuration, datasets, models, PEFT dispatch, training and evaluation carry no
 assumptions about any particular study.
@@ -113,17 +120,11 @@ quickstart
 ```
 
 ```{toctree}
-:caption: Framework
+:caption: What micm-nlp offers
 :hidden:
 
 config
 groups
-```
-
-```{toctree}
-:caption: Features
-:hidden:
-
 features
 ```
 
@@ -143,6 +144,7 @@ autoapi/micm_nlp/evals/index
 :caption: Meta
 :hidden:
 
+contributing
 changelog
 PyPI <https://pypi.org/project/micm-nlp/>
 GitHub <https://github.com/bmikaberidze/micm-nlp>

@@ -1,11 +1,18 @@
 # Unit run · one config
 
 Every run is described by a single YAML file loaded with `CONFIG.from_yaml` — the
-**unit config**, the first half of the framework. One of these is one run; a
-{doc}`group config <groups>` is many of them.
+**unit config**. One of these is one run; a {doc}`group config <groups>` is many of
+them. This page is the package's *pipeline unification*.
 
-The schema is a set of pydantic models in
-{doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
+The whole file, at a glance:
+
+```{include} ../../README.md
+:start-after: <!-- start:blocks -->
+:end-before: <!-- end:blocks -->
+```
+
+The rest of this page is those blocks in full. The schema behind them is a set of
+pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
 
 The concrete HuggingFace classes are selected here by name: `model.pretrained.cls`,
 `trainer.cls`, `data_collator.cls` and `training_args.cls` are resolved at runtime, so
@@ -141,13 +148,13 @@ prediction saving; custom consumers of raw predictions should be aware of it.
 
 ## `output`
 
-Optional. Every run writes its resolved `config.yml`, `run.json`, one metrics
+Optional. Every run writes its resolved `config.yml`, `info.json`, one metrics
 file per evaluation event and always-on predictions into its run directory;
 this block only decorates that.
 
 ```yaml
 output:
-  dir: artefacts/runs/xlmr/my_group/20260907_1431_spt   # overrides the run directory
+  dir: artefacts/runs/groups/my_group/20260907_1431_spt   # overrides the run directory
   config_file: config.yml                                # name of the saved config copy
   prefix: ''                                             # 'separate_' is set by the framework on a separate_test config; a runner may set its own
   columns: {seed: 11, method: spt}                       # stamped onto every result row
@@ -157,12 +164,12 @@ output:
 runs, not to the workspace.
 
 `run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a unit config
-run on its own lands under `runs/<architecture>/_solo/`. Every evaluation event
+run on its own lands under `runs/units/`. Every evaluation event
 writes its own file (`eval_<split>_<stage>.csv`, `test_<stage>.csv`,
 `predictions_<stage>.csv`; stage is `before_train` or `after_train`, and
 absent for a run without a training phase); metrics rows carry
 `metric_group`, the metrics and `step`, plus the static columns. The directory
-also holds `run.json` and `model` / `wandb` symlinks.
+also holds `info.json` and `model` / `wandb` symlinks.
 
 ## `optimizer_grouped_parameters`
 
@@ -247,7 +254,7 @@ ds:
     dirs: mikaberidze/xstory-cloze-ftp
     name: ar
     type: huggingface
-    comes_with_splits:
+    splits:
         train: eval
         test: false
         validation: train

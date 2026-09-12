@@ -1,152 +1,227 @@
 # micm-nlp
 
 [![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
+[![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://micm-nlp.readthedocs.io/en/latest/)
 [![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://micm-nlp.readthedocs.io/en/latest/)
+
 
 <!-- start:tagline -->
-A research framework for NLP: the whole pipeline in a single YAML, run alone or in groups. Builds on the HuggingFace stack and adds a layer of features of its own.
+A research framework for NLP — the whole pipeline in a single YAML, run alone or in groups.
+Builds on the HuggingFace stack and adds a layer of features of its own.
 <!-- end:tagline -->
+
+**[micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/)** — full documentation 📚
 
 <!--
 The blocks between the start/end markers below are pulled into the documentation
-site with MyST {include} directives. README is the canonical copy; docs/source/
-never holds a second one. Moving or renaming a marker breaks a docs page --
-grep for the marker name in docs/source/ before editing.
+site with MyST {include} directives. For anything that appears in BOTH places,
+README is the canonical copy and docs/source/ never holds a second one -- moving
+or renaming a marker breaks a docs page, so grep for the marker name in
+docs/source/ before editing.
+
+Detail that belongs only to the docs lives in docs/source/ directly, with no
+marker here: install.md, config.md, groups.md, and features.md (an include of
+the root FEATURES.md). Keeping it out of README is what stops README growing a
+second copy of the documentation.
 -->
 
 ## About
 
 <!-- start:about -->
-`micm-nlp` is a research framework for NLP, developed at the Muskhelishvili Institute of Computational Mathematics (MICM, Georgian Technical University). One YAML file describes a whole pipeline — data preprocessing, tokenization, model, PEFT, training, evaluation — and a second describes a group of runs over it. Underneath sits a set of high-level building blocks — `CONFIG`, `TOKENIZER`, `DATASET`, `MODEL`, and a unified `TRAINER` — built on the HuggingFace stack.
+`micm-nlp` is developed at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University.
 
-It has backed two peer-reviewed publications: *Cross-Prompt Encoder for Low-Performing Languages* (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)) and *A Comparison of Different Tokenization Methods for the Georgian Language* (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/)).
+It has backed two peer-reviewed publications:
+1. *Cross-Prompt Encoder for Low-Performing Languages* (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/))  
+Beso Mikaberidze, Temo Saghinadze, Simon Ostermann, Philipp Müller
 
-The package currently ships **three examples** that exercise a single use case end-to-end: preprocessing, decoder-only PEFT fine-tuning (XPE) on an FTP-reframed multilingual dataset hosted on the HuggingFace Hub, and running that fine-tune as a group. The package's underlying surface is broader than these three examples demonstrate.
-
-Additional examples covering encoder-only text classification, encoder-decoder seq2seq, and MLM pretraining will land in subsequent releases. Contributions and issue reports are welcome.
+2. *A Comparison of Different Tokenization Methods for the Georgian Language* (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/))  
+Beso Mikaberidze, Teimuraz Saghinadze, Guram Mikaberidze, Raphael Kalandadze, Konstantine Pkhakadze, Josef van Genabith, Simon Ostermann, Lonneke van der Plas, Philipp Müller
 <!-- end:about -->
 
-📖 **Full documentation: [micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/)**
-
-## What micm-nlp contributes
+## What micm-nlp offers
 
 <!-- start:contributions -->
-Three things, of two kinds — the same split any framework has between the ready-made
-functionality it hands you and the structure it asks you to work inside.
 
-| Kind | Contribution | Answers |
+| Contribution | In short | Answers |
 |---|---|---|
-| **Features** | Functionality on top of HuggingFace | *What can I do here that `transformers`, `datasets`, `evaluate` and `peft` do not already do?* |
-| **Framework** | One config → one run | *How is a single run assembled, and where does it land?* |
-| **Framework** | One group config → many runs | *How do I repeat that across the axes an experiment varies, and find the outputs afterwards?* |
+| **Features** | ready-made functionality | *What can I do here that the HuggingFace stack does not already do?* |
+| **Pipeline Unification** | one unit config, one unit run | *How do I describe a whole run in one place, and make it reproducible?* |
+| **Experiment Orchestration** | one group config, many unit runs | *How do I run many variations, and collect their results together?* |
 
-The two framework rows are one idea at two scales: a group is made of unit runs, so
-the second stands on the first. The features are usable without either — they are
-ordinary classes and functions — but the configuration is how they are meant to be
-reached.
 <!-- end:contributions -->
 
 ## Install
 
-<!-- start:install-requires -->
-Requires **Python 3.10 or newer**. On an older interpreter `pip` reports
-`No matching distribution found for micm-nlp`, which does not say why — check with
-`python3 --version` first.
-
-A fresh Debian or Ubuntu machine has neither `pip` nor `venv`; install them with
-`apt install python3-venv` (or use `uv`, `conda`, `pyenv` — anything that gives you a
-Python 3.10+ environment with pip):
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-```
-<!-- end:install-requires -->
-
-From PyPI:
-
-<!-- start:install-pypi -->
 ```bash
 pip install micm-nlp
 ```
-<!-- end:install-pypi -->
 
-From source (development):
-
-<!-- start:install-source -->
-```bash
-git clone https://github.com/bmikaberidze/micm-nlp.git
-cd micm-nlp
-pip install -e ".[dev]"
-```
-
-The `dev` extra adds `pytest` and `ruff`.
-<!-- end:install-source -->
-
-Docker (recommended for reproducibility on GPU machines):
-
-<!-- start:install-docker -->
-```bash
-docker build -t micm-nlp .
-docker run --gpus all -it --rm -v $(pwd):/app -w /app micm-nlp bash
-```
-<!-- end:install-docker -->
-
-Credentials and the workspace root come from a `.env` file. `.env.example` is in the
-repository, so `cp` only works from a clone — installing from PyPI, set the variables
-in your environment instead, or pass `root_path` straight to `micm_nlp.init()`:
-
-<!-- start:install-env -->
-```bash
-cp .env.example .env          # from a clone
-```
-
-| Variable | Purpose |
-|---|---|
-| `PROJECT_ROOT_PATH` | Workspace directory; `artefacts/` (datasets, models, runs, wandb) is created under it. Used as the fallback when `init()` is called without `root_path`. |
-| `WANDB_API_KEY` | Needed to log a run to the W&B service. The shipped example configs set `WANDB_MODE: offline` in their `env:` block, so they write to `artefacts/wandb/` on disk and need no account; set it to `online` once you have run `wandb login`. |
-| `HF_TOKEN` | Required only for gated HuggingFace models or datasets. |
-<!-- end:install-env -->
+Requires **Python 3.10 or newer**. For installing from source, with Docker, or setting up
+the `.env` file see the [install docs](https://micm-nlp.readthedocs.io/en/latest/install.html).
 
 ## Quickstart
 
 <!-- start:quickstart -->
 ```python
-import micm_nlp
-from micm_nlp.config import CONFIG
-from micm_nlp.pipeline import run
+from micm_nlp import init, run, example
 
-# Sets the workspace root (where artefacts/ goes) and, optionally,
-# enables Rich pretty-printing and traceback formatting.
-micm_nlp.init({'root_path': '/path/to/your/workspace', 'pretty_output': True})
-# Or, if PROJECT_ROOT_PATH is set in .env or the environment:
-# micm_nlp.init()
-
-config = CONFIG.from_yaml('micm-nlp-examples/xsc_finetune.yml')
-model, test_output = run(config)
+init('/path/to/your/workspace')
+output = run(example('xsc_finetune.yml'))
 ```
 
-The example configs ship with the package. Write them out once with:
+`init()` loads `.env` and sets your workspace root. A bare `init()` is enough when `PROJECT_ROOT_PATH` is set in `.env` or the environment.  
+`run()` takes a config, and chains: load tokenizer → load and preprocess dataset → load model, with PEFT if configured → train → evaluate.  
+`example()` resolves the path of a config shipped inside the package.  
+`output` holds info about run, raw predictions, metric results, and the dir path where everything is written.  
+<!-- end:quickstart -->
+
+## Pipeline unification
+
+One YAML ***unit config*** describes a whole pipeline that is executed as a ***unit run*** and lands in dedicated output dir.
+
+<!-- start:blocks -->
+```yaml
+mode:                 finetune # preprocess | train | finetune | evaluate | test
+task:                 {category, name, metric_groups, preproc_rules}
+tokenizer:            {source, name, args, ...}
+ds:                   {category, dirs, name, type, splits, preproc_rules, ...}
+model:                {architecture, pretrained: {cls, args, ...}}
+peft:                 {peft_type, task_type, ...}
+trainer:              {cls}
+training_args:        {cls, args}
+custom_training_args: {...}
+data_collator:        {cls, args}
+eval:                 {before_training, after_training, ...}
+test:                 {run, zero_shot, ...}
+cuda:                 {...}
+env:                  {...}
+```
+
+`model`, `tokenizer` and `ds` can each be loaded from the HuggingFace Hub, or from local disk.  
+`cls` keys name HuggingFace classes, constructed at runtime, so a new backbone, head, trainer or collator needs no code.  
+The package's own trainers and collators plug in the same way.  
+
+```bash
+python -m micm_nlp run \
+    --config        configs/units/tune.lm.aya.ds.bebe.yml \
+    --root-path     /path/to/your/workspace
+```
+`--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.
+
+Everything the run produces lands in one directory:
+
+```
+artefacts/runs/units/{model.name}/
+├── config.yml              # the config as resolved
+├── info.json               # environment, versions, resolved seed and metric, wandb, paths
+├── eval_*.csv, test_*.csv  # one file per eval or test event, one row per metric group
+├── predictions_*.csv       # one row per sample, always
+├── model/ -> …             # the checkpoint
+└── wandb/ -> …             # the wandb run
+```
+<!-- end:blocks -->
+
+[The unit run](https://micm-nlp.readthedocs.io/en/latest/config.html) is the full reference; [the stage-by-stage form](https://micm-nlp.readthedocs.io/en/latest/quickstart.html) is the same chain unwrapped.
+
+## Experiment orchestration
+
+<!-- start:groups -->
+One YAML ***group config*** varies your unit configs into ***many unit runs***, each landing in its own dir under one group directory.
+
+```yaml
+# configs/groups/aya_lr_search.yml
+configs:
+  tune_aya_bebe: ../units/tune.lm.aya.ds.bebe.yml
+runs:
+  - {config: tune_aya_bebe, name: lr1e-4, seed: 1, overrides: {training_args.args.learning_rate: 1e-4}}
+  - {config: tune_aya_bebe, name: lr5e-5, seed: 1, overrides: {training_args.args.learning_rate: 5e-5}}
+```
+
+In a group config each entry in `runs:` resolves one unit config from `configs:` and forms one unit run.  
+The runs land side by side, in `artefacts/runs/groups/{group}/{time_id}_{runs[i].name}/`.  
+Every result row is stamped with the run's identity, so the group's runs concatenate into one table.
+
+```bash
+python -m micm_nlp run-group \
+    --group-config  configs/groups/aya_lr_search.yml \
+    --run-index     0 \
+    --root-path     /path/to/your/workspace \
+    --runner        /path/to/your/custom/run.py
+```
+`--run-index` selects one run; skip it to run everything.  
+`--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.  
+`--runner` allows your own custom `run(config, ctx)`, or can be skipped — resolved config, run entry, and unknown CLI flags are passed.  
+Append `:fn` to name a function other than `run`.
+
+```bash
+sbatch --array=0-1 my_wrapper.sh \
+    "python -m micm_nlp run-group --group-config configs/groups/aya_lr_search.yml"
+```
+Under a SLURM array each task picks its own run by `SLURM_ARRAY_TASK_ID`.
+
+<!-- end:groups -->
+
+[The group run](https://micm-nlp.readthedocs.io/en/latest/groups.html) is the full reference: every reserved key, what each run writes, and how to supply a runner.
+
+## Features
+
+Thirty ***features*** on top of the HuggingFace stack, grouped by the area of the package they live in.
+
+| Area | Some of what is there |
+|---|---|
+| **PEFT** | the Cross-Prompt Encoder — a published method, not a wrapper; soft prompts, the encoder, or any mix of the two, set by one ratio; save and load for adapters stock PEFT cannot serialise |
+| **Training** | token-budget batching with an `'auto'` GPU probe; early stopping decoupled from model selection; per-parameter-group optimizer settings from YAML; collators HuggingFace lacks; closed-set generation |
+| **Evaluation** | label-restricted likelihood; length-normalised log-likelihood accuracy; a declarative post-processing chain |
+| **Data** | length statistics for choosing `max_length` from evidence; a declarative pre-processing chain; splitting, subsetting or concatenation based on config |
+| **Tokenizers** | an architecture-aware factory; SentencePiece / WordPiece / byte-level BPE training; a Georgian sentence splitter with 885 abbreviations |
+
+Every entry says what HuggingFace does on its own, so the difference is checkable rather than asserted, and links to the module behind it.
+
+[The feature list](FEATURES.md) is all of them.
+
+## Examples
+
+<!-- start:examples -->
+Three configs ship inside the package, covering one use case end to end — preprocessing, decoder-only PEFT fine-tuning on an FTP-reframed multilingual dataset from the HuggingFace Hub, and the same fine-tune as a group.
+
+| Config | What it does |
+|---|---|
+| `xsc_preprocess.yml` | loads FTP-reframed XStoryCloze (English) from the Hub, tokenizes it for BLOOM-560M, saves the result locally |
+| `xsc_finetune.yml` | fine-tunes BLOOM-560M with Cross-Prompt Encoder PEFT on the Arabic split, then evaluates |
+| `groups/xsc_tune_across_seeds.yml` | the same fine-tune at two seeds, one run directory each |
 
 ```bash
 micm-nlp init-examples
+python -m micm_nlp run       --config       configs/examples/xsc_preprocess.yml
+python -m micm_nlp run       --config       configs/examples/xsc_finetune.yml
+python -m micm_nlp run-group --group-config configs/examples/groups/xsc_tune_across_seeds.yml
 ```
 
-They land in `micm-nlp-examples/`, and the copy you get always matches the version
-you installed.
+The preprocessing phase can run in every unit run, whatever the mode, but we expose `mode: preprocess` separately for tokenizing once and reusing across many runs.  
+`init-examples` writes editable copies to `configs/examples/`; `example()` reaches the same files in place.  
+The package's surface is broader than these three demonstrate.  
+Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
+<!-- end:examples -->
 
-`init()` resolves the workspace root from its `root_path` argument, falling back to `PROJECT_ROOT_PATH` in the environment. Call it once before any pipeline call so `artefacts/` lands in the right place. It is **not** triggered on import.
+## Contributing
 
-`run(config)` chains: load tokenizer → load and preprocess dataset → load model (with PEFT if configured) → train → evaluate. Every stage is configured by YAML; no plumbing code required.
-<!-- end:quickstart -->
+<!-- start:contributing -->
+Pull requests are welcome. For non-trivial changes, please open an issue first to discuss the proposed change. A `CONTRIBUTORS.md` will be added with the first external contribution.
+<!-- end:contributing -->
 
-## Framework
+<!-- start:development -->
+```bash
+git clone https://github.com/bmikaberidze/micm-nlp.git
+cd micm-nlp
+pip install -e ".[dev]"   # the dev extra adds ruff and pytest
 
-The structure the package asks you to work inside: a run is a YAML file, and a group
-of runs is a YAML file listing runs over unit configs.
+ruff check src/
+ruff format src/
+pytest
+```
 
-### Package tour
+Where things live:
 
 ```
 micm_nlp/
@@ -159,144 +234,10 @@ micm_nlp/
 ├── datasets/       # DATASET class — local + HF Hub + HF saved + CSV/TXT/JSON
 ├── models/         # MODEL wrapper, PEFT dispatch, Cross-Prompt Encoder
 ├── training/       # TRAINER — wraps HF Trainer with custom callbacks + WandB;
-│                   #   RunOutput — the run's output directory and run.json
+│                   #   RunOutput — the run's output directory and info.json
 └── evals/          # Metrics, confusion matrices, plotting; one result file per event
 ```
-
-### One config, one run
-
-<!-- start:stages -->
-The same flow, unwrapped — useful when a consumer repository needs to intervene between stages (swap a dataset, concatenate languages, reuse one tokenizer):
-
-```python
-from micm_nlp.config import CONFIG
-from micm_nlp.tokenizers.tokenizer import load as load_tokenizer
-from micm_nlp.datasets.dataset import DATASET
-from micm_nlp.models.model import MODEL
-from micm_nlp.training.runner import TRAINER
-
-config = CONFIG.from_yaml('path/to/config.yml')
-tokenizer = load_tokenizer(config)
-dataset = DATASET(config)
-dataset.preprocess(tokenizer)
-model = MODEL(config)
-trainer = TRAINER(model, dataset, tokenizer)
-test_output = trainer.run()
-```
-<!-- end:stages -->
-
-### Run a group of runs
-
-<!-- start:groups -->
-One YAML describes several runs over your unit configs; its file stem is the
-group name, and every run it produces carries that name.
-
-```yaml
-# config/groups/lr_sweep.yml
-configs:
-  base: ../tune.yml
-runs:
-  - {config: base, name: lr1e-4, seed: 1, overrides: {training_args.args.learning_rate: 1e-4}}
-  - {config: base, name: lr5e-5, seed: 1, overrides: {training_args.args.learning_rate: 5e-5}}
-```
-
-```bash
-python -m micm_nlp run-group --group-config config/groups/lr_sweep.yml            # every entry, in order
-python -m micm_nlp run-group --group-config config/groups/lr_sweep.yml --task-id 1
-sbatch --array=0-1 my_wrapper.sh "python -m micm_nlp run-group --group-config config/groups/lr_sweep.yml"
-```
-
-Under a SLURM array, `SLURM_ARRAY_TASK_ID` picks the entry. Each run gets
-`artefacts/runs/<architecture>/lr_sweep/<time>_<name>/` holding the resolved
-`config.yml`, `run.json` (environment, versions, the resolved seed and metric,
-wandb id/url/dir, paths), one metrics file per evaluation event
-(`eval_validation_after_train.csv`, `test_after_train.csv`, … — one row
-per metric group, every row stamped with `group`, `name`, `index`, `config`,
-`seed`, `time_id`, `uuid4` and any other scalar key on the entry),
-`predictions_before_train.csv` / `predictions_after_train.csv` (one row
-per sample, always; no stage suffix for a `test` / `evaluate` run, which has
-one pass), and `model` / `wandb` symlinks — every artefact of a run is one `cd`
-away. Paths in `configs:`
-resolve relative to the group file.
-
-Entry keys the framework reserves: `config`, `overrides`, `seed`, `name`, and
-`separate_test` (a second config for the test phase; whether a runner uses it is
-the runner's business — the default one is single-phase). Anything else is
-passed to the runner in `ctx.entry` and stamped as a column.
-
-Bring your own science with `--runner package.module:function`, a callable
-`run(config, ctx)` — or `--runner path/to/script.py`, whose `run(config, ctx)`
-is called (add `:fn` for another name); unknown flags reach it as `ctx.extras`
-(`--source-group joshi5` → `{'source_group': 'joshi5'}`). The default runner is
-`micm_nlp.pipeline:run`. A `run --config unit.yml` is the same machinery with
-one implicit entry; its files land under `…/runs/<architecture>/_solo/`.
-<!-- end:groups -->
-
-## Features
-
-What the package adds on top of the HuggingFace stack, by area. Each entry in
-**[FEATURES.md](FEATURES.md)** says what HuggingFace does on its own, so the
-difference is checkable rather than asserted, and links to the module behind it.
-
-| Area | Some of what is there |
-|---|---|
-| **Data** | One `DATASET` over local files, the Hub and saved directories; tokenization in three configurable stages; subsetting and splitting from config; concatenation across a path template; column standardisation; length statistics for choosing `max_length` from evidence |
-| **PEFT** | The Cross-Prompt Encoder (a published method, not a wrapper); XPE / SPT / DUAL as one class separated by a ratio; three reparameterisation heads; XPE-aware state-dict save/load |
-| **Training** | Token-budget batching with an `'auto'` GPU probe; early stopping decoupled from model selection; per-parameter-group optimizer settings from YAML; collators HuggingFace lacks; closed-set generation |
-| **Evaluation** | Label-restricted likelihood; length-normalised log-likelihood accuracy; a declarative post-processing chain; per-task metric grouping |
-| **Tokenizers** | An architecture-aware factory; SentencePiece / WordPiece / byte-level BPE training; a Georgian sentence splitter with 885 abbreviations |
-
-## Examples
-
-<!-- start:examples -->
-Three runnable examples ship with the package. Together they cover one use case end to end — preprocessing, decoder-only PEFT fine-tuning on an FTP-reframed multilingual dataset from the HuggingFace Hub, and the same fine-tune run as a group.
-
-| Run it with | Config | What it does |
-|---|---|---|
-| `examples/preprocess_dataset.py` | `xsc_preprocess.yml` | Loads FTP-reframed XStoryCloze (English) from the Hub, tokenizes it for BLOOM-560M, saves the result locally. |
-| `examples/run_model.py` | `xsc_finetune.yml` | Fine-tunes BLOOM-560M with Cross-Prompt Encoder PEFT on the Arabic split, then evaluates. |
-| `micm-nlp run-group` | `groups/xsc_group.yml` | The same fine-tune at two seeds, one run directory each. No script — the CLI is the runner. |
-
-```bash
-micm-nlp init-examples
-python examples/preprocess_dataset.py --config micm-nlp-examples/xsc_preprocess.yml
-python examples/run_model.py          --config micm-nlp-examples/xsc_finetune.yml
-python -m micm_nlp run-group --group-config micm-nlp-examples/groups/xsc_group.yml
-```
-
-The configs ship inside the package — `micm-nlp init-examples` writes them to
-`micm-nlp-examples/`. The two scripts are four lines each and live in the
-repository; `run_model.py` is the Quickstart snippet above, and
-`preprocess_dataset.py` is the same with `preprocess_dataset(config)` in place of
-`run(config)`. A `pip install` is enough to run any of the three.
-
-The package's surface is broader than these three demonstrate. Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
-<!-- end:examples -->
-
-## Supported architectures
-
-<!-- start:architectures -->
-| Architecture | Framework support | Covered by a shipped example |
-|---|---|---|
-| Decoder-only (BLOOM, Aya) | yes | yes |
-| Encoder-only (BERT, XLM-R, mDeBERTa) | yes | planned |
-| Encoder-decoder (T5) | yes | planned |
-
-PEFT methods: LoRA, Prefix Tuning, P-Tuning / soft prompt tuning, and the Cross-Prompt Encoder. The shipped examples demonstrate the Cross-Prompt Encoder only.
-<!-- end:architectures -->
-
-## Development
-
-```bash
-pip install -e ".[dev]"
-ruff check src/
-ruff format src/
-pytest
-```
-
-## Contributing
-
-Pull requests are welcome. For non-trivial changes, please open an issue first to discuss the proposed change. A `CONTRIBUTORS.md` will be added with the first external contribution.
+<!-- end:development -->
 
 ## Acknowledgements
 
@@ -335,4 +276,4 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 
 ## Contact
 
-`beso.mikaberidze@gmail.com`
+Beso Mikaberidze · `beso.mikaberidze@gmail.com`

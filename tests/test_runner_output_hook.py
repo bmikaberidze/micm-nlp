@@ -1,5 +1,5 @@
 """The trainer's output hooks on a bare instance: ``_setup_output`` builds the
-``RunOutput`` (dir, snapshot, run.json, link) and ``_emit_order`` reads the
+``RunOutput`` (dir, snapshot, info.json, link) and ``_emit_order`` reads the
 last dataloader's order. No model, no HF Trainer."""
 
 import json

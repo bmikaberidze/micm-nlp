@@ -20,7 +20,7 @@ ds:
     dirs: mikaberidze/xstory-cloze-ftp
     name: en
     type: huggingface
-    comes_with_splits:
+    splits:
         train: eval
         test: false
         validation: train

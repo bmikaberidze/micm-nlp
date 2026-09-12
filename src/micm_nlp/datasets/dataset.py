@@ -170,7 +170,7 @@ class DATASET:
         self._set_dir()
         self._set_name()
         ds_conf = self._config.ds
-        with_splits = ds_conf.comes_with_splits
+        with_splits = ds_conf.splits
         self.split_map = {
             DsSplitSE.NONE: DsSplitSE.TRAIN,
             DsSplitSE.TRAIN: DsSplitSE.TRAIN if isinstance(with_splits.train, bool) else with_splits.train,
@@ -201,13 +201,13 @@ class DATASET:
                     data_files[ds_key] = ds_file_path
                     print(f'Load Dataset From: {ds_file_path}')
 
-                if not ds_conf.comes_with_splits.train:
+                if not ds_conf.splits.train:
                     add_data_file(DsSplitSE.NONE)
                 else:
                     add_data_file(DsSplitSE.TRAIN)
-                if ds_conf.comes_with_splits.test:
+                if ds_conf.splits.test:
                     add_data_file(DsSplitSE.TEST)
-                if ds_conf.comes_with_splits.validation:
+                if ds_conf.splits.validation:
                     add_data_file(DsSplitSE.VALIDATION)
 
                 hf_dataset = load_dataset(ds_conf.type, data_files=data_files)
@@ -435,10 +435,10 @@ class DATASET:
                 ds_conf = self._config.ds
                 split_conf = ds_conf.preproc_rules.split
                 must_exist = SimpleNamespace()
-                must_exist.train = True  # if ds_conf.comes_with_splits.train else False
-                must_exist.test = True if ds_conf.comes_with_splits.test or (split_conf and split_conf.test) else False
+                must_exist.train = True  # if ds_conf.splits.train else False
+                must_exist.test = True if ds_conf.splits.test or (split_conf and split_conf.test) else False
                 must_exist.validation = (
-                    True if ds_conf.comes_with_splits.validation or (split_conf and split_conf.validation) else False
+                    True if ds_conf.splits.validation or (split_conf and split_conf.validation) else False
                 )
                 exists = SimpleNamespace()
                 exists.train = True if self.train else False

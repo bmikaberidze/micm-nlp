@@ -1,5 +1,5 @@
 """``RunOutput`` -- a run's directory: creation, the static columns, the config
-snapshot, ``run.json`` (environment, paths, resolved values, wandb), the
+snapshot, ``info.json`` (environment, paths, resolved values, wandb), the
 ``model`` / ``wandb`` links, and the ``prefix`` for a separate_test config. The
 model is a stub; no trainer, no GPU."""
 
@@ -27,8 +27,8 @@ def _cfg(**output):
 def test_output_dir_for(tmp_path):
     nlpka_path.set_root(tmp_path)
     assert output_dir_for(_cfg(dir='/runs/g/r'), 'ignored') == '/runs/g/r'
-    assert output_dir_for(_cfg(), 'uuid_bloom_1_2') == str(tmp_path / 'artefacts' / 'runs' / 'toy' / '_solo' / 'uuid_bloom_1_2')
-    assert '/runs/_nomodel/_solo/' in output_dir_for(CONFIG(mode='preprocess'), 'x')
+    assert output_dir_for(_cfg(), 'uuid_bloom_1_2') == str(tmp_path / 'artefacts' / 'runs' / 'units' / 'uuid_bloom_1_2')
+    assert '/runs/units/' in output_dir_for(CONFIG(mode='preprocess'), 'x'), 'a config with no model block needs no architecture segment'
 
 
 def test_write_config_dumps_plain_yaml(tmp_path):
@@ -43,7 +43,7 @@ def test_write_config_dumps_plain_yaml(tmp_path):
 def test_run_output_creates_dir_snapshot_run_info_and_link(tmp_path):
     nlpka_path.set_root(tmp_path)
     o = RunOutput(_cfg(columns={'group': 'g', 'name': 'r'}), _model(tmp_path))
-    assert o.dir == tmp_path / 'artefacts' / 'runs' / 'toy' / '_solo' / 'uuid_bloom_1_2' and o.dir.is_dir()
+    assert o.dir == tmp_path / 'artefacts' / 'runs' / 'units' / 'uuid_bloom_1_2' and o.dir.is_dir()
     assert o.prefix == '' and o.columns['group'] == 'g' and o.columns['uuid4'] == 'u-1' and 'time_id' in o.columns
     assert (o.dir / CONFIG_FILE).exists()
     saved = json.loads((o.dir / RUN_INFO_FILE).read_text())

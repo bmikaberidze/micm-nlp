@@ -21,20 +21,20 @@ def test_example_group_dispatches(tmp_path, monkeypatch):
     # monkeypatch restores it after the test.
     monkeypatch.setenv('WANDB_MODE', 'offline')
     monkeypatch.setenv('TOKENIZERS_PARALLELISM', 'true')
-    monkeypatch.setattr(cli, '_init_workspace', lambda: nlpka_path.set_root(tmp_path))
+    monkeypatch.setattr(cli, '_init_workspace', lambda root_path=None: nlpka_path.set_root(tmp_path))
     dest = tmp_path / 'examples'
     assert cli.main(['init-examples', str(dest)]) == 0
-    assert (dest / 'groups' / 'xsc_group.yml').exists()
+    assert (dest / 'groups' / 'xsc_tune_across_seeds.yml').exists()
 
     SEEN.clear()
-    rc = cli.main(['run-group', '--group-config', str(dest / 'groups' / 'xsc_group.yml'),
+    rc = cli.main(['run-group', '--group-config', str(dest / 'groups' / 'xsc_tune_across_seeds.yml'),
                    '--runner', 'tests.test_group_e2e:stub_runner'])
     assert rc == 0 and SEEN == ['seed_1', 'seed_2']
 
-    group_dir = tmp_path / 'artefacts' / 'runs' / 'bloom' / 'xsc_group'
+    group_dir = tmp_path / 'artefacts' / 'runs' / 'groups' / 'xsc_tune_across_seeds'
     run_dirs = sorted(group_dir.iterdir())
     assert [d.name.split('_', 2)[-1] for d in run_dirs] == ['seed_1', 'seed_2']
     saved = yaml.safe_load((run_dirs[0] / 'config.yml').read_text())
-    assert saved['output']['columns']['group'] == 'xsc_group'
+    assert saved['output']['columns']['group'] == 'xsc_tune_across_seeds'
     assert saved['output']['columns']['seed'] == 1
     assert saved['training_args']['args']['seed'] == 1

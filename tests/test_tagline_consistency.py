@@ -25,11 +25,18 @@ PYPROJECT = REPO_ROOT / 'pyproject.toml'
 # failures tell you every place that has to follow.
 CORE_PHRASE = 'a research framework for NLP'
 
-# The full sentence, shared by the README tagline and the PyPI summary.
+# The full sentence, shared by the README tagline and the PyPI summary. Compared
+# after whitespace normalisation, so the README may wrap it over several lines
+# while ``pyproject.toml`` keeps it on one -- a rewrap is not a drift.
 TAGLINE = (
-    'A research framework for NLP: the whole pipeline in a single YAML, run alone '
+    'A research framework for NLP — the whole pipeline in a single YAML, run alone '
     'or in groups. Builds on the HuggingFace stack and adds a layer of features of its own.'
 )
+
+
+def _one_line(text: str) -> str:
+    """Collapse every run of whitespace to a single space, and strip."""
+    return ' '.join(text.split())
 
 
 def _readme() -> str:
@@ -58,12 +65,12 @@ def _project_field(key: str) -> str:
 
 
 def test_readme_tagline_is_the_canonical_sentence():
-    assert _marker_block(_readme(), 'tagline') == TAGLINE
+    assert _one_line(_marker_block(_readme(), 'tagline')) == TAGLINE
 
 
 def test_pypi_summary_matches_the_readme_tagline():
     """``description`` is PyPI's summary; ``readme`` supplies the page body."""
-    assert _project_field('description') == TAGLINE
+    assert _one_line(_project_field('description')) == TAGLINE
 
 
 def test_package_docstring_carries_the_core_phrase():

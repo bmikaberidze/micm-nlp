@@ -5,7 +5,7 @@ not a metric or a prediction.
 exist (they need the directory) and holds: the directory, the static columns
 stamped onto every metrics row, the config snapshot (``config.yml`` -- the
 config as the framework resolved it, written before anything non-serialisable
-can reach it), ``run.json`` (environment, paths, the values the trainer
+can reach it), ``info.json`` (environment, paths, the values the trainer
 resolved, the wandb identity, start/finish) and the ``model`` / ``wandb``
 symlinks. Metrics and predictions files are written by
 :mod:`micm_nlp.evals.results`, into :meth:`RunOutput.file`.
@@ -24,13 +24,13 @@ from pathlib import Path
 from typing import Any
 
 import micm_nlp.utils as utils
-from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, output_dir
+from micm_nlp.path import output_dir
 
 CONFIG_FILE = 'config.yml'
 TEST_CONFIG_FILE = 'test_config.yml'
-RUN_INFO_FILE = 'run.json'
+RUN_INFO_FILE = 'info.json'
 
-# (distribution name, key in run.json). The packages that decide numerics.
+# (distribution name, key in info.json). The packages that decide numerics.
 _VERSIONED = (('micm-nlp', 'micm_nlp'), ('torch', 'torch'), ('transformers', 'transformers'),
               ('peft', 'peft'), ('datasets', 'datasets'))
 
@@ -77,19 +77,18 @@ def output_dir_for(config, model_name: str) -> str:
     """The directory a run writes into.
 
     ``output.dir`` wins when set -- the group runner puts the run there.
-    Otherwise the run is a solo one and lands under the reserved ``_solo``
-    group: ``runs/{architecture}/_solo/{model_name}``, where ``model_name`` is
-    the generated name (uuid first), unique and equal to the wandb run name.
+    Otherwise the run belongs to no group and lands under ``runs/units/{model_name}``,
+    where ``model_name`` is the generated name (uuid first), unique and equal to the
+    wandb run name.
     """
     output = getattr(config, 'output', None)
     if output is not None and output.dir:
         return str(output.dir)
-    architecture = config.model.architecture if config.model is not None else NO_MODEL_ARCH
-    return str(output_dir(architecture, SOLO_GROUP, model_name))
+    return str(output_dir(None, model_name))
 
 
 def write_run_info(dir_: str | Path, **sections) -> Path:
-    """Merge ``sections`` into ``<dir_>/run.json`` (read-modify-write).
+    """Merge ``sections`` into ``<dir_>/info.json`` (read-modify-write).
 
     Dict-valued sections merge one level deep; ``started`` is kept from the
     first write; everything else is latest-wins. Values must be
@@ -131,6 +130,9 @@ class RunOutput:
         output = getattr(config, 'output', None)
         self.dir = Path(output_dir_for(config, model.name))
         self.dir.mkdir(parents=True, exist_ok=True)
+        self.info: dict[str, Any] = {}
+        self.results: dict[str, list[dict[str, Any]]] = {}
+        self.predictions: dict[str, list[dict[str, Any]]] = {}
         self.prefix = output.prefix if output is not None else ''
         self.columns: dict[str, Any] = dict(output.columns) if output is not None and output.columns else {}
         self.columns.setdefault('time_id', utils.get_time_id())
@@ -147,9 +149,32 @@ class RunOutput:
         """The path of one of this run's files, with the output prefix applied."""
         return self.dir / f'{self.prefix}{name}'
 
+    def record(self, kind: str, event: str, rows: list[dict[str, Any]]) -> None:
+        """Keep the rows of one written file, so the run is readable in memory.
+
+        Called by :func:`~micm_nlp.evals.results.save_metrics` and
+        :func:`~micm_nlp.evals.results.save_predictions` as they write, which is
+        why nothing in :class:`~micm_nlp.training.runner.TRAINER` has to collect
+        results: whatever reaches disk is here, under the same event name, in the
+        same row shape the CSV holds. That equality is the point -- it is what lets
+        a future ``RunOutput.load(dir)`` read a finished run back into the same
+        attributes rather than a second, parallel shape.
+
+        :param kind: ``'results'`` for a metrics file, ``'predictions'`` for a
+            predictions file -- the two kinds a run writes.
+        :param event: the event name the file is named for (``test_after_train``).
+        """
+        getattr(self, kind)[event] = rows
+
     def write_run_info(self, **sections) -> Path:
-        """Merge ``sections`` into this run's ``run.json``; see the module function."""
-        return write_run_info(self.dir, **sections)
+        """Merge ``sections`` into this run's ``info.json``; see the module function.
+
+        The merged result is read back into :attr:`info`, so the attribute always
+        equals the file rather than a parallel accumulation of the same sections.
+        """
+        path = write_run_info(self.dir, **sections)
+        self.info = json.loads(path.read_text())
+        return path
 
     def link(self, name: str, target: str | Path | None) -> Path | None:
         """A symlink ``dir/name -> target`` (absolute), so every artefact of the
@@ -175,7 +200,7 @@ class RunOutput:
     def resolved(self, **values) -> None:
         """Record the values the trainer derived from the config (the seed it
         drew, the prefixed ``metric_for_best_model``, ``fp16`` by device) in
-        ``run.json`` -- under ``resolved``, or ``<prefix>resolved`` for a
+        ``info.json`` -- under ``resolved``, or ``<prefix>resolved`` for a
         prefixed trainer (a ``separate_test`` config, or a runner-set prefix), so two never overwrite each
         other -- and stamp ``seed`` as a column unless the config pinned one (a
         ``separate_test`` trainer stamps the seed its own process used; it

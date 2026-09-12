@@ -23,7 +23,7 @@ unit config, applies the seed, then the overrides, fills the ``output`` block
 run dir and calls the runner -- ``run(config, ctx)`` -- which does the science.
 Result rows are written by the trainer, never here. The only scheduler
 *logic* in the package is the ``SLURM_ARRAY_TASK_ID`` read in
-:func:`select_indices` (``run.json`` merely records ``SLURM*`` variables).
+:func:`select_indices` (``info.json`` merely records ``SLURM*`` variables).
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ from micm_nlp.config import CONFIG, OutputConfig, _Flex
 from micm_nlp.training.run_output import (
     CONFIG_FILE, TEST_CONFIG_FILE, environment_info, write_config, write_run_info,
 )
-from micm_nlp.path import NO_MODEL_ARCH, SOLO_GROUP, output_dir
+from micm_nlp.path import output_dir
 
 RESERVED_KEYS = ('config', 'overrides', 'seed', 'name', 'separate_test')
 # Columns the framework or the trainer stamps; an entry may not carry them.
@@ -65,7 +65,7 @@ class RunContext:
 
     test_config: CONFIG | None
     entry: dict[str, Any]
-    group: str
+    group: str | None          # None for a run started outside any group config
     name: str | None
     index: int | None
     output_dir: str | None
@@ -90,7 +90,7 @@ def load_group(path: str | Path) -> dict[str, Any]:
     """
     path = Path(path)
     if path.stem.startswith('_'):
-        raise ValueError(f'{path}: group stems must not start with "_" (reserved, e.g. {SOLO_GROUP})')
+        raise ValueError(f'{path}: group stems must not start with "_" (reserved for the framework)')
     with open(path) as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
@@ -145,21 +145,21 @@ def load_group(path: str | Path) -> dict[str, Any]:
 
 # -- Entry selection -----------------------------------------------------------
 
-def select_indices(n_runs: int, task_id: int | None) -> list[int]:
-    """Which entries to run: ``SLURM_ARRAY_TASK_ID`` > ``task_id`` > all of them.
+def select_indices(n_runs: int, run_index: int | None) -> list[int]:
+    """Which entries to run: ``SLURM_ARRAY_TASK_ID`` > ``run_index`` > all of them.
 
-    Array dispatch is authoritative -- a ``--task-id`` under SLURM is ignored
+    Array dispatch is authoritative -- a ``--run-index`` under SLURM is ignored
     with a note, so an array can never be silently re-pointed. With neither,
     every entry runs in order, which is the whole group on a machine with no
     scheduler.
     """
     env = os.environ.get('SLURM_ARRAY_TASK_ID')
     if env is not None:
-        if task_id is not None:
-            print(f'[group] --task-id={task_id} ignored (SLURM_ARRAY_TASK_ID={env} wins)')
+        if run_index is not None:
+            print(f'[group] --run-index={run_index} ignored (SLURM_ARRAY_TASK_ID={env} wins)')
         chosen = [int(env)]
-    elif task_id is not None:
-        chosen = [task_id]
+    elif run_index is not None:
+        chosen = [run_index]
     else:
         return list(range(n_runs))
     for i in chosen:
@@ -245,7 +245,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     """The selected entry as a resolved config plus its context.
 
     Order: load, seed (entry, else CLI), overrides, ``output`` block, output dir
-    created with a snapshot of the resolved config and a ``run.json`` carrying
+    created with a snapshot of the resolved config and an ``info.json`` carrying
     ``started``, the output dir and the environment, so a run that dies before
     the trainer exists still says where and when it ran; then ``separate_test``
     the same way (no seed), with its own ``output`` block. The output dir is
@@ -258,8 +258,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     config = _load_and_override(group['configs'][entry['config']], entry.get('overrides'), seed)
 
     time_id = utils.get_time_id()
-    architecture = config.model.architecture if config.model is not None else NO_MODEL_ARCH
-    dir_ = output_dir(architecture, group['group'], f"{time_id}_{entry['name']}")
+    dir_ = output_dir(group['group'], f"{time_id}_{entry['name']}")
     if dir_.exists():
         raise FileExistsError(f'{dir_} already exists: the same entry was dispatched twice within one second')
 
@@ -314,12 +313,12 @@ def load_runner(spec: str | None) -> Callable:
     return getattr(importlib.import_module(target), attr)
 
 
-def run_group(group_path: str | Path, runner: str | None = None, task_id: int | None = None,
+def run_group(group_path: str | Path, runner: str | None = None, run_index: int | None = None,
               seed: int | None = None, extras: dict[str, Any] | None = None) -> list[int]:
     """Run the selected entries of a group config. Returns the indices run."""
     group = load_group(group_path)
     fn = load_runner(runner)
-    indices = select_indices(len(group['runs']), task_id)
+    indices = select_indices(len(group['runs']), run_index)
     for i in indices:
         config, ctx = resolve_entry(group, i, cli_seed=seed, extras=extras)
         print(f"[group] {group['group']} [{i}] {ctx.name} -> {ctx.output_dir}")
@@ -327,14 +326,15 @@ def run_group(group_path: str | Path, runner: str | None = None, task_id: int | 
     return indices
 
 
-def run_solo(config_path: str | Path, runner: str | None = None,
+def run_unit(config_path: str | Path, runner: str | None = None,
              extras: dict[str, Any] | None = None) -> None:
-    """Run one unit config outside any group: the ``_solo`` context.
+    """Run one unit config outside any group.
 
-    Nothing to resolve -- the trainer's default output dir already puts the
-    run under ``runs/{architecture}/_solo/`` -- so the context is built directly.
+    Nothing to resolve -- the trainer's default output dir already puts the run
+    under ``runs/units/`` -- so the context is built directly, with ``group``
+    left ``None``: there is no group, and the stamped column says so.
     """
     config = CONFIG.from_yaml(config_path)
-    ctx = RunContext(test_config=None, entry={}, group=SOLO_GROUP, name=None, index=None,
+    ctx = RunContext(test_config=None, entry={}, group=None, name=None, index=None,
                      output_dir=None, extras=dict(extras or {}))
     load_runner(runner)(config, ctx)

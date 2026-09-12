@@ -1,14 +1,14 @@
-# src/micm_nlp/configs/groups/xsc_group.yml
+# src/micm_nlp/configs/groups/xsc_tune_across_seeds.yml
 # A group of runs over the shipped finetune example: the same unit config at two
 # seeds. Paths resolve relative to this file, so the group works wherever
-# `micm-nlp init-examples` copied it. Run the preprocess example first, then:
+# `micm-nlp init-examples` copied it. Run it with:
 #
-#   python -m micm_nlp run-group --group-config micm-nlp-examples/groups/xsc_group.yml
+#   python -m micm_nlp run-group --group-config configs/examples/groups/xsc_tune_across_seeds.yml
 #
-# Each entry lands in artefacts/runs/bloom/xsc_group/<time>_<name>/ with
-# config.yml, run.json, eval_validation_before_train.csv,
+# Each entry lands in artefacts/runs/groups/xsc_tune_across_seeds/<time>_<name>/ with
+# config.yml, info.json, eval_validation_before_train.csv,
 # eval_validation_after_train.csv and model/wandb links. The example dataset
-# ships no test split (`comes_with_splits.test: false`), so there is no test
+# ships no test split (`splits.test: false`), so there is no test
 # phase here and no test_after_train.csv / predictions_after_train.csv;
 # a dataset with a test split gets one metrics file and one predictions file
 # per test pass. Add `overrides:` to an entry to set any config value by dotted
@@ -16,12 +16,12 @@
 # `overrides: {training_args.args.learning_rate: 1e-4}`.
 
 configs:
-  finetune: ../xsc_finetune.yml
+  xsc_tune: ../xsc_finetune.yml
 
 runs:
-  - config: finetune
+  - config: xsc_tune
     name: seed_1
     seed: 1
-  - config: finetune
+  - config: xsc_tune
     name: seed_2
     seed: 2

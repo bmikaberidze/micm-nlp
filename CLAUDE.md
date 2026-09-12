@@ -108,7 +108,6 @@ Standard `src` layout; `pip install -e .` makes `from micm_nlp.X import Y` work.
 micm-nlp/
 ├── pyproject.toml              # hatchling; name = micm-nlp, requires-python >=3.10
 ├── dockerfile
-├── examples/                   # usage demos for the package API
 ├── tests/                      # pytest suite (+ tests/golden fixtures)
 ├── runtime/                    # cluster wrappers (SLURM/pegasus)
 ├── docs/

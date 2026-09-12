@@ -7,6 +7,7 @@ torch, transformers, spacy or lightning installed — see ``docs/requirements.tx
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -93,6 +94,20 @@ autoapi_keep_files = False
 # -- HTML --------------------------------------------------------------------
 
 html_theme = 'furo'
+# Where these pages officially live. Sphinx turns it into a <link rel="canonical">
+# on every page, so a second hostname serving the same docs (the readthedocs.io
+# subdomain once a custom domain is in use) does not split search ranking.
+#
+# This literal is also the single source of truth for the absolute documentation
+# URLs hand-written in README.md and FEATURES.md — those files are rendered by
+# GitHub, which substitutes nothing, so the links cannot be generated. The
+# fallback below is what ``tests/test_docs_urls.py`` pins them against; change it
+# here and the failures name every file that has to follow.
+#
+# Read the Docs exports READTHEDOCS_CANONICAL_URL during its own builds, already
+# pointing at the version being built, so a build of ``stable`` does not claim to
+# be ``latest``. The fallback is for local builds, which have no such variable.
+html_baseurl = os.environ.get('READTHEDOCS_CANONICAL_URL', 'https://micm-nlp.readthedocs.io/en/latest/')
 # The full release (0.2.1), not the short version (0.2) — a patch-level fix is
 # exactly the thing a reader needs to know they are looking at.
 html_title = f'micm-nlp {release}'

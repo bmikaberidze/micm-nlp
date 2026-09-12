@@ -9,20 +9,81 @@ they raise otherwise. ``micm_nlp.init()`` does that for you::
 """
 
 import os
+from importlib import resources
 from pathlib import Path
+from typing import Any
 
 from tqdm import tqdm
 
 # Package directory (inner paths — read-only, shipped with the package)
 PACKAGE_DIR = Path(__file__).parent
 
+EXAMPLE_CONFIG_PACKAGE = 'micm_nlp.configs'
+"""Where the example configs ship. Inside the package rather than downloaded, so
+the copy you get always matches the version you installed."""
+
+
+def available_examples() -> list[tuple[Path, Any]]:
+    """Every config shipped in the example package.
+
+    The package root and one level of subdirectories (``groups/``), sorted by path.
+
+    :returns: ``(relative path, traversable)`` pairs. The first line above is kept
+        short and self-contained because the API reference renders it as the
+        summary, and a summary that stops mid-``literal`` is a docs build warning.
+    """
+    root = resources.files(EXAMPLE_CONFIG_PACKAGE)
+    found: list[tuple[Path, Any]] = []
+    for entry in root.iterdir():
+        if entry.name.endswith('.yml'):
+            found.append((Path(entry.name), entry))
+        elif entry.is_dir() and not entry.name.startswith('_'):
+            found.extend((Path(entry.name) / sub.name, sub) for sub in entry.iterdir() if sub.name.endswith('.yml'))
+    return sorted(found, key=lambda pair: str(pair[0]))
+
+
+def example(name: str) -> Path:
+    """The path of one config shipped inside the package.
+
+    ::
+
+        run(example('xsc_finetune.yml'))
+
+    Reading a config straight out of the installed package, rather than making
+    ``run`` fall back to it for a name that is not on disk -- one visible call is
+    easier to explain than a second lookup rule hidden inside the pipeline.
+    ``micm-nlp init-examples`` is still the way to get an editable copy.
+
+    :param name: the file name, with or without ``.yml``; ``groups/`` names work
+        too (``example('groups/xsc_tune_across_seeds.yml')``).
+    :raises FileNotFoundError: naming what does ship, since the set is small and
+        fixed -- a typo should not send anyone to the documentation.
+    """
+    wanted = name if name.endswith('.yml') else f'{name}.yml'
+    for relative, traversable in available_examples():
+        if str(relative) == wanted:
+            return Path(str(traversable))
+    shipped = ', '.join(str(relative) for relative, _ in available_examples())
+    raise FileNotFoundError(f'No example config {name!r}. The package ships: {shipped}')
+
 # Workspace (outer paths — user's project, read-write)
 _workspace = None
 
 
 def set_root(workspace: str | Path):
-    """Set the workspace root. Call once at startup."""
+    """Set the workspace root. Call once at startup.
+
+    :raises ValueError: if no root was given. ``micm_nlp.init()`` passes its
+        ``root_path`` straight through, and that is ``None`` when neither the call
+        nor ``PROJECT_ROOT_PATH`` supplied one -- which used to surface here as a
+        ``TypeError`` from ``Path(None)``, naming neither the setting nor the fix.
+    """
     global _workspace
+    if workspace is None:
+        raise ValueError(
+            "No workspace root. Pass one to init(), as micm_nlp.init('/path/to/your/workspace'), "
+            'or set PROJECT_ROOT_PATH in the environment or in .env.'
+        )
     _workspace = Path(workspace)
 
 
@@ -67,27 +128,31 @@ def evals_dir() -> Path:
     return artefacts_dir() / 'evals'
 
 
-SOLO_GROUP = '_solo'
-"""Reserved run-group name for runs started outside any group config. The
-leading underscore sorts it first and keeps it clear of real group stems, which
-must not start with ``_``."""
+UNIT_RUNS = 'units'
+"""Where a run started outside any group config lands: ``runs/units/{name}``."""
 
-NO_MODEL_ARCH = '_nomodel'
-"""Architecture segment for runs whose config has no ``model`` block (e.g. a
-preprocessing-only group)."""
+GROUP_RUNS = 'groups'
+"""Where a group's runs land: ``runs/groups/{group}/{name}``. One directory per
+group keeps an experiment whole -- which is why no segment above it varies with
+the run. An earlier layout led with the model architecture, and split any group
+that varied the backbone across two trees."""
 
 
 def runs_dir() -> Path:
-    """``artefacts/runs`` -- one directory per run, laid out as
-    ``{architecture}/{group}/{run}``. A run is neither an eval nor a training;
-    it is the unit the trainer executes."""
+    """``artefacts/runs`` -- one directory per run, under ``units/`` or
+    ``groups/{group}/``. A run is neither an eval nor a training; it is the unit
+    the trainer executes."""
     return artefacts_dir() / 'runs'
 
 
-def output_dir(architecture: str, group: str, name: str) -> Path:
-    """The directory one run writes into: config snapshot, ``run.json``,
-    metrics, predictions, links, logs."""
-    return runs_dir() / architecture / group / name
+def output_dir(group: str | None, name: str) -> Path:
+    """The directory one run writes into: config snapshot, ``info.json``,
+    metrics, predictions, links, logs.
+
+    :param group: the group's name, or ``None`` for a run started outside any
+        group config -- which lands under :data:`UNIT_RUNS` instead.
+    """
+    return runs_dir() / GROUP_RUNS / group / name if group else runs_dir() / UNIT_RUNS / name
 
 
 def wandb_dir() -> Path:

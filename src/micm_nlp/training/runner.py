@@ -89,6 +89,16 @@ class TRAINER:
 
     # -- Output ------------------------------------------------------------
 
+    @property
+    def output(self):
+        """This run's :class:`~micm_nlp.training.run_output.RunOutput`.
+
+        The public handle on everything the run produced: its directory, and the
+        metrics and prediction rows recorded as they were written. It is what
+        :func:`micm_nlp.pipeline.run` hands back.
+        """
+        return self._output
+
     def _setup_output(self):
         """The run's output directory: created, snapshotted, linked (see RunOutput)."""
         self._output = RunOutput(self._config, self._model)

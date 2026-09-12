@@ -90,6 +90,9 @@ def save_metrics(output, event: str, metrics: dict[str, Any], hf_prefix: str,
     ``step`` added when given. Written once, whole; a second write of the same
     event replaces the file.
 
+    The rows are also recorded on ``output`` under this event name, so the run is
+    readable in memory in exactly the shape the file holds.
+
     :returns: the path, or ``None`` when no key carried ``hf_prefix``.
     """
     rows = metric_rows(metrics, hf_prefix, strip)
@@ -98,7 +101,9 @@ def save_metrics(output, event: str, metrics: dict[str, Any], hf_prefix: str,
     if step is not None:
         for row in rows:
             row['step'] = step
-    return write_csv(output.file(f'{event}.csv'), [{**output.columns, **row} for row in rows])
+    rows = [{**output.columns, **row} for row in rows]
+    output.record('results', event, rows)
+    return write_csv(output.file(f'{event}.csv'), rows)
 
 
 def _scalar(value):
@@ -148,4 +153,6 @@ def save_predictions(output, stage: str | None, pred_out, config, label_pad_id, 
             rows.extend(_sample_rows(task_preds, labels[task_id], indices[task_id], {'task': task_id}))
     else:
         rows = _sample_rows(preds, labels, order, {})
-    return write_csv(output.file(f'{event_name("predictions", stage)}.csv'), rows)
+    event = event_name('predictions', stage)
+    output.record('predictions', event, rows)
+    return write_csv(output.file(f'{event}.csv'), rows)

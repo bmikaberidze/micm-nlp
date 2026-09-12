@@ -30,7 +30,10 @@ def test_model_config_has_no_runtime_name_or_path():
 def test_run_dir_helpers(tmp_path):
     nlpka_path.set_root(tmp_path)
     assert nlpka_path.runs_dir() == tmp_path / 'artefacts' / 'runs'
-    assert nlpka_path.output_dir('xlmr', 'g24a', '20260907_1431_spt') == (
-        tmp_path / 'artefacts' / 'runs' / 'xlmr' / 'g24a' / '20260907_1431_spt'
+    assert nlpka_path.output_dir('g24a', '20260907_1431_spt') == (
+        tmp_path / 'artefacts' / 'runs' / 'groups' / 'g24a' / '20260907_1431_spt'
     )
-    assert nlpka_path.SOLO_GROUP == '_solo' and nlpka_path.NO_MODEL_ARCH == '_nomodel'
+    assert nlpka_path.output_dir(None, 'uuid_bloom_1_2') == (
+        tmp_path / 'artefacts' / 'runs' / 'units' / 'uuid_bloom_1_2'
+    ), 'a run outside any group lands under units/, with no group segment'
+    assert nlpka_path.UNIT_RUNS == 'units' and nlpka_path.GROUP_RUNS == 'groups'

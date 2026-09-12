@@ -104,7 +104,7 @@ def _wrap_value(v):
 class OutputConfig(_Flex):
     """Where a run writes and what every metrics row is stamped with.
 
-    A run always writes its output (config snapshot, ``run.json``, one metrics
+    A run always writes its output (config snapshot, ``info.json``, one metrics
     file per evaluation event, predictions); this block only decorates that.
     ``dir`` overrides the run directory (the group runner sets it),
     ``config_file`` names the saved copy of the resolved config, ``prefix`` is
@@ -444,12 +444,25 @@ class DatasetConfig(_Flex):
     dirs: str | None = None
     name: str | None = None
     type: str | None = None
-    comes_with_splits: SplitsConfig | None = None
+    splits: SplitsConfig | None = None
     input: InputConfig | None = None
     label: LabelConfig | None = None
     task_id: TaskIdConfig | None = None
     preproc_rules: _Flex | None = None
     Y: _Flex | None = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def _reject_renamed_keys(cls, data):
+        """``comes_with_splits`` was renamed to ``splits``; say so instead of ignoring it.
+
+        Config sections allow extra keys, so a stale name would otherwise be kept as
+        an unknown attribute while ``splits`` silently took its default -- the wrong
+        behaviour, with no error to find it by.
+        """
+        if isinstance(data, dict) and 'comes_with_splits' in data:
+            raise ValueError('ds.comes_with_splits was renamed to ds.splits')
+        return data
 
 
 # ---------------------------------------------------------------------------

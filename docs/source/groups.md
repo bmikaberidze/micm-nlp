@@ -1,8 +1,8 @@
 # Group run · many configs
 
 A unit config describes one run. A **group config** describes many runs over unit
-configs, and is the second half of the framework: the same pipeline, repeated across
-the axes an experiment varies — seeds, hyperparameters, methods.
+configs — the same pipeline, repeated across the axes an experiment varies: seeds,
+hyperparameters, methods. This page is the package's *experiment orchestration*.
 
 ```{include} ../../README.md
 :start-after: <!-- start:groups -->
@@ -11,13 +11,13 @@ the axes an experiment varies — seeds, hyperparameters, methods.
 
 ## What one run leaves behind
 
-Every run — solo or grouped — writes one directory, and the trainer is its only
+Every run — in a group or not — writes one directory, and the trainer is its only
 writer. Nothing is appended to, and nothing is overwritten.
 
 ```
-artefacts/runs/{architecture}/{group}/{time_id}_{name}/
+artefacts/runs/groups/{group}/{time_id}_{name}/
 ├── config.yml                          # the config as the framework resolved it
-├── run.json                            # what the run did (see below)
+├── info.json                           # what the run did (see below)
 ├── eval_validation_before_train.csv    # one row per metric group
 ├── eval_validation_after_train.csv     # …from the best checkpoint
 ├── test_after_train.csv
@@ -29,12 +29,12 @@ artefacts/runs/{architecture}/{group}/{time_id}_{name}/
 A run that never trains — `mode: test` or `evaluate` — has one pass per event, so its
 files carry no stage suffix: `test.csv`, `predictions.csv`.
 
-`run.json` holds what the config cannot: `started` / `finished`, every `SLURM*`
+`info.json` holds what the config cannot: `started` / `finished`, every `SLURM*`
 variable, host, Python version, `CUDA_VISIBLE_DEVICES`, the versions of the packages
 that decide numerics, the wandb id / url / dir, the resolved seed and
 `metric_for_best_model`, and `paths.best_checkpoint`. The rule behind the split is
 that **the config is read-only for everything that consumes it** — a fact about the
-run goes to `run.json`, never back into the config.
+run goes to `info.json`, never back into the config.
 
 ## One event, one file
 
@@ -63,7 +63,8 @@ dataset between stages, train two models and compare them.
 A runner is a callable `run(config, ctx)`. The first argument is the resolved config;
 the second is a {py:class}`~micm_nlp.group.RunContext` carrying everything the
 framework knows that the config does not — the entry as written, the group and run
-name, the index, the output directory, unknown CLI flags as `extras`, and
+name, the index, the output directory, unknown CLI flags as `extras`
+(`--source-group joshi5` arrives as `{'source_group': 'joshi5'}`), and
 `test_config` when the entry declared a `separate_test`.
 
 Because `RunContext` is a frozen dataclass rather than keyword arguments, adding a

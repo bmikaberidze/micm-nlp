@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from micm_nlp.path import set_root
@@ -72,18 +72,27 @@ class MicmNlpConfig(BaseModel):
     ``root_path`` defaults to ``PROJECT_ROOT_PATH`` from the environment, so
     ``init()`` with no arguments works when ``.env`` sets it. ``pretty_output`` takes
     ``True`` for Rich defaults, or a :class:`RichConfig` to tune it.
+
+    The default is a factory, not a plain ``os.getenv(...)`` call: a field default is
+    evaluated once when this class is created, which is import time, so a plain call
+    would freeze whatever ``PROJECT_ROOT_PATH`` held *before* ``import micm_nlp`` and
+    silently ignore one set afterwards.
     """
 
-    root_path: str | None = os.getenv('PROJECT_ROOT_PATH')
+    root_path: str | None = Field(default_factory=lambda: os.getenv('PROJECT_ROOT_PATH'))
     pretty_output: RichConfig | bool = False
 
 
-def init(config: MicmNlpConfig | dict | None = None) -> None:
+def init(root_path: str | Path | MicmNlpConfig | dict | None = None, **settings) -> None:
     """Set up the process: workspace root, distributed env, optional Rich output.
 
     Call once before any pipeline call. **Not** triggered on import — until it runs,
     every accessor in :mod:`micm_nlp.path` raises, so ``artefacts/`` can never land
-    in the wrong place by accident.
+    in the wrong place by accident::
+
+        init('/path/to/your/workspace')
+        init('/path/to/your/workspace', pretty_output=True)
+        init()                              # PROJECT_ROOT_PATH from the environment
 
     Three things happen, in order: the workspace root is set from ``root_path``
     (falling back to ``PROJECT_ROOT_PATH``); the distributed-training variables are
@@ -91,14 +100,21 @@ def init(config: MicmNlpConfig | dict | None = None) -> None:
     ``_disable_distributed_if_single_process``; and Rich is installed if
     ``pretty_output`` asks for it.
 
-    :param config: a :class:`MicmNlpConfig` or a plain dict of its fields. Omit it
-        entirely to take every default -- which is the documented form when
-        ``PROJECT_ROOT_PATH`` is already set in the environment or in ``.env``.
+    :param root_path: the workspace root. Omit it when ``PROJECT_ROOT_PATH`` is set
+        in the environment or in ``.env``. A :class:`MicmNlpConfig` or a dict of its
+        fields is accepted here too -- the older calling form, kept working.
+    :param settings: the remaining :class:`MicmNlpConfig` fields, chiefly
+        ``pretty_output``.
     """
-    if config is None:
-        config = {}
-    if isinstance(config, dict):
-        config = MicmNlpConfig(**config)
+    if isinstance(root_path, MicmNlpConfig):
+        config = root_path
+    elif isinstance(root_path, dict):
+        config = MicmNlpConfig(**{**root_path, **settings})
+    else:
+        # Pass root_path only when there is one: an explicit ``None`` would satisfy
+        # the field and so skip the default_factory that reads PROJECT_ROOT_PATH.
+        given = {'root_path': str(root_path)} if root_path is not None else {}
+        config = MicmNlpConfig(**given, **settings)
     set_root(config.root_path)
     _disable_distributed_if_single_process()
     if config.pretty_output:

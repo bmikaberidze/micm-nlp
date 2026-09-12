@@ -6,8 +6,8 @@ the example configurations out of the installed package into a directory you
 can edit. Flags the parser does not know are forwarded to the runner as
 ``ctx.extras`` (``--source-group joshi5`` -> ``{'source_group': 'joshi5'}``)::
 
-    python -m micm_nlp run       --config micm-nlp-examples/xsc_finetune.yml
-    python -m micm_nlp run-group --group-config micm-nlp-examples/groups/xsc_group.yml
+    python -m micm_nlp run       --config configs/examples/xsc_finetune.yml
+    python -m micm_nlp run-group --group-config configs/examples/groups/xsc_tune_across_seeds.yml
     python -m micm_nlp init-examples
 
 The configs ship *inside* the package rather than being downloaded, so the copy you
@@ -15,8 +15,9 @@ get always matches the version you installed. Fetching them over the network wou
 introduce the one failure this is meant to avoid -- a config written for a different
 release, or no config at all on a machine without internet.
 
-The example *scripts* are not shipped: each is four lines, and both are printed in
-the Quickstart. What carries the content is the YAML.
+No example *scripts* exist: running a shipped config is ``run`` / ``run-group``
+above, so a script would be a third path to what these commands already do. What
+carries the content is the YAML.
 """
 
 from __future__ import annotations
@@ -24,28 +25,13 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from importlib import resources
 from pathlib import Path
 
 import micm_nlp
 from micm_nlp import group
+from micm_nlp.path import available_examples
 
-_CONFIG_PACKAGE = 'micm_nlp.configs'
-DEFAULT_DEST = 'micm-nlp-examples'
-
-
-def _available_configs():
-    """Every ``.yml`` shipped in the example-config package, as ``(relative path,
-    traversable)`` pairs -- the package root and one level of subdirectories
-    (``groups/``), sorted by path."""
-    root = resources.files(_CONFIG_PACKAGE)
-    found = []
-    for entry in root.iterdir():
-        if entry.name.endswith('.yml'):
-            found.append((Path(entry.name), entry))
-        elif entry.is_dir() and not entry.name.startswith('_'):
-            found.extend((Path(entry.name) / sub.name, sub) for sub in entry.iterdir() if sub.name.endswith('.yml'))
-    return sorted(found, key=lambda pair: str(pair[0]))
+DEFAULT_DEST = 'configs/examples'
 
 
 def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
@@ -63,7 +49,7 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
     dest.mkdir(parents=True, exist_ok=True)
 
     written, skipped = [], []
-    for rel, src in _available_configs():
+    for rel, src in available_examples():
         target = dest / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists() and not force:
@@ -81,7 +67,7 @@ def init_examples(dest: str | Path = DEFAULT_DEST, force: bool = False) -> int:
         print(
             f'\nRun one with:\n'
             f'  python -m micm_nlp run --config {dest / "xsc_preprocess.yml"}\n'
-            f'  python -m micm_nlp run-group --group-config {dest / "groups" / "xsc_group.yml"}'
+            f'  python -m micm_nlp run-group --group-config {dest / "groups" / "xsc_tune_across_seeds.yml"}'
         )
     return 0
 
@@ -115,17 +101,20 @@ def parse_extras(rest: list[str]) -> dict:
     return extras
 
 
-def _init_workspace() -> None:
+def _init_workspace(root_path: str | None = None) -> None:
     """``micm_nlp.init()`` once, before anything reads ``micm_nlp.path``.
 
-    The workspace root comes from ``PROJECT_ROOT_PATH`` (environment or the
-    ``.env`` that ``micm_nlp.bootstrap`` loaded on import); without it the
-    package cannot place ``artefacts/``, so say so instead of failing deep
-    inside ``pathlib``.
+    The workspace root comes from ``--root-path``, else ``PROJECT_ROOT_PATH``
+    (environment or the ``.env`` that ``micm_nlp.bootstrap`` loaded on import).
+    Without either the package cannot place ``artefacts/``, so say so instead of
+    failing deep inside ``pathlib`` -- and never fall back to the working
+    directory, which would scatter one experiment's artefacts across as many
+    trees as the directories it was launched from.
     """
-    if not os.environ.get('PROJECT_ROOT_PATH'):
-        sys.exit('micm-nlp: set PROJECT_ROOT_PATH (environment or .env) to your workspace root')
-    micm_nlp.init()
+    if not root_path and not os.environ.get('PROJECT_ROOT_PATH'):
+        sys.exit('micm-nlp: pass --root-path, or set PROJECT_ROOT_PATH (environment or .env), '
+                 'to your workspace root')
+    micm_nlp.init(root_path)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -139,14 +128,18 @@ def main(argv: list[str] | None = None) -> int:
     init.add_argument('dest', nargs='?', default=DEFAULT_DEST, help=f'destination directory (default: {DEFAULT_DEST})')
     init.add_argument('--force', action='store_true', help='overwrite existing files')
 
+    root_help = 'workspace root, where artefacts/ goes (default: PROJECT_ROOT_PATH from the environment or .env)'
+
     run = sub.add_parser('run', help='run one unit config', allow_abbrev=False)
     run.add_argument('--config', required=True, help='path to a unit config')
     run.add_argument('--runner', default=None, help='module:attr or path/to/script.py[:fn] of the runner (default: micm_nlp.pipeline:run)')
+    run.add_argument('--root-path', default=None, help=root_help)
 
     rg = sub.add_parser('run-group', help='run the entries of a group config', allow_abbrev=False)
     rg.add_argument('--group-config', required=True, help='path to a group config; its stem is the group name')
     rg.add_argument('--runner', default=None, help='module:attr or path/to/script.py[:fn] of the runner (default: micm_nlp.pipeline:run)')
-    rg.add_argument('--task-id', type=int, default=None,
+    rg.add_argument('--root-path', default=None, help=root_help)
+    rg.add_argument('--run-index', type=int, default=None,
                     help='entry index to run; ignored under SLURM_ARRAY_TASK_ID; omit to run every entry')
     rg.add_argument('--seed', type=int, default=None, help='seed for entries that do not set their own')
 
@@ -160,11 +153,11 @@ def main(argv: list[str] | None = None) -> int:
         extras = parse_extras(rest)
     except ValueError as e:
         parser.error(str(e))
-    _init_workspace()
+    _init_workspace(args.root_path)
     if args.command == 'run':
-        group.run_solo(args.config, runner=args.runner, extras=extras)
+        group.run_unit(args.config, runner=args.runner, extras=extras)
         return 0
-    group.run_group(args.group_config, runner=args.runner, task_id=args.task_id, seed=args.seed, extras=extras)
+    group.run_group(args.group_config, runner=args.runner, run_index=args.run_index, seed=args.seed, extras=extras)
     return 0
 
 

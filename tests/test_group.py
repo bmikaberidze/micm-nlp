@@ -14,7 +14,7 @@ from micm_nlp import path as nlpka_path
 from micm_nlp.config import CONFIG
 from micm_nlp.group import (
     RunContext, apply_override, apply_seed, config_seed, load_group, load_runner, resolve_entry,
-    run_group, run_solo, scalar_columns, select_indices,
+    run_group, run_unit, scalar_columns, select_indices,
 )
 
 CALLS = []
@@ -84,23 +84,23 @@ def test_load_group_rejects_reserved_stem_and_bad_config_paths(tmp_path):
 
 def test_select_env_wins(monkeypatch):
     monkeypatch.setenv('SLURM_ARRAY_TASK_ID', '2')
-    assert select_indices(4, task_id=0) == [2]
+    assert select_indices(4, run_index=0) == [2]
 
 
-def test_select_task_id(monkeypatch):
+def test_select_run_index(monkeypatch):
     monkeypatch.delenv('SLURM_ARRAY_TASK_ID', raising=False)
-    assert select_indices(4, task_id=3) == [3]
+    assert select_indices(4, run_index=3) == [3]
 
 
 def test_select_all(monkeypatch):
     monkeypatch.delenv('SLURM_ARRAY_TASK_ID', raising=False)
-    assert select_indices(3, task_id=None) == [0, 1, 2]
+    assert select_indices(3, run_index=None) == [0, 1, 2]
 
 
 def test_select_out_of_range(monkeypatch):
     monkeypatch.delenv('SLURM_ARRAY_TASK_ID', raising=False)
     with pytest.raises(ValueError, match='range'):
-        select_indices(3, task_id=3)
+        select_indices(3, run_index=3)
 
 
 # -- overrides / seed ------------------------------------------------------------
@@ -166,7 +166,7 @@ def test_resolve_entry_full(tmp_path):
     assert cols['config'] == 'u' and cols['seed'] == 11 and cols['source_group'] == 'joshi5'
     run = Path(config.output.dir)
     assert cols['time_id'] and run.name == f"{cols['time_id']}_a"
-    assert run.parent == tmp_path / 'artefacts' / 'runs' / 'toy' / 'g1'
+    assert run.parent == tmp_path / 'artefacts' / 'runs' / 'groups' / 'g1'
     assert (run / 'config.yml').exists() and (run / 'test_config.yml').exists()   # the snapshot
     assert ctx == RunContext(test_config=ctx.test_config, entry={'source_group': 'joshi5'},
                              group='g1', name='a', index=0, output_dir=str(run), extras={'fold': '0'})
@@ -207,7 +207,7 @@ def test_resolve_entry_writes_run_info(tmp_path):
     nlpka_path.set_root(tmp_path)
     g = load_group(_group(tmp_path, [{'config': 'u', 'name': 'a'}]))
     config, ctx = resolve_entry(g, 0)
-    saved = json.loads((Path(ctx.output_dir) / 'run.json').read_text())
+    saved = json.loads((Path(ctx.output_dir) / 'info.json').read_text())
     assert saved['started'] == config.output.columns['time_id']
     assert saved['paths']['output_dir'] == ctx.output_dir and 'slurm' in saved and 'versions' in saved
 
@@ -217,7 +217,7 @@ def test_resolve_entry_no_model_block(tmp_path):
     gp = _group(tmp_path, [{'config': 'u', 'name': 'a'}])
     (tmp_path / 'unit.yml').write_text(yaml.safe_dump({'mode': 'preprocess'}))
     config, ctx = resolve_entry(load_group(gp), 0)
-    assert '/runs/_nomodel/g1/' in ctx.output_dir
+    assert '/runs/groups/g1/' in ctx.output_dir, 'no architecture segment: a group stays one directory'
 
 
 def test_two_dispatches_two_dirs_same_second_raises(tmp_path, monkeypatch):
@@ -258,17 +258,17 @@ def test_run_group_all_then_one(tmp_path, monkeypatch):
     assert run_group(gp, runner='tests.test_group:stub_runner', extras={'k': 'v'}) == [0, 1]
     assert [c.name for _, c in CALLS] == ['a', 'b'] and CALLS[0][1].extras == {'k': 'v'}
     CALLS.clear()
-    assert run_group(gp, runner='tests.test_group:stub_runner', task_id=1) == [1]
+    assert run_group(gp, runner='tests.test_group:stub_runner', run_index=1) == [1]
     assert CALLS[0][1].index == 1
 
 
-def test_run_solo(tmp_path):
+def test_run_unit(tmp_path):
     nlpka_path.set_root(tmp_path)
     CALLS.clear()
-    run_solo(_unit(tmp_path), runner='tests.test_group:stub_runner', extras={'x': True})
+    run_unit(_unit(tmp_path), runner='tests.test_group:stub_runner', extras={'x': True})
     config, ctx = CALLS[0]
     assert isinstance(config, CONFIG) and config.output is None
-    assert ctx == RunContext(test_config=None, entry={}, group='_solo', name=None, index=None,
+    assert ctx == RunContext(test_config=None, entry={}, group=None, name=None, index=None,
                              output_dir=None, extras={'x': True})
 
 
