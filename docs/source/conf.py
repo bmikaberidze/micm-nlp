@@ -9,7 +9,11 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from pathlib import Path
+
+# Local extensions (docs/source/_ext): code_style.py holds the code-block colours.
+sys.path.insert(0, str(Path(__file__).parent / '_ext'))
 
 # -- Project metadata --------------------------------------------------------
 # Read straight out of pyproject.toml rather than importing the package, so the
@@ -42,6 +46,7 @@ extensions = [
     'autoapi.extension',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
+    'code_style',
 ]
 
 templates_path = ['_templates']
@@ -94,11 +99,9 @@ autoapi_keep_files = False
 # -- HTML --------------------------------------------------------------------
 
 html_theme = 'furo'
-# Code blocks are re-coloured in the browser by _static/shiki.js with VS Code's One
-# Dark Pro. These Pygments styles are what shows before it runs, and if the CDN is
-# unreachable: close to the Shiki themes, so the swap is barely visible.
-pygments_style = 'friendly'
-pygments_dark_style = 'github-dark'
+# Code blocks in VS Code's colours, baked in at build time (see _ext/code_style.py).
+pygments_style = 'code_style.GitHubLight'
+pygments_dark_style = 'code_style.OneDarkProDarker'
 # Where these pages officially live. Sphinx turns it into a <link rel="canonical">
 # on every page, so a second hostname serving the same docs (the readthedocs.io
 # subdomain once a custom domain is in use) does not split search ranking.
@@ -132,8 +135,11 @@ def _first(*names: str) -> str | None:
     return None
 
 
-html_css_files = ['custom.css']
-html_js_files = ['copy-for-llm.js', ('shiki.js', {'type': 'module'})]
+html_css_files = [
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap',
+    'custom.css',
+]
+html_js_files = ['copy-for-llm.js']
 
 _logo = _first('logo')
 _logo_light = _first('logo-light') or _logo
@@ -142,7 +148,66 @@ _favicon = _first('favicon') or _logo
 
 if _favicon:
     html_favicon = f'_static/{_favicon}'
+# The site's palette and type. Dark mode is VS Code's One Dark Pro Darker — the
+# editor the docs are written in — so prose, inline code and code blocks share one
+# set of colours; light mode is its clean counterpart. Furo applies `dark_*` both
+# when the reader picks dark and when "auto" follows a dark OS, so custom.css needs
+# no theme switch for anything set here. Fonts load in `html_css_files` below.
+_FONTS = {
+    'font-stack': '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+    'font-stack--monospace': '"JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace',
+    'font-stack--headings': '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    'code-font-size': '90%',
+    'admonition-font-size': '0.95rem',
+    'admonition-title-font-size': '0.95rem',
+    'sidebar-item-font-size': '95%',
+}
+_LIGHT = {
+    'color-background-primary': '#ffffff',
+    'color-background-secondary': '#f6f7f9',
+    'color-background-hover': '#eef0f3',
+    'color-background-hover--transparent': '#eef0f300',
+    'color-background-border': '#e3e6ea',
+    'color-foreground-primary': '#1f2328',
+    'color-foreground-secondary': '#4b5260',
+    'color-foreground-muted': '#6b7280',
+    'color-foreground-border': '#c9ced6',
+    'color-brand-primary': '#2563eb',
+    'color-brand-content': '#2563eb',
+    'color-brand-visited': '#7c3aed',
+    'color-sidebar-background': '#f6f7f9',
+    'color-sidebar-item-background--current': '#e8eefc',
+    'color-toc-background': '#ffffff',
+    'color-table-header-background': '#f6f7f9',
+    'color-inline-code-text': '#9a4a0b',
+    'color-inline-code-background': '#fbf0e6',
+    'color-code-block-background': '#f6f8fa',
+}
+_DARK = {
+    'color-background-primary': '#23272e',
+    'color-background-secondary': '#1e2227',
+    'color-background-hover': '#2c313a',
+    'color-background-hover--transparent': '#2c313a00',
+    'color-background-border': '#2f343c',
+    'color-foreground-primary': '#d7dae0',
+    'color-foreground-secondary': '#abb2bf',
+    'color-foreground-muted': '#7f848e',
+    'color-foreground-border': '#4b5263',
+    'color-brand-primary': '#61afef',
+    'color-brand-content': '#61afef',
+    'color-brand-visited': '#c678dd',
+    'color-sidebar-background': '#1e2227',
+    'color-sidebar-item-background--current': '#2c313a',
+    'color-toc-background': '#23272e',
+    'color-table-header-background': '#1e2227',
+    'color-inline-code-text': '#d19a66',
+    'color-inline-code-background': '#2c313a',
+    'color-code-block-background': '#1b1e23',
+}
+
 html_theme_options = {
+    'light_css_variables': {**_FONTS, **_LIGHT},
+    'dark_css_variables': _DARK,
     'source_repository': 'https://github.com/bmikaberidze/micm-nlp/',
     'source_branch': 'main',
     'source_directory': 'docs/source/',

@@ -1,3 +1,54 @@
+/* Site styling on top of Furo.
+
+   Colours and fonts are CSS variables set in conf.py (`light_css_variables` /
+   `dark_css_variables`), which Furo applies for both an explicit dark choice and a
+   dark OS under "auto". This file holds layout and shape, and reads those variables.
+   Code-block token colours are Pygments styles, in _ext/code_style.py. */
+
+
+/* -- Type ------------------------------------------------------------------ */
+
+/* Furo's 16px body with 1.5 line height reads cramped in long reference pages. */
+
+article[role="main"] {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+article h1,
+article h2,
+article h3,
+article h4 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+article h1 {
+  font-size: 2.4em;
+}
+
+/* Too little space above sub-headings.
+
+   Furo gives h1/h2 `margin-top: 1.75rem` but h3–h6 only the shared `.5rem`, so a
+   `###` section starts flush against the paragraph or table above it. Space above a
+   heading now steps down with its level, so the hierarchy is visible at a glance. */
+
+article h2 {
+  margin-top: 2.75rem;
+}
+
+article h3 {
+  margin-top: 2.25rem;
+}
+
+article h4 {
+  margin-top: 1.75rem;
+}
+
+
+/* -- Sidebar --------------------------------------------------------------- */
+
 /* Furo defaults the sidebar logo to the full column width and centres it with
    `margin: 0 auto`, while the brand text beneath it stays left-aligned — so a square
    logo reads as both oversized and misaligned. Size it and align it to the same edge
@@ -8,28 +59,30 @@
    it is now cropped to its opaque bounding box.*/
 
 .sidebar-logo {
-  max-width: 10rem;
+  max-width: 5.5rem;
   margin: 0;
 }
 
 .sidebar-logo-container {
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 
-/* Furo centres every table.
+.sidebar-brand-text {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
-   `article .align-center, article .align-default` sets display:block,
-   text-align:center and `margin-left/right: auto`. The follow-up rule
-   `article table.align-default` puts display and text-align back for tables but
-   leaves the auto margins in place — and Sphinx stamps `align-default` on every
-   table that does not ask for something else, so all of them float centred.
+/* The current page as a rounded pill rather than a bold full-width row. */
 
-   Reset the inline margins for the default alignment only. A table that explicitly
-   asks to be centred (`:align: center` -> `table.align-center`) still is. */
+.sidebar-tree .reference {
+  border-radius: 6px;
+}
 
-article table.align-default {
-  margin-left: 0;
-  margin-right: auto;
+.sidebar-tree .current-page > .reference {
+  background: var(--color-sidebar-item-background--current);
+  color: var(--color-brand-primary);
+  font-weight: 600;
 }
 
 /* Breathing room under the last sidebar entry.
@@ -57,9 +110,11 @@ body {
   --toc-title-font-size: var(--font-size--small--2);
 }
 
-.toc-tree code.literal {
+.toc-tree code.literal,
+.sidebar-tree code.literal {
   font-family: inherit;
   font-size: inherit;
+  color: inherit;
   background: none;
   border: none;
   padding: 0;
@@ -71,99 +126,126 @@ body {
   }
 }
 
-/* Too little space above sub-headings.
 
-   Furo gives h1/h2 `margin-top: 1.75rem` but h3–h6 only the shared `.5rem`, so a
-   `###` section starts flush against the paragraph or table above it. Space above a
-   heading now steps down with its level, so the hierarchy is visible at a glance. */
+/* -- Inline code ------------------------------------------------------------ */
 
-article h2 {
-  margin-top: 2.5rem;
-}
-
-article h3 {
-  margin-top: 2rem;
-}
-
-article h4 {
-  margin-top: 1.5rem;
-}
-
-/* Inline code in colour.
-
-   Furo draws inline `code` in the body text colour inside a faint bordered box, so
-   config keys — most of config.md — barely stand out from prose. Give them an amber
-   foreground on a soft tint, no border, in both themes. Furo switches theme on
-   `body[data-theme]`, with `prefers-color-scheme` deciding when the choice is "auto".
-   The menus keep plain text (see the toc rule above). */
-
-body {
-  --color-inline-code-text: #9a4a0b;
-  --color-inline-code-background: #fbf0e6;
-}
-
-body[data-theme="dark"] {
-  --color-inline-code-text: #d19a66;
-  --color-inline-code-background: #2c313a;
-}
-
-@media (prefers-color-scheme: dark) {
-  body:not([data-theme="light"]) {
-    --color-inline-code-text: #d19a66;
-    --color-inline-code-background: #2c313a;
-  }
-}
+/* Furo draws inline `code` in the body text colour inside a faint bordered box, so
+   config keys — most of config.md — barely stand out from prose. Amber on a soft
+   tint (colours in conf.py), no border. */
 
 article code.literal {
   color: var(--color-inline-code-text);
   background: var(--color-inline-code-background);
   border: none;
-  padding: 0.1em 0.3em;
+  border-radius: 5px;
+  padding: 0.12em 0.35em;
+  font-size: 88%;
 }
 
-.toc-tree code.literal,
-.sidebar-tree code.literal {
-  color: inherit;
+
+/* -- Code blocks ------------------------------------------------------------ */
+
+/* Rounded cards on their own background, a shade off the page so they stand out
+   in both themes. Painted on the `.highlight` wrapper as well as the <pre>, so the
+   code block and its padding share one colour. */
+
+article .highlight {
+  border: 1px solid var(--color-background-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-/* Shiki code blocks (see shiki.js).
-
-   Shiki emits both themes as per-token CSS variables; pick the one that matches
-   Furo's theme, the same three-way switch as the inline-code colours above. The
-   dark background is One Dark Pro *Darker*'s #23272e rather than One Dark Pro's
-   #282c34, and it is painted on the `.highlight` wrapper too so Furo's Pygments
-   background does not show around the edges. */
-
-body {
-  --shiki-block-background: #f6f8fa;
+article .highlight,
+article .highlight pre {
+  background-color: var(--color-code-block-background) !important;
 }
 
-pre.shiki,
-pre.shiki span {
-  color: var(--shiki-light);
+article[role="main"] .highlight pre {
+  padding: 0.9rem 1.1rem;
+  line-height: 1.6;
 }
 
-body[data-theme="dark"] {
-  --shiki-block-background: #23272e;
+
+/* -- Tables ----------------------------------------------------------------- */
+
+/* Furo centres every table.
+
+   `article .align-center, article .align-default` sets display:block,
+   text-align:center and `margin-left/right: auto`. The follow-up rule
+   `article table.align-default` puts display and text-align back for tables but
+   leaves the auto margins in place — and Sphinx stamps `align-default` on every
+   table that does not ask for something else, so all of them float centred.
+
+   Reset the inline margins for the default alignment only. A table that explicitly
+   asks to be centred (`:align: center` -> `table.align-center`) still is. */
+
+article table.align-default {
+  margin-left: 0;
+  margin-right: auto;
 }
 
-body[data-theme="dark"] pre.shiki,
-body[data-theme="dark"] pre.shiki span {
-  color: var(--shiki-dark);
+/* A rounded frame with horizontal rules only: no column lines, a small uppercase
+   header, left-aligned, and a row highlight on hover. */
+
+article table.docutils {
+  border: 1px solid var(--color-background-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  body:not([data-theme="light"]) {
-    --shiki-block-background: #23272e;
-  }
-
-  body:not([data-theme="light"]) pre.shiki,
-  body:not([data-theme="light"]) pre.shiki span {
-    color: var(--shiki-dark);
-  }
+article table.docutils th,
+article table.docutils td {
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid var(--color-background-border);
+  padding: 0.5rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
 }
 
-.highlight:has(pre.shiki),
-pre.shiki {
-  background-color: var(--shiki-block-background) !important;
+article table.docutils tr:last-child td {
+  border-bottom: none;
+}
+
+article table.docutils th {
+  color: var(--color-foreground-muted);
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+article table.docutils td p,
+article table.docutils th p {
+  margin: 0;
+}
+
+article table.docutils tbody tr:hover {
+  background: var(--color-background-hover);
+}
+
+
+/* -- Notes and warnings ----------------------------------------------------- */
+
+/* Rounded cards with a coloured bar; the title strip loses its own background so
+   the card reads as one block. */
+
+article .admonition {
+  border-radius: 10px;
+  border-left-width: 4px;
+  background: var(--color-background-secondary);
+  box-shadow: none;
+  padding: 0.75rem 1rem;
+}
+
+article p.admonition-title {
+  background: transparent;
+  font-weight: 600;
+  margin: 0 0 0.35rem 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
