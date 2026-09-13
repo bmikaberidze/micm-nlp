@@ -2,7 +2,7 @@
 
 *one unit config, one unit run*
 
-> Q: How do I describe a whole run in one place, and make it reproducible?
+> How do I describe a whole run in one place, and make it reproducible?
 
 ```{include} ../../README.md
 :start-after: <!-- start:blocks -->

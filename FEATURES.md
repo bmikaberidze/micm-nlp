@@ -2,7 +2,7 @@
 
 *ready-made functionality*
 
-> Q: What can I do here that the HuggingFace stack does not already do?
+> What can I do here that the HuggingFace stack does not already do?
 
 Every entry says what HuggingFace does on its own, and links to the module that implements it.
 

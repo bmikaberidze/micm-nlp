@@ -2,7 +2,7 @@
 
 *one group config, many unit runs*
 
-> Q: How do I run many variations, and collect their results together?
+> How do I run many variations, and collect their results together?
 
 ```{include} ../../README.md
 :start-after: <!-- start:groups -->

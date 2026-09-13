@@ -42,9 +42,6 @@ pip install micm-nlp
 :end-before: <!-- end:acknowledgements -->
 ```
 
-The package was formerly named `nlpka`; that name survives only in the archived
-repository behind the IJCNLP–AACL paper.
-
 ## Citation
 
 ```{include} ../../README.md
