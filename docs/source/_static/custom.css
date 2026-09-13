@@ -42,3 +42,31 @@ article table.align-default {
 .sidebar-scroll {
   padding-bottom: 5rem;
 }
+
+/* The "On this page" menu is too small to read.
+
+   Furo sets it to 75% (`--toc-font-size: small--3`), and `code.literal` inside it
+   shrinks again to 81% of that — about 61% for headings named after config keys,
+   which is most of config.md. Raise the menu to 87.5%, let code inherit that size
+   in the proportional font (narrower, so `eval/test_max_tokens_per_batch` wraps less),
+   and widen the drawer on screens where it is shown beside the page. Below 82em
+   Furo hides it off-canvas at a fixed `right: -15em`, so the width stays put there. */
+
+body {
+  --toc-font-size: var(--font-size--small);
+  --toc-title-font-size: var(--font-size--small--2);
+}
+
+.toc-tree code.literal {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+@media (min-width: 82em) {
+  .toc-drawer {
+    width: 18em;
+  }
+}

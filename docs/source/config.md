@@ -8,7 +8,13 @@
 :start-after: <!-- start:blocks -->
 :end-before: <!-- end:blocks -->
 ```
-## Output Dir Details
+
+## Output Dir
+
+```{include} ../../README.md
+:start-after: <!-- start:run-dir -->
+:end-before: <!-- end:run-dir -->
+```
 
 - The trainer is the only writer of the run directory.
 - `info.json` holds what the config cannot: `started` / `finished`, every `SLURM*` variable, host, Python, `CUDA_VISIBLE_DEVICES`, the package versions, wandb id / url / dir, the resolved seed and `metric_for_best_model`, `paths.best_checkpoint`.
@@ -18,7 +24,7 @@
 - Each `evaluate()` or `predict()` call is an event and writes its file once.
 - The same rows are in memory as `output.results` and `output.predictions`, keyed by event name.
 
-## Config Details
+## Config
 
 | Section | Purpose |
 |---|---|

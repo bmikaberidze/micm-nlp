@@ -109,7 +109,9 @@ python -m micm_nlp run \
     --root-path     /path/to/your/workspace
 ```
 - `--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.
+<!-- end:blocks -->
 
+<!-- start:run-dir -->
 Everything the run produces lands in one directory:
 
 ```
@@ -123,7 +125,7 @@ artefacts/runs/units/{model.name}/
 ├── model -> …                       # symlink to the checkpoint
 └── wandb -> …                       # symlink to the wandb run
 ```
-<!-- end:blocks -->
+<!-- end:run-dir -->
 
 [The unit run](https://micm-nlp.readthedocs.io/en/latest/config.html) is the full reference; [the stage-by-stage form](https://micm-nlp.readthedocs.io/en/latest/quickstart.html) is the same chain unwrapped.
 
