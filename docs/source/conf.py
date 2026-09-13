@@ -94,6 +94,11 @@ autoapi_keep_files = False
 # -- HTML --------------------------------------------------------------------
 
 html_theme = 'furo'
+# Furo's default dark highlighting ('native') colours little beyond keywords and
+# strings, so a code block reads as one grey mass. One Dark matches the editor theme
+# the docs are written in; 'friendly' is its light-mode counterpart.
+pygments_style = 'friendly'
+pygments_dark_style = 'one-dark'
 # Where these pages officially live. Sphinx turns it into a <link rel="canonical">
 # on every page, so a second hostname serving the same docs (the readthedocs.io
 # subdomain once a custom domain is in use) does not split search ranking.

@@ -88,3 +88,40 @@ article h3 {
 article h4 {
   margin-top: 1.5rem;
 }
+
+/* Inline code in colour.
+
+   Furo draws inline `code` in the body text colour inside a faint bordered box, so
+   config keys — most of config.md — barely stand out from prose. Give them an amber
+   foreground on a soft tint, no border, in both themes. Furo switches theme on
+   `body[data-theme]`, with `prefers-color-scheme` deciding when the choice is "auto".
+   The menus keep plain text (see the toc rule above). */
+
+body {
+  --color-inline-code-text: #9a4a0b;
+  --color-inline-code-background: #fbf0e6;
+}
+
+body[data-theme="dark"] {
+  --color-inline-code-text: #d19a66;
+  --color-inline-code-background: #2c313a;
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    --color-inline-code-text: #d19a66;
+    --color-inline-code-background: #2c313a;
+  }
+}
+
+article code.literal {
+  color: var(--color-inline-code-text);
+  background: var(--color-inline-code-background);
+  border: none;
+  padding: 0.1em 0.3em;
+}
+
+.toc-tree code.literal,
+.sidebar-tree code.literal {
+  color: inherit;
+}
