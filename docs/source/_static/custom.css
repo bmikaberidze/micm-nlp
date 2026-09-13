@@ -86,15 +86,20 @@ body {
   border-radius: 6px;
 }
 
-/* A hairline gap so a hovered item and the current page read as two pills, and the
-   same gap from the sidebar's right edge. */
+/* A hairline gap so a hovered item and the current page read as two pills. */
 
 .sidebar-tree li {
   margin-top: 2px;
 }
 
-.sidebar-tree {
-  margin-right: 2px;
+/* Section captions ("GETTING STARTED") sit on a straight 1px rule in the divider
+   colour, the height of a menu item (bottom padding reduced by the rule). */
+
+.sidebar-tree .caption {
+  border-bottom: 1px solid var(--color-background-border);
+  line-height: var(--sidebar-item-line-height);
+  padding: var(--sidebar-item-spacing-vertical) var(--sidebar-item-spacing-horizontal)
+           calc(var(--sidebar-item-spacing-vertical) - 1px);
 }
 
 .sidebar-tree .current-page > .reference {
