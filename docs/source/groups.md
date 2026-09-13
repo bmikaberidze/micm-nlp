@@ -4,6 +4,8 @@
 
 > How do I run many variations, and collect their results together?
 
+## Intro
+
 ```{include} ../../README.md
 :start-after: <!-- start:groups -->
 :end-before: <!-- end:groups -->

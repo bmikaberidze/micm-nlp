@@ -112,7 +112,7 @@ python -m micm_nlp run \
 <!-- end:blocks -->
 
 <!-- start:run-dir -->
-Everything the run produces lands in one directory:
+Everything the run writes is reachable from one directory:
 
 ```
 artefacts/runs/units/{model.name}/
@@ -125,6 +125,7 @@ artefacts/runs/units/{model.name}/
 ├── model -> …                       # symlink to the checkpoint
 └── wandb -> …                       # symlink to the wandb run
 ```
+Console output is kept only by an online wandb run, in `wandb/files/output.log`; an offline run writes no such file.
 <!-- end:run-dir -->
 
 [The unit run](https://micm-nlp.readthedocs.io/en/latest/config.html) is the full reference; [the stage-by-stage form](https://micm-nlp.readthedocs.io/en/latest/quickstart.html) is the same chain unwrapped.

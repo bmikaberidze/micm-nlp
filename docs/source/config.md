@@ -4,6 +4,8 @@
 
 > How do I describe a whole run in one place, and make it reproducible?
 
+## Intro
+
 ```{include} ../../README.md
 :start-after: <!-- start:blocks -->
 :end-before: <!-- end:blocks -->
@@ -45,10 +47,8 @@
 | `output` | Where the run writes and what every result row carries — see [`output`](#output) |
 | `generation_config` | Kwargs for the HuggingFace `GenerationConfig`, for generative evaluation |
 
-Each section is a pydantic model in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>` — the full schema.
-
-**Every section accepts extra keys.**   
-Undeclared keys pass through; declared ones are still validated.
+Each section is a pydantic model in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>` — the full schema.  
+Every section accepts extra keys.
 
 :::{note}
 PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  

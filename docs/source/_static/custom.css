@@ -70,3 +70,21 @@ body {
     width: 18em;
   }
 }
+
+/* Too little space above sub-headings.
+
+   Furo gives h1/h2 `margin-top: 1.75rem` but h3–h6 only the shared `.5rem`, so a
+   `###` section starts flush against the paragraph or table above it. Space above a
+   heading now steps down with its level, so the hierarchy is visible at a glance. */
+
+article h2 {
+  margin-top: 2.5rem;
+}
+
+article h3 {
+  margin-top: 2rem;
+}
+
+article h4 {
+  margin-top: 1.5rem;
+}
