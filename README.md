@@ -46,8 +46,8 @@ Beso Mikaberidze, Teimuraz Saghinadze, Guram Mikaberidze, Raphael Kalandadze, Ko
 | Contribution | In short | Answers |
 |---|---|---|
 | **Features** | ready-made functionality | *What can I do here that the HuggingFace stack does not already do?* |
-| **Pipeline Unification** | one unit config, one unit run | *How do I describe a whole run in one place, and make it reproducible?* |
-| **Experiment Orchestration** | one group config, many unit runs | *How do I run many variations, and collect their results together?* |
+| **Pipeline Unification** | unit config → unit run | *How do I describe a whole run in one place, and make it reproducible?* |
+| **Experiment Orchestration** | group config → many unit runs | *How do I run many variations, and collect their results together?* |
 
 <!-- end:contributions -->
 
@@ -113,12 +113,14 @@ Everything the run produces lands in one directory:
 
 ```
 artefacts/runs/units/{model.name}/
-├── config.yml              # the config as resolved
-├── info.json               # environment, versions, resolved seed and metric, wandb, paths
-├── eval_*.csv, test_*.csv  # one file per eval or test event, one row per metric group
-├── predictions_*.csv       # one row per sample, always
-├── model/ -> …             # the checkpoint
-└── wandb/ -> …             # the wandb run
+├── config.yml                       # the config as resolved
+├── info.json                        # environment, versions, resolved seed and metric, wandb, paths
+├── eval_validation_before_train.csv # one row per metric group
+├── eval_validation_after_train.csv  # same, from the best checkpoint
+├── test_after_train.csv             # same, on the test split
+├── predictions_after_train.csv      # one row per sample, always written
+├── model -> …                       # symlink to the checkpoint
+└── wandb -> …                       # symlink to the wandb run
 ```
 <!-- end:blocks -->
 
@@ -254,21 +256,24 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 ```bibtex
 @software{micm_nlp,
   author = {Mikaberidze, Beso},
-  title = {micm-nlp: a research framework for NLP based on HuggingFace},
+  title = {micm-nlp: a research framework for {NLP} built on {HuggingFace}},
   organization = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url = {https://github.com/bmikaberidze/micm-nlp},
   version = {0.4.0},
   year = {2026},
 }
 
-@misc{mikaberidze2025crosspromptencoderlowperforminglanguages,
-  title         = {Cross-Prompt Encoder for Low-Performing Languages},
-  author        = {Beso Mikaberidze and Teimuraz Saghinadze and Simon Ostermann and Philipp Muller},
-  year          = {2026},
-  eprint        = {2508.10352},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.CL},
-  url           = {https://arxiv.org/abs/2508.10352},
+@inproceedings{mikaberidze-etal-2025-cross,
+  title     = {Cross-Prompt Encoder for Low-Performing Languages},
+  author    = {Mikaberidze, Beso and Saghinadze, Temo and Ostermann, Simon and M{\"u}ller, Philipp},
+  booktitle = {Proceedings of the 14th International Joint Conference on Natural Language Processing and the 4th Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics},
+  month     = dec,
+  year      = {2025},
+  address   = {Mumbai, India},
+  publisher = {The Asian Federation of Natural Language Processing and The Association for Computational Linguistics},
+  url       = {https://aclanthology.org/2025.findings-ijcnlp.144/},
+  doi       = {10.18653/v1/2025.findings-ijcnlp.144},
+  pages     = {2380--2393},
 }
 ```
 <!-- end:citation -->

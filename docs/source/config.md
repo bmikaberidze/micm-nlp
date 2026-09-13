@@ -1,6 +1,6 @@
 # Pipeline Unification
 
-*one unit config, one unit run*
+*unit config → unit run*
 
 > How do I describe a whole run in one place, and make it reproducible?
 
@@ -11,10 +11,11 @@
 
 The schema behind these blocks is a set of pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
 
-**Class selection lives in YAML.** `model.pretrained.cls`, `trainer.cls`, `data_collator.cls` and `training_args.cls` are resolved by name at runtime against `transformers` — and, for trainers and collators, against this package's own modules too.  
-Adding a backbone or a head should need no code here. Where a class needs an unusual keyword argument, reach for the passthrough dictionaries before new code: `model.pretrained.args` and `tokenizer.args` are splatted verbatim into the constructor.
+**Class selection lives in YAML.**  
+Every `cls` key is a class name, resolved at runtime from `transformers` — and, for trainers and collators, from this package too — so a new backbone or head needs no code. Any extra keyword argument goes in the section's `args`, passed verbatim to the constructor.
 
-**Every section accepts extra keys.** All sections inherit from a permissive base, so a file can carry keys the schema does not declare and runtime code can attach computed attributes. Validation catches the fields that matter without blocking the rest.
+**Every section accepts extra keys.**  
+Undeclared keys pass through; declared ones are still validated.
 
 :::{note}
 Scientific notation works without a decimal point. PyYAML's `SafeLoader` follows YAML 1.1, where `5e-5` parses as a *string*; `micm_nlp.config` widens the float resolver once at import, so `learning_rate: 5e-5` is a float everywhere.
@@ -101,9 +102,9 @@ Early stopping is decoupled from best-checkpoint selection.
 This matters when the selection metric and the stopping signal should differ — for
 example selecting on accuracy while the evaluation loss is unstable.
 
-### Token-budget batching
+### `eval/test_max_tokens_per_batch`
 
-Instead of a fixed `per_device_eval_batch_size`, batches can be built to a target
+Token-budget batching: instead of a fixed `per_device_eval_batch_size`, batches can be built to a target
 token count. This keeps memory roughly constant across languages whose tokenizations
 differ in length by an order of magnitude.
 
@@ -128,28 +129,7 @@ order. Anything zipping predictions against a dataset split must use the sampler
 prediction saving; custom consumers of raw predictions should be aware of it.
 :::
 
-## `output`
-
-Optional. Every run writes its resolved `config.yml`, `info.json`, one metrics
-file per evaluation event and always-on predictions into its run directory;
-this block only decorates that.
-
-```yaml
-output:
-  dir: artefacts/runs/groups/my_group/20260907_1431_spt   # overrides the run directory
-  config_file: config.yml                                # name of the saved config copy
-  prefix: ''                                             # 'separate_' is set by the framework on a separate_test config; a runner may set its own
-  columns: {seed: 11, method: spt}                       # stamped onto every result row
-```
-
-`dir` is used as given — an absolute path, or one relative to where the process runs, not to the workspace.  
-`run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a config run on its own lands under `runs/units/`.
-
-Every evaluation event writes its own file — `eval_<split>_<stage>.csv`, `test_<stage>.csv`, `predictions_<stage>.csv`, where stage is `before_train` or `after_train` and absent for a run that never trains.  
-Metrics rows carry `metric_group`, the metrics and `step`, plus the static columns.  
-The directory also holds `info.json` and the `model` / `wandb` symlinks.
-
-## `optimizer_grouped_parameters`
+### `optimizer_grouped_parameters`
 
 Assigns a different learning rate and weight decay to parameters whose names contain
 given substrings — the mechanism behind giving prompt embeddings their own schedule:
@@ -165,6 +145,38 @@ custom_training_args:
 
 Parameters that match no group fall back to the global `learning_rate` and
 `weight_decay` from `training_args`.
+
+## What one run leaves behind
+
+Every run — in a group or not — writes one directory, and the trainer is its only writer.
+
+A run that never trains — `mode: test` or `evaluate` — has one pass per event, so its files carry no stage suffix: `test.csv`, `predictions.csv`.
+
+`info.json` holds what the config cannot: `started` / `finished`, every `SLURM*` variable, host, Python version, `CUDA_VISIBLE_DEVICES`, the versions of the packages that decide numerics, the wandb id / url / dir, the resolved seed and `metric_for_best_model`, and `paths.best_checkpoint`.  
+The rule behind the split: **the config is read-only for everything that consumes it** — a fact about the run goes to `info.json`, never back into the config.
+
+Each `evaluate()` or `predict()` call is an *event*, and each event writes its file once, from the output HuggingFace returned.
+
+Metric rows are the `compute_metrics` dict verbatim, one row per metric group, carrying `metric_group`, the metrics, `step`, `time_id` and `uuid4`, plus the columns from `output.columns`.  
+Predictions carry the same preprocessing the metric saw, in the dataloader's emit order, so every metric is recomputable from the file.  
+There is no row-count column — the count *is* the predictions file's length.
+
+The same rows reach `output.results` and `output.predictions` in memory, keyed by event name, so a runner reads back what it wrote without parsing the files.
+
+## `output`
+
+Optional. Decorates the run directory; the run writes the same files without it.
+
+```yaml
+output:
+  dir: artefacts/runs/groups/my_group/20260907_1431_spt   # overrides the run directory
+  config_file: config.yml                                # name of the saved config copy
+  prefix: ''                                             # 'separate_' is set by the framework on a separate_test config; a runner may set its own
+  columns: {seed: 11, method: spt}                       # stamped onto every result row
+```
+
+`dir` is used as given — an absolute path, or one relative to where the process runs, not to the workspace.  
+`run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a config run on its own lands under `runs/units/`.
 
 ## `task.preproc_rules`
 

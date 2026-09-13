@@ -1,6 +1,6 @@
 # Experiment Orchestration
 
-*one group config, many unit runs*
+*group config → many unit runs*
 
 > How do I run many variations, and collect their results together?
 
@@ -9,45 +9,31 @@
 :end-before: <!-- end:groups -->
 ```
 
-## What one run leaves behind
+## Identity columns
 
-Every run — in a group or not — writes one directory, and the trainer is its only writer. Nothing is appended to, nothing overwritten.
-
-```
-artefacts/runs/groups/{group}/{time_id}_{name}/
-├── config.yml                       # the config as the framework resolved it
-├── info.json                        # what the run did (see below)
-├── eval_validation_before_train.csv
-├── eval_validation_after_train.csv  # …from the best checkpoint
-├── test_after_train.csv             # one row per metric group
-├── predictions_after_train.csv      # one row per sample, always written
-├── model -> …                       # symlink to the checkpoint
-└── wandb -> …                       # symlink to the wandb run
-```
-
-A run that never trains — `mode: test` or `evaluate` — has one pass per event, so its files carry no stage suffix: `test.csv`, `predictions.csv`.
-
-`info.json` holds what the config cannot: `started` / `finished`, every `SLURM*` variable, host, Python version, `CUDA_VISIBLE_DEVICES`, the versions of the packages that decide numerics, the wandb id / url / dir, the resolved seed and `metric_for_best_model`, and `paths.best_checkpoint`.  
-The rule behind the split: **the config is read-only for everything that consumes it** — a fact about the run goes to `info.json`, never back into the config.
-
-## One event, one file
-
-Each `evaluate()` or `predict()` call is an *event*, and each event writes its file once, from the output HuggingFace returned.
-
-Metric rows are the `compute_metrics` dict verbatim, split by metric group, with the framework's identity columns stamped on every row: `group`, `name`, `index`, `config`, `seed`, `time_id`, `uuid4`, plus any other scalar key on the entry.  
-Predictions carry the same preprocessing the metric saw, in the dataloader's emit order, so every metric is recomputable from the file.  
-There is no row-count column — the count *is* the predictions file's length.
-
-The same rows reach `output.results` and `output.predictions` in memory, keyed by event name, so a runner reads back what it wrote without parsing the files.
-
-```{note}
-Reading a whole group back into one table — pooling replicates, comparing methods — is not yet part of the package. Today that lives in the consumer repository. See the roadmap.
-```
+Each run in a group writes the same directory as a {doc}`unit run <config>`.  
+Every row of its eval_*.csv and test_*.csv also gets the run's identity: group, name, index, seed, and any extra key you add to the run entry, e.g. `method: spt`.
 
 ## Bringing your own science
 
-The default runner is `micm_nlp.pipeline:run`. Replace it with `--runner` when a run needs to do something the pipeline does not: evaluate on many target languages, swap a dataset between stages, train two models and compare them.
+The default runner is `micm_nlp.pipeline:run`. Replace it with `--runner` when a run needs to do something the pipeline does not.  
+E.g. transfer learning: fine-tune the model on one dataset, then test it on another.  
+That takes two configs in a single entry: `config` with `mode: finetune`, and `separate_test.config` with `mode: test`.
 
-A runner is a callable `run(config, ctx)`. The first argument is the resolved config; the second is a {py:class}`~micm_nlp.group.RunContext` carrying everything the framework knows that the config does not — the entry as written, the group and run name, the index, the output directory, unknown CLI flags as `extras` (`--source-group joshi5` arrives as `{'source_group': 'joshi5'}`), and `test_config` when the entry declared a `separate_test`.
+A runner is a callable with this contract:
 
-`RunContext` is a frozen dataclass rather than keyword arguments, so adding a field never breaks a runner written against an older version.
+```python
+def run(config: CONFIG, ctx: RunContext) -> RunOutput:
+    ...                                   # tokenizer, dataset, model — whatever your science needs
+    trainer = TRAINER(model, dataset, tokenizer)
+    return trainer.run()
+```
+
+- `config` is the resolved config.  
+- `ctx` is a {py:class}`~micm_nlp.group.RunContext`: the group and run names, the index and the entry as written, unknown CLI flags as `extras`, and resolved `test_config` when the entry declared a `separate_test`.  
+- The return value is the trainer's {py:class}`~micm_nlp.training.run_output.RunOutput` — the trainer is what writes the results into the run directory.
+
+:::{note}
+For the test phase, a second `TRAINER` built from `ctx.test_config` writes its `separate_`-prefixed files into the same directory.
+:::
+
