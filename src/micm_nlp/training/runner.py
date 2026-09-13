@@ -23,7 +23,6 @@ import math
 import os
 import random
 import shutil
-from types import SimpleNamespace
 from typing import ClassVar
 
 import torch
@@ -119,11 +118,10 @@ class TRAINER:
         ``test.run`` and ``test.zero_shot`` are also true; each phase is
         otherwise gated by its own flag in ``eval`` / ``test``.
 
-        :returns: the test output -- both the full-shot and zero-shot results when
-            both ran.
+        :returns: the run's :class:`~micm_nlp.training.run_output.RunOutput` --
+            the same object :attr:`output` holds, with every result and prediction
+            row this run wrote, keyed by event name.
         """
-        full_shot_res = None
-        zero_shot_res = None
         test_pref = 'test'
         test_z_pref = 'test_zero'
         run_test = getattr(self._config.test, 'run', True)
@@ -145,7 +143,7 @@ class TRAINER:
             self._output.note_wandb(self._model.hf.wandb_run or wandb.run)
             # Zero Shot Testing
             if run_test and zero_shot:
-                zero_shot_res = self._test(test_z_pref, stage=before)
+                self._test(test_z_pref, stage=before)
 
             if not (run_test and zero_shot and zero_shot_only):
                 if self._config.mode in [ModeSE.TRAIN, ModeSE.FINETUNE]:
@@ -158,13 +156,13 @@ class TRAINER:
                     self._evaluate(stage=after)
                     self._evaluate(DsSplitSE.TEST, test_pref, stage=after)
                 if run_test or self._config.mode == ModeSE.TEST:
-                    full_shot_res = self._test(test_pref, stage=after)
+                    self._test(test_pref, stage=after)
 
             # Finish Weights and Biases
             if self._model.hf.wandb_run:
                 self._model.hf.wandb_run.finish()
 
-            return SimpleNamespace(full_shot=full_shot_res, zero_shot=zero_shot_res)
+            return self._output
 
         finally:
             self._output.write_run_info(finished=utils.get_time_id())

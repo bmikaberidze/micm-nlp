@@ -84,7 +84,8 @@ def test_citation_title_carries_the_core_phrase():
     citation = _marker_block(_readme(), 'citation')
     title = re.search(r'^\s*title\s*=\s*\{(.+?)\},?\s*$', citation, re.M)
     assert title, 'citation block has no title field'
-    assert CORE_PHRASE in title.group(1)
+    # BibTeX case-protection braces ({NLP}) are markup, not words.
+    assert CORE_PHRASE in re.sub(r'[{}]', '', title.group(1))
 
 
 def test_citation_version_matches_the_real_version():

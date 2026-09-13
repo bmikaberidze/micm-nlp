@@ -29,6 +29,26 @@ def test_setup_output(tmp_path):
     assert t._output.columns['group'] == 'g' and t._output.columns['uuid4'] == 'u-1'
 
 
+def test_run_returns_the_run_output(tmp_path, monkeypatch):
+    """``run()`` hands back the same ``RunOutput`` it wrote through -- not the old
+    ``full_shot`` / ``zero_shot`` pair."""
+    from micm_nlp.training import runner
+
+    t = _bare(tmp_path)
+    t._config = CONFIG(mode='test', model={'architecture': 'toy', 'pretrained': {'source': 'local', 'name': 'm'}},
+                       output={'dir': str(tmp_path / 'run')}, test={'run': True})
+    t._model.hf = SimpleNamespace(wandb_run=None)
+    t._setup_output()
+    monkeypatch.setattr(runner.wandb, 'run', None)
+    monkeypatch.setattr(t, '_init_wandb', lambda: None, raising=False)
+    tested = []
+    monkeypatch.setattr(t, '_test', lambda prefix, stage=None: tested.append((prefix, stage)), raising=False)
+
+    assert t.run() is t._output
+    assert tested == [('test', None)]
+    assert 'finished' in json.loads((tmp_path / 'run' / RUN_INFO_FILE).read_text())
+
+
 def test_emit_order(tmp_path):
     t = _bare(tmp_path)
     t.trainer = SimpleNamespace(_last_test_batch_sampler=SimpleNamespace(order=[2, 0, 1]))

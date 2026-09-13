@@ -20,6 +20,8 @@ from micm_nlp.models.model import MODEL
 from micm_nlp.training.runner import TRAINER
 from micm_nlp.datasets.dataset import DATASET
 from micm_nlp.tokenizers.tokenizer import load as load_tokenizer
+from micm_nlp.group import RunContext
+from micm_nlp.training.run_output import RunOutput
 # isort: on
 
 
@@ -41,7 +43,7 @@ def load_model(config):
     return MODEL(config)
 
 
-def run(config, ctx=None):
+def run(config: CONFIG | str, ctx: RunContext | None = None) -> RunOutput | None:
     """CONFIG → TOKENIZER → DATASET → MODEL → TRAINER → results
 
     ``ctx`` is the group runner's :class:`~micm_nlp.group.RunContext`; this
@@ -84,7 +86,5 @@ def run(config, ctx=None):
 
     # Trainer
     trainer = TRAINER(model, dataset, tokenizer)
-    trainer.run()
-
-    # Output
-    return trainer.output
+    output = trainer.run()
+    return output

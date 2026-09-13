@@ -31,10 +31,7 @@ model = MODEL(config)
 
 # Trainer
 trainer = TRAINER(model, dataset, tokenizer)
-trainer.run()
-
-# Output
-output = trainer.output
+output = trainer.run()
 ```
 
 ## Examples

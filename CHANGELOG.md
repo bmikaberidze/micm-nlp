@@ -61,6 +61,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
   pair named its two results `full_shot` / `zero_shot` — a second vocabulary for
   the same events — and dropped the four `_evaluate` results entirely, which were
   reachable only by reading the files back.
+- **Breaking:** `TRAINER.run()` returns the same `RunOutput` — `output = trainer.run()` —
+  instead of a `SimpleNamespace(full_shot=…, zero_shot=…)` of raw HuggingFace
+  prediction outputs. The metrics those carried are in `output.results`, one row
+  per metric group.
 - **Breaking:** `micm_nlp.init()` takes the workspace root positionally —
   `init('/path/to/workspace', pretty_output=True)`. The dict and `MicmNlpConfig`
   forms still work, so `init({'root_path': ...})` is unaffected.

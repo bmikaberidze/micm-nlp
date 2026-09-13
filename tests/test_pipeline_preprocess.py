@@ -20,7 +20,7 @@ def _stub_stages(monkeypatch, calls):
     monkeypatch.setattr(
         pipeline, 'TRAINER',
         lambda model, dataset, tokenizer: type(
-            'T', (), {'run': lambda self: 'ran', 'output': 'the-output'},
+            'T', (), {'run': lambda self: 'the-output'},
         )(),
     )
 
@@ -34,8 +34,8 @@ def test_preprocess_mode_stops_before_the_model(monkeypatch):
 
 
 def test_other_modes_return_the_run_output(monkeypatch):
-    """The trainer's ``output`` is what comes back -- not the model, not the
-    trainer, and not the value ``TRAINER.run()`` returns."""
+    """What ``TRAINER.run()`` returns -- the run's ``RunOutput`` -- is what comes
+    back: not the model, not the trainer."""
     calls = []
     _stub_stages(monkeypatch, calls)
     assert pipeline.run(CONFIG(mode='train', model={'architecture': 'toy'})) == 'the-output'

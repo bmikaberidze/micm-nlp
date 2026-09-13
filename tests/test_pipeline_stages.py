@@ -22,9 +22,8 @@ QUICKSTART = REPO_ROOT / 'docs' / 'source' / 'quickstart.md'
 _STAGES_BLOCK = re.compile(r'## Drive the stages yourself.*?```python\n(.*?)```', re.DOTALL)
 
 # Lines that belong to the listing but not to a function body: the imports a
-# reader needs, the config load ``run`` takes as an argument, and the trailing
-# line naming what ``run`` returns.
-_LISTING_ONLY = ('from ', 'import ', 'config = CONFIG.from_yaml', 'output = trainer.output')
+# reader needs, and the config load ``run`` takes as an argument.
+_LISTING_ONLY = ('from ', 'import ', 'config = CONFIG.from_yaml')
 
 
 def _statements(text: str) -> list[str]:
