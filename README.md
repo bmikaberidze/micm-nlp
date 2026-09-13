@@ -70,10 +70,10 @@ init('/path/to/your/workspace')
 output = run(example('xsc_finetune.yml'))
 ```
 
-`init()` loads `.env` and sets your workspace root. A bare `init()` is enough when `PROJECT_ROOT_PATH` is set in `.env` or the environment.  
-`run()` takes a config, and chains: load tokenizer → load and preprocess dataset → load model, with PEFT if configured → train → evaluate.  
-`example()` resolves the path of a config shipped inside the package.  
-`output` holds info about run, raw predictions, metric results, and the dir path where everything is written.  
+- `init()` loads `.env` and sets your workspace root. A bare `init()` is enough when `PROJECT_ROOT_PATH` is set in `.env` or the environment.  
+- `run()` takes a config, and chains: load tokenizer → load and preprocess dataset → load model, with PEFT if configured → train → evaluate.  
+- `example()` resolves the path of a config shipped inside the package.  
+- `output` holds info about run, raw predictions, metric results, and the dir path where everything is written.  
 <!-- end:quickstart -->
 
 ## Pipeline unification
@@ -98,8 +98,8 @@ cuda:                 {...}
 env:                  {...}
 ```
 
-`model`, `tokenizer` and `ds` can each be loaded from the HuggingFace Hub, or from local disk.  
-`cls` keys name HuggingFace classes, constructed at runtime, so a new backbone, head, trainer or collator needs no code.  
+- `model`, `tokenizer` and `ds` can each be loaded from the HuggingFace Hub, or from local disk.  
+- `cls` keys name HuggingFace classes, constructed at runtime, so a new backbone, head, trainer or collator needs no code.  
 The package's own trainers and collators plug in the same way.  
 
 ```bash
@@ -107,7 +107,7 @@ python -m micm_nlp run \
     --config        configs/units/tune.lm.aya.ds.bebe.yml \
     --root-path     /path/to/your/workspace
 ```
-`--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.
+- `--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.
 
 Everything the run produces lands in one directory:
 
@@ -149,9 +149,9 @@ python -m micm_nlp run-group \
     --root-path     /path/to/your/workspace \
     --runner        /path/to/your/custom/run.py
 ```
-`--run-index` selects one run; skip it to run everything.  
-`--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.  
-`--runner` allows your own custom `run(config, ctx)`, or can be skipped — resolved config, run entry, and unknown CLI flags are passed. Append `:fn` to name a function other than `run`.
+- `--run-index` selects one run; skip it to run everything.  
+- `--root-path` is only needed when `PROJECT_ROOT_PATH` is not set.  
+- `--runner` allows your own custom `run(config, ctx)`, or can be skipped — resolved config, run entry, and unknown CLI flags are passed. Append `:fn` to name a function other than `run`.
 
 ```bash
 sbatch --array=0-1 my_wrapper.sh \
@@ -254,7 +254,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 ```bibtex
 @software{micm_nlp,
   author = {Mikaberidze, Beso},
-  title = {micm-nlp: a research framework for NLP},
+  title = {micm-nlp: a research framework for NLP based on HuggingFace},
   organization = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url = {https://github.com/bmikaberidze/micm-nlp},
   version = {0.4.0},
