@@ -18,7 +18,8 @@ Every `cls` key is a class name, resolved at runtime from `transformers` — and
 Undeclared keys pass through; declared ones are still validated.
 
 :::{note}
-Scientific notation works without a decimal point. PyYAML's `SafeLoader` follows YAML 1.1, where `5e-5` parses as a *string*; `micm_nlp.config` widens the float resolver once at import, so `learning_rate: 5e-5` is a float everywhere.
+PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
+`micm_nlp.config` extends its float resolver at import, so `learning_rate: 5e-5` is a float everywhere.
 :::
 
 ## Top-level sections
