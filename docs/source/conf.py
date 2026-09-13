@@ -94,11 +94,11 @@ autoapi_keep_files = False
 # -- HTML --------------------------------------------------------------------
 
 html_theme = 'furo'
-# Furo's default dark highlighting ('native') colours little beyond keywords and
-# strings, so a code block reads as one grey mass. One Dark matches the editor theme
-# the docs are written in; 'friendly' is its light-mode counterpart.
+# Code blocks are re-coloured in the browser by _static/shiki.js with VS Code's One
+# Dark Pro. These Pygments styles are what shows before it runs, and if the CDN is
+# unreachable: close to the Shiki themes, so the swap is barely visible.
 pygments_style = 'friendly'
-pygments_dark_style = 'one-dark'
+pygments_dark_style = 'github-dark'
 # Where these pages officially live. Sphinx turns it into a <link rel="canonical">
 # on every page, so a second hostname serving the same docs (the readthedocs.io
 # subdomain once a custom domain is in use) does not split search ranking.
@@ -133,7 +133,7 @@ def _first(*names: str) -> str | None:
 
 
 html_css_files = ['custom.css']
-html_js_files = ['copy-for-llm.js']
+html_js_files = ['copy-for-llm.js', ('shiki.js', {'type': 'module'})]
 
 _logo = _first('logo')
 _logo_light = _first('logo-light') or _logo

@@ -125,3 +125,45 @@ article code.literal {
 .sidebar-tree code.literal {
   color: inherit;
 }
+
+/* Shiki code blocks (see shiki.js).
+
+   Shiki emits both themes as per-token CSS variables; pick the one that matches
+   Furo's theme, the same three-way switch as the inline-code colours above. The
+   dark background is One Dark Pro *Darker*'s #23272e rather than One Dark Pro's
+   #282c34, and it is painted on the `.highlight` wrapper too so Furo's Pygments
+   background does not show around the edges. */
+
+body {
+  --shiki-block-background: #f6f8fa;
+}
+
+pre.shiki,
+pre.shiki span {
+  color: var(--shiki-light);
+}
+
+body[data-theme="dark"] {
+  --shiki-block-background: #23272e;
+}
+
+body[data-theme="dark"] pre.shiki,
+body[data-theme="dark"] pre.shiki span {
+  color: var(--shiki-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    --shiki-block-background: #23272e;
+  }
+
+  body:not([data-theme="light"]) pre.shiki,
+  body:not([data-theme="light"]) pre.shiki span {
+    color: var(--shiki-dark);
+  }
+}
+
+.highlight:has(pre.shiki),
+pre.shiki {
+  background-color: var(--shiki-block-background) !important;
+}
