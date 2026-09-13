@@ -8,16 +8,17 @@
 :start-after: <!-- start:blocks -->
 :end-before: <!-- end:blocks -->
 ```
+## Output Dir Details
 
-**Every section accepts extra keys.**  
-Undeclared keys pass through; declared ones are still validated.
+- The trainer is the only writer of the run directory.
+- `info.json` holds what the config cannot: `started` / `finished`, every `SLURM*` variable, host, Python, `CUDA_VISIBLE_DEVICES`, the package versions, wandb id / url / dir, the resolved seed and `metric_for_best_model`, `paths.best_checkpoint`.
+- Metric rows are the `compute_metrics` dict verbatim, plus `metric_group`, `step`, `time_id`, `uuid4` and `output.columns`.
+- Predictions are saved after the same preprocessing the metric used, so any metric can be recomputed from the file; the `sample` column is the example's position in the test split.
+- `<stage>` is `before_train` or `after_train`; a run that never trains has no suffix: `test.csv`, `predictions.csv`.
+- Each `evaluate()` or `predict()` call is an event and writes its file once.
+- The same rows are in memory as `output.results` and `output.predictions`, keyed by event name.
 
-:::{note}
-PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
-`micm_nlp.config` extends its float resolver at import, so `learning_rate: 5e-5` is a float everywhere.
-:::
-
-## Top-level sections
+## Config Details
 
 | Section | Purpose |
 |---|---|
@@ -40,10 +41,34 @@ PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.
 
 Each section is a pydantic model in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>` — the full schema.
 
-## `peft`
+**Every section accepts extra keys.**   
+Undeclared keys pass through; declared ones are still validated.
 
-All Cross-Prompt Encoder variants use `peft_type: XPE` and differ only in
-`encoder_ratio` — the fraction of virtual tokens that are cross-prompt encoded.
+:::{note}
+PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
+`micm_nlp.config` extends its float resolver at import, so `learning_rate: 5e-5` is a float everywhere.
+:::
+
+### `task.preproc_rules`
+
+Post-processing applied to predictions before metrics.
+
+| Key | Meaning |
+|---|---|
+| `flatten` | Flatten predictions and labels before metric computation |
+| `filter_padded` | Drop padded positions |
+| `label_id_to_name` / `label_name_to_id` | Convert between label ids and names |
+| `label_name_strip_lower` | Normalise label names before comparison |
+| `verify_labels_match` | Assert predictions and labels line up |
+| `calc_confusion_matrix` | Produce a confusion matrix |
+| `prediction_axis` | Axis for the argmax (default `-1`) |
+| `label_restricted_likelihood` | Restrict the answer-slot argmax to the candidate tokens in `ds.label.names` |
+
+`label_restricted_likelihood` is lm-eval-harness `multiple_choice` scoring for `mcqa_ftp`: only the label tokens compete at the answer position, not the full vocabulary. Off by default.
+
+### `peft`
+
+All Cross-Prompt Encoder variants use `peft_type: XPE` and differ only in `encoder_ratio`, the fraction of virtual tokens that are cross-prompt encoded.
 
 | `encoder_ratio` | Variant | Behaviour |
 |---|---|---|
@@ -63,11 +88,9 @@ peft:
     encoder_ratio: 1
 ```
 
-`PEFT.setup_model()` routes to the Cross-Prompt Encoder path or to stock PEFT
-depending on this block. Checkpoints written before the `XPE` `peft_type` existed
-(`P_TUNING` plus an `encoder_ratio`) still load.
+Any other `peft_type` goes to stock PEFT.
 
-## `custom_training_args`
+### `custom_training_args`
 
 The knobs this package adds beyond HuggingFace's `TrainingArguments`.
 
@@ -87,7 +110,8 @@ The knobs this package adds beyond HuggingFace's `TrainingArguments`.
 | `random_task_exclusion` | bool | Batch sampler that holds out a random task |
 | `generation_whitelist` | list[str] | Restrict generation to these strings |
 
-### `early_stopping_metric`
+
+#### `early_stopping_metric`
 
 Early stopping is decoupled from best-checkpoint selection.
 
@@ -97,14 +121,11 @@ Early stopping is decoupled from best-checkpoint selection.
 | any literal key, e.g. `'eval_loss'` | Monitor that key directly; direction inferred (a name containing `loss` means lower is better) |
 | unset | Defaults to `'eval_loss'` |
 
-This matters when the selection metric and the stopping signal should differ — for
-example selecting on accuracy while the evaluation loss is unstable.
+Use it to select on accuracy while the evaluation loss is too unstable to stop on.
 
-### `eval/test_max_tokens_per_batch`
+#### `eval/test_max_tokens_per_batch`
 
-Token-budget batching: instead of a fixed `per_device_eval_batch_size`, batches can be built to a target
-token count. This keeps memory roughly constant across languages whose tokenizations
-differ in length by an order of magnitude.
+Token-budget batching: batches are built to a token count, keeping memory steady across languages whose tokenizations differ in length by an order of magnitude.
 
 | Value | Behaviour |
 |---|---|
@@ -112,25 +133,26 @@ differ in length by an order of magnitude.
 | `'auto'` | Probe the GPU at runtime for the largest budget that does not run out of memory |
 | an integer | Skip the probe and use this budget exactly |
 
-One constraint is validated at config load: the budget is mutually exclusive with the
-matching `*_force_sequential` flag — token-budget mode needs length-sorted batching,
-which a sequential sampler overrides. Booleans are rejected, and integers must be
-positive.
-
-HuggingFace's `training_args.group_by_length` is **not** rejected — it is ignored on
-this path, because the token-budget sampler always length-sorts internally.
+| Rule, checked at config load | Why |
+|---|---|
+| Excludes the matching `*_force_sequential` | Token budgets need length-sorted batches; a sequential sampler overrides that |
+| Booleans rejected, integers must be positive | — |
+| `training_args.group_by_length` is ignored, not rejected | The token-budget sampler length-sorts anyway |
 
 :::{warning}
-The token-budget sampler yields samples in globally length-sorted order, not dataset
-order. Anything zipping predictions against a dataset split must use the sampler's
-`order` permutation. The package does this internally for per-task grouping and
-prediction saving; custom consumers of raw predictions should be aware of it.
+Samples come out length-sorted, not in dataset order.  
+Zip predictions against a split through the sampler's `order` permutation — the package already does, for per-task grouping and saved predictions.
 :::
 
-### `optimizer_grouped_parameters`
+#### `optimizer_grouped_parameters`
 
-Assigns a different learning rate and weight decay to parameters whose names contain
-given substrings — the mechanism behind giving prompt embeddings their own schedule:
+Gives parameters their own learning rate and weight decay — the mechanism behind a separate schedule for prompt embeddings.
+
+| Key | Meaning |
+|---|---|
+| `param_name_parts` | A trainable parameter joins the group if its name contains any of these substrings |
+| `lr` | The group's learning rate |
+| `weight_decay` | The group's weight decay |
 
 ```yaml
 custom_training_args:
@@ -141,63 +163,16 @@ custom_training_args:
       weight_decay: 0.01
 ```
 
-Parameters that match no group fall back to the global `learning_rate` and
-`weight_decay` from `training_args`.
+Parameters that match no group use `learning_rate` and `weight_decay` from `training_args`.
 
-## What one run leaves behind
+### `output`
 
-Every run — in a group or not — writes one directory, and the trainer is its only writer.
+`output` is optional; the group runner fills it for you.  
+Set it by hand only to change `dir`, add `columns`, or set a `prefix` in a custom runner.
 
-A run that never trains — `mode: test` or `evaluate` — has one pass per event, so its files carry no stage suffix: `test.csv`, `predictions.csv`.
+## Config Example
 
-`info.json` holds what the config cannot: `started` / `finished`, every `SLURM*` variable, host, Python version, `CUDA_VISIBLE_DEVICES`, the versions of the packages that decide numerics, the wandb id / url / dir, the resolved seed and `metric_for_best_model`, and `paths.best_checkpoint`.  
-The rule behind the split: **the config is read-only for everything that consumes it** — a fact about the run goes to `info.json`, never back into the config.
-
-Each `evaluate()` or `predict()` call is an *event*, and each event writes its file once, from the output HuggingFace returned.
-
-Metric rows are the `compute_metrics` dict verbatim, one row per metric group, carrying `metric_group`, the metrics, `step`, `time_id` and `uuid4`, plus the columns from `output.columns`.  
-Predictions carry the same preprocessing the metric saw, in the dataloader's emit order, so every metric is recomputable from the file.  
-There is no row-count column — the count *is* the predictions file's length.
-
-The same rows reach `output.results` and `output.predictions` in memory, keyed by event name, so a runner reads back what it wrote without parsing the files.
-
-## `output`
-
-Optional. Decorates the run directory; the run writes the same files without it.
-
-```yaml
-output:
-  dir: artefacts/runs/groups/my_group/20260907_1431_spt   # overrides the run directory
-  config_file: config.yml                                # name of the saved config copy
-  prefix: ''                                             # 'separate_' is set by the framework on a separate_test config; a runner may set its own
-  columns: {seed: 11, method: spt}                       # stamped onto every result row
-```
-
-`dir` is used as given — an absolute path, or one relative to where the process runs, not to the workspace.  
-`run-group` fills `dir` and the identity columns itself, and sets `prefix` on a `separate_test` config; a config run on its own lands under `runs/units/`.
-
-## `task.preproc_rules`
-
-Post-processing applied to predictions before metrics.
-
-| Key | Meaning |
-|---|---|
-| `flatten` | Flatten predictions and labels before metric computation |
-| `filter_padded` | Drop padded positions |
-| `label_id_to_name` / `label_name_to_id` | Convert between label ids and names |
-| `label_name_strip_lower` | Normalise label names before comparison |
-| `verify_labels_match` | Assert predictions and labels line up |
-| `calc_confusion_matrix` | Produce a confusion matrix |
-| `prediction_axis` | Axis for the argmax (default `-1`) |
-| `label_restricted_likelihood` | Restrict the answer-slot argmax to the candidate tokens in `ds.label.names` |
-
-`label_restricted_likelihood` implements lm-eval-harness `multiple_choice` scoring
-for `mcqa_ftp`: rather than taking a full-vocabulary argmax at the answer position,
-only the configured label tokens compete. It is opt-in and off by default.
-
-## A complete example
-
-`xsc_finetune.yml` (from `micm-nlp init-examples`) preprocess and fine-tunes BLOOM-560M with the Cross-Prompt
+`xsc_finetune.yml` (from `micm-nlp init-examples`) preprocesses and fine-tunes BLOOM-560M with the Cross-Prompt
 Encoder on the Arabic split of FTP-reframed XStoryCloze:
 
 ```{literalinclude} ../../src/micm_nlp/configs/xsc_finetune.yml
