@@ -11,7 +11,7 @@ A research framework for NLP — the whole pipeline in a single YAML, run alone 
 Builds on the HuggingFace stack and adds a layer of features of its own.
 <!-- end:tagline -->
 
-**[micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/)** — full documentation 📚
+[micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/) — full documentation 📚
 
 <!--
 The blocks between the start/end markers below are pulled into the documentation
@@ -45,9 +45,9 @@ Beso Mikaberidze, Teimuraz Saghinadze, Guram Mikaberidze, Raphael Kalandadze, Ko
 
 | Contribution | In short | Answers |
 |---|---|---|
-| **Features** | ready-made functionality | *What can I do here that the HuggingFace stack does not already do?* |
-| **Pipeline Unification** | unit config → unit run | *How do I describe a whole run in one place, and make it reproducible?* |
-| **Experiment Orchestration** | group config → many unit runs | *How do I run many variations, and collect their results together?* |
+| [Pipeline Unification](https://micm-nlp.readthedocs.io/en/latest/config.html) | unit&nbsp;config&nbsp;→&nbsp;unit&nbsp;run | *How do I describe a whole run in one place, and make it reproducible?* |
+| [Experiment Orchestration](https://micm-nlp.readthedocs.io/en/latest/groups.html) | group&nbsp;config&nbsp;→&nbsp;many&nbsp;unit&nbsp;runs | *How do I run many variations, and collect their results together?* |
+| [Features](https://micm-nlp.readthedocs.io/en/latest/features.html)  | ready-made&nbsp;functionality | *What can I do here that the HuggingFace stack does not already do?* |
 
 <!-- end:contributions -->
 

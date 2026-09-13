@@ -182,6 +182,7 @@ _LIGHT = {
     'color-inline-code-text': '#9a4a0b',
     'color-inline-code-background': '#fbf0e6',
     'color-code-block-background': '#f6f8fa',
+    'color-highlight-on-target': '#e8eefc',
 }
 _DARK = {
     'color-background-primary': '#23272e',
@@ -203,6 +204,7 @@ _DARK = {
     'color-inline-code-text': '#d19a66',
     'color-inline-code-background': '#2c313a',
     'color-code-block-background': '#1b1e23',
+    'color-highlight-on-target': 'rgba(97, 175, 239, 0.14)',
 }
 
 html_theme_options = {
