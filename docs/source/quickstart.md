@@ -37,7 +37,7 @@ trainer.run()
 output = trainer.output
 ```
 
-## Worked examples
+## Examples
 
 ```{include} ../../README.md
 :start-after: <!-- start:examples -->

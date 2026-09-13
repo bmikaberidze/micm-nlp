@@ -78,9 +78,9 @@ output = run(example('xsc_finetune.yml'))
 
 ## Pipeline unification
 
+<!-- start:blocks -->
 One YAML ***unit config*** describes a whole pipeline that is executed as a ***unit run*** and lands in dedicated output dir.
 
-<!-- start:blocks -->
 ```yaml
 mode:                 finetune # preprocess | train | finetune | evaluate | test
 task:                 {category, name, metric_groups, preproc_rules}

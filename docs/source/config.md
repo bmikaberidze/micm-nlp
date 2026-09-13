@@ -1,19 +1,15 @@
-# Unit run · one config
+# Pipeline Unification
 
-Every run is described by a single YAML file loaded with `CONFIG.from_yaml` — the
-**unit config**. One of these is one run; a {doc}`group config <groups>` is many of
-them. This page is the package's *pipeline unification*.
+*one unit config, one unit run*
 
-The whole file, at a glance:
+> Q: How do I describe a whole run in one place, and make it reproducible?
 
 ```{include} ../../README.md
 :start-after: <!-- start:blocks -->
 :end-before: <!-- end:blocks -->
 ```
 
-The rest of this page is those blocks in full; the schema behind them is a set of pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
-
-Two properties are worth knowing before the reference below.
+The schema behind these blocks is a set of pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
 
 **Class selection lives in YAML.** `model.pretrained.cls`, `trainer.cls`, `data_collator.cls` and `training_args.cls` are resolved by name at runtime against `transformers` — and, for trainers and collators, against this package's own modules too.  
 Adding a backbone or a head should need no code here. Where a class needs an unusual keyword argument, reach for the passthrough dictionaries before new code: `model.pretrained.args` and `tokenizer.args` are splatted verbatim into the constructor.
@@ -28,7 +24,7 @@ Scientific notation works without a decimal point. PyYAML's `SafeLoader` follows
 
 | Section | Purpose |
 |---|---|
-| `mode` | `finetune`, `test`, `train`, … — selects the pipeline path |
+| `mode` | `preprocess`, `train`, `finetune`, `evaluate`, `test` — selects the pipeline path |
 | `task` | Task identity, metric groups, prediction post-processing rules |
 | `peft` | PEFT method and its hyperparameters |
 | `model` | Architecture tag, pretrained source, adapter, or from-scratch init |
@@ -191,75 +187,9 @@ only the configured label tokens compete. It is opt-in and off by default.
 
 ## A complete example
 
-`xsc_finetune.yml` (from `micm-nlp init-examples`) fine-tunes BLOOM-560M with the Cross-Prompt
+`xsc_finetune.yml` (from `micm-nlp init-examples`) preprocess and fine-tunes BLOOM-560M with the Cross-Prompt
 Encoder on the Arabic split of FTP-reframed XStoryCloze:
 
-```yaml
-mode: finetune
-
-task:
-    category: text_generation
-    name: mcqa_ftp
-    metric_groups:
-    - metrics:
-        - accuracy
-    preproc_rules:
-        flatten: true
-        filter_padded: true
-        verify_labels_match: true
-
-peft:
-    peft_type: XPE
-    task_type: CAUSAL_LM
-    num_virtual_tokens: 20
-    encoder_reparameterization_type: MLP
-    encoder_hidden_size: 256
-    encoder_num_layers: 2
-    encoder_dropout: 0.1
-    encoder_ratio: 1
-
-model:
-    architecture: bloom
-    pretrained:
-        cls: AutoModelForCausalLM
-        name: bigscience/bloom-560m
-        source: huggingface
-
-tokenizer:
-    source: huggingface
-    name: bigscience/bloom-560m
-    args:
-        padding_side: right
-
-ds:
-    category: benchmarks
-    dirs: mikaberidze/xstory-cloze-ftp
-    name: ar
-    type: huggingface
-    splits:
-        train: eval
-        test: false
-        validation: train
-    input:
-        key: text
-        standardize_key: true
-    label:
-        key: answer_label
-        standardize_key: true
-
-trainer:
-    cls: Trainer
-
-training_args:
-    cls: TrainingArguments
-    args:
-        num_train_epochs: 10
-        learning_rate: 5.0e-5
-        metric_for_best_model: accuracy
-        greater_is_better: true
-        load_best_model_at_end: true
-        bf16: true
+```{literalinclude} ../../src/micm_nlp/configs/xsc_finetune.yml
+:language: yaml
 ```
-
-The full file, including tokenization rules, evaluation schedule and collator
-settings, is in the repository.
