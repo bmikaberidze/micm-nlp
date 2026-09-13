@@ -94,13 +94,14 @@ custom_training_args: {...}
 data_collator:        {cls, args}
 eval:                 {before_training, after_training, ...}
 test:                 {run, zero_shot, ...}
+generation_config:    {...}
 cuda:                 {...}
 env:                  {...}
 ```
 
-- `model`, `tokenizer` and `ds` can each be loaded from the HuggingFace Hub, or from local disk.  
-- `cls` keys name HuggingFace classes, constructed at runtime, so a new backbone, head, trainer or collator needs no code.  
-The package's own trainers and collators plug in the same way.  
+- `model`, `tokenizer` and `ds` each can take the HuggingFace Hub slug, or be loaded from local disk.  
+- `cls` keys are class names, resolved at runtime from `transformers` — and, for trainers and collators, from this package too — so a new backbone or head needs no code.  
+- `args` keys pass any extra keyword arguments verbatim to the `cls` constructor.  
 
 ```bash
 python -m micm_nlp run \

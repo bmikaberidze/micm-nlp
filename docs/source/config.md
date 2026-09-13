@@ -9,11 +9,6 @@
 :end-before: <!-- end:blocks -->
 ```
 
-The schema behind these blocks is a set of pydantic models in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>`.
-
-**Class selection lives in YAML.**  
-Every `cls` key is a class name, resolved at runtime from `transformers` — and, for trainers and collators, from this package too — so a new backbone or head needs no code. Any extra keyword argument goes in the section's `args`, passed verbatim to the constructor.
-
 **Every section accepts extra keys.**  
 Undeclared keys pass through; declared ones are still validated.
 
@@ -42,6 +37,8 @@ PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.
 | `env` | Environment variables set at config-load time |
 | `output` | Where the run writes and what every result row carries — see [`output`](#output) |
 | `generation_config` | Kwargs for the HuggingFace `GenerationConfig`, for generative evaluation |
+
+Each section is a pydantic model in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>` — the full schema.
 
 ## `peft`
 
