@@ -83,7 +83,13 @@ body {
 }
 
 .sidebar-tree .reference {
-  border-radius: 10px;
+  border-radius: 8px;
+}
+
+/* A hairline gap so a hovered item and the current page read as two pills. */
+
+.sidebar-tree li {
+  margin-top: 2px;
 }
 
 .sidebar-tree .current-page > .reference {
