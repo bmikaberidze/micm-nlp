@@ -75,6 +75,18 @@ article h4 {
 
 /* The current page as a rounded pill rather than a bold full-width row. */
 
+/* Furo's hover is a left-fading gradient, which clashes with a rounded pill; make it
+   solid. The tree also stops short of the sidebar's right edge so pills don't touch
+   the border. */
+
+body {
+  --color-sidebar-item-background--hover: var(--color-background-hover);
+}
+
+.sidebar-tree {
+  margin-right: 0.75rem;
+}
+
 .sidebar-tree .reference {
   border-radius: 6px;
 }
