@@ -1,6 +1,6 @@
 # Pipeline Unification
 
-*unit config → unit run*
+***unit config → unit run***
 
 > How do I describe a whole run in one place, and make it reproducible?
 

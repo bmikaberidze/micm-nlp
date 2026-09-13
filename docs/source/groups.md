@@ -1,6 +1,6 @@
 # Experiment Orchestration
 
-*group config → many unit runs*
+***group config → many unit runs***
 
 > How do I run many variations, and collect their results together?
 
