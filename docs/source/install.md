@@ -1,5 +1,7 @@
 # Install
 
+## PyPi
+
 ```bash
 pip install micm-nlp
 ```

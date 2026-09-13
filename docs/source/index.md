@@ -1,5 +1,7 @@
 # micm-nlp
 
+## Intro
+
 ```{include} ../../README.md
 :start-after: <!-- start:tagline -->
 :end-before: <!-- end:tagline -->
