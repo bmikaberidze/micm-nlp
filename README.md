@@ -268,18 +268,18 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 }
 
 @inproceedings{mikaberidze-etal-2025-cross,
-  title         = "Cross-Prompt Encoder for Low-Performing Languages",
-  author        = {Mikaberidze, Beso and Saghinadze, Temo and Ostermann, Simon and M{\"u}ller, Philipp},
-  booktitle     = "Proceedings of the 14th International Joint Conference on Natural Language Processing and the 4th Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics",
-  month         = dec,
-  year          = "2025",
-  address       = "Mumbai, India",
-  publisher     = "The Asian Federation of Natural Language Processing and The Association for Computational Linguistics",
-  url           = "https://aclanthology.org/2025.findings-ijcnlp.144/",
-  doi           = "10.18653/v1/2025.findings-ijcnlp.144",
-  pages         = "2380--2393",
-  ISBN          = "979-8-89176-303-6"
+  title        = {Cross-Prompt Encoder for Low-Performing Languages},
+  author       = {Mikaberidze, Beso and Saghinadze, Temo and Ostermann, Simon and M{\"u}ller, Philipp},
+  booktitle    = {Proceedings of the 14th International Joint Conference on Natural Language Processing and the 4th Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics},
+  month        = dec,
+  year         = {2025},
+  address      = {Mumbai, India},
+  publisher    = {The Asian Federation of Natural Language Processing and The Association for Computational Linguistics},
+  url          = {https://aclanthology.org/2025.findings-ijcnlp.144/},
+  doi          = {10.18653/v1/2025.findings-ijcnlp.144},
+  pages        = {2380--2393},
 }
+
 ```
 <!-- end:citation -->
 
