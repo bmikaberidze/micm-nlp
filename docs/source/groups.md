@@ -14,7 +14,7 @@
 ## Identity columns
 
 Each run in a group writes the same directory as a {doc}`unit run <config>`.  
-Every row of its eval_*.csv and test_*.csv also gets the run's identity: group, name, index, seed, and any extra key you add to the run entry, e.g. `method: spt`.
+Every row of its `eval_*.csv` and `test_*.csv` also gets the run's identity: `group`, `name`, `index`, `seed`, and any extra key you add to the run entry, e.g. `method: spt`.
 
 ## Bringing your own science
 

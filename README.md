@@ -146,9 +146,7 @@ runs:
   - {config: tune_aya_bebe, name: lr5e-5, seed: 1, overrides: {training_args.args.learning_rate: 5e-5}}
 ```
 
-In a group config each entry in `runs:` resolves one unit config from `configs:` and forms one unit run.  
-The runs land side by side, in `artefacts/runs/groups/{group}/{time_id}_{runs[i].name}/`.  
-Every result row is stamped with the run's identity, so the group's runs concatenate into one table.
+In a group config each entry in `runs:` resolves one unit config from `configs:` and forms one unit run. The runs land side by side, in `artefacts/runs/groups/{group}/{time_id}_{runs[i].name}/`. Every result row is stamped with the run's identity, so the group's runs concatenate into one table.
 
 ```bash
 python -m micm_nlp run-group \
