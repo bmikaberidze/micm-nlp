@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-09-XX
+## [0.4.0] - 2026-09-14
 
 ### Added
 - `python -m micm_nlp` reaches the CLI (`__main__.py`), so the commands work on
@@ -131,6 +131,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - **Breaking:** `MODEL.eval_path` and `MODEL.logs_path` are removed. The trainer
   owns the output directory (`RunOutput`) and derives the logging directory from
   it; `MODEL` keeps `path` (the checkpoint location) only.
+
+### Documentation
+- The README and the docs site are organised around the three contributions —
+  Pipeline Unification (unit config → unit run), Experiment Orchestration (group
+  config → many unit runs) and Features — each page opening with its tagline and
+  the question it answers. A section shared by both lives once, in the README, and
+  the site includes it.
+- The runner contract is written out: `run(config: CONFIG, ctx: RunContext) ->
+  RunOutput`, ending in `return trainer.run()`.
+- The stage-by-stage listing in the quickstart runs as copied: it calls `init()`
+  and loads the shipped example config.
+- Notes use GitHub alert syntax (`> [!NOTE]`), which renders on GitHub and, through
+  a local Sphinx extension, as note cards on the site.
+- The site restyle: VS Code One Dark Pro Darker / GitHub Light palettes, code
+  blocks coloured by role (calls, constants, keyword arguments, shell commands and
+  flags) at build time, Inter and JetBrains Mono, and a readable "On this page"
+  menu.
 
 ## [0.3.1] - 2026-09-04
 
