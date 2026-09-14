@@ -19,7 +19,7 @@ from micm_nlp.models.model import MODEL
 from micm_nlp.training.runner import TRAINER
 
 # Workspace
-init('/path/to/your/workspace')
+init('/path/to/your/workspace', pretty_output=True)
 
 # Config
 config = CONFIG.from_yaml(example('xsc_finetune.yml'))
