@@ -32,11 +32,13 @@ second copy of the documentation.
 `micm-nlp` is developed at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University.
 
 It has backed two peer-reviewed publications:
-1. ***Cross-Prompt Encoder for Low-Performing Languages*** (Findings of IJCNLP–AACL 2025; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/))  
-Beso Mikaberidze, Temo Saghinadze, Simon Ostermann, Philipp Müller
+1. **Cross-Prompt Encoder for Low-Performing Languages**  
+*Findings of IJCNLP–AACL 2025*; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)  
+Beso Mikaberidze, Temo Saghinadze, Simon Ostermann, Philipp Müller  
 
-2. ***A Comparison of Different Tokenization Methods for the Georgian Language*** (ICNLSP 2024; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/))  
-Beso Mikaberidze, Teimuraz Saghinadze, Guram Mikaberidze, Raphael Kalandadze, Konstantine Pkhakadze, Josef van Genabith, Simon Ostermann, Lonneke van der Plas, Philipp Müller
+2. **A Comparison of Different Tokenization Methods for the Georgian Language**  
+*ICNLSP 2024*; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/)  
+Beso Mikaberidze, Teimuraz Saghinadze, Guram Mikaberidze, Raphael Kalandadze, Konstantine Pkhakadze, Josef van Genabith, Simon Ostermann, Lonneke van der Plas, Philipp Müller  
 <!-- end:about -->
 
 ## What micm-nlp offers
