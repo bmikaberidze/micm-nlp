@@ -9,7 +9,7 @@
 
 ## Drive the stages yourself
 
-The chain, unwrapped — this is what run() does. Copy it and change the stage you need: swap a dataset, concatenate languages, reuse one tokenizer.
+The chain, unwrapped — this is what `run()` does. Copy it to interact between stages, e.g. add your own dataset processing after `dataset.preprocess(tokenizer)`.
 
 ```python
 from micm_nlp import CONFIG, init, example
