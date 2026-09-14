@@ -12,7 +12,8 @@ import re
 import sys
 from pathlib import Path
 
-# Local extensions (docs/source/_ext): code_style.py holds the code-block colours.
+# Local extensions (docs/source/_ext): code_style.py holds the code-block colours;
+# github_alerts.py renders `> [!NOTE]` quotes as note cards.
 sys.path.insert(0, str(Path(__file__).parent / '_ext'))
 
 # -- Project metadata --------------------------------------------------------
@@ -47,6 +48,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'code_style',
+    'github_alerts',
 ]
 
 templates_path = ['_templates']

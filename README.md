@@ -209,7 +209,8 @@ python -m micm_nlp run-group --group-config configs/examples/groups/xsc_tune_acr
 The package's surface is broader than these three demonstrate.
 Examples for encoder-only text classification, encoder-decoder seq2seq and MLM pretraining are planned.
 
-> **Note:** The preprocessing phase can run in every unit run, whatever the mode, but we expose `mode: preprocess` separately for tokenizing once and reusing across many runs.
+> [!NOTE]
+> The preprocessing phase can run in every unit run, whatever the mode, but we expose `mode: preprocess` separately for tokenizing once and reusing across many runs.
 
 <!-- end:examples -->
 

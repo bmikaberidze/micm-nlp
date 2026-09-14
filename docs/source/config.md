@@ -50,7 +50,8 @@
 Each section is a pydantic model in {doc}`micm_nlp.config <autoapi/micm_nlp/config/index>` — the full schema.  
 Every section accepts extra keys.
 
-> **Note:** PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
+> [!NOTE]
+> PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
 > `micm_nlp.config` extends its float resolver at import, so `learning_rate: 5e-5` is a float everywhere.
 
 ### `task.preproc_rules`
@@ -143,7 +144,8 @@ Token-budget batching: batches are built to a token count, keeping memory steady
 | Booleans rejected, integers must be positive | — |
 | `training_args.group_by_length` is ignored, not rejected | The token-budget sampler length-sorts anyway |
 
-> **Warning:** Samples come out length-sorted, not in dataset order.  
+> [!WARNING]
+> Samples come out length-sorted, not in dataset order.  
 > Zip predictions against a split through the sampler's `order` permutation — the package already does, for per-task grouping and saved predictions.
 
 #### `optimizer_grouped_parameters`
