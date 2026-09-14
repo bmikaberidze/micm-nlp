@@ -35,7 +35,5 @@ def run(config: CONFIG, ctx: RunContext) -> RunOutput:
 - `ctx` is a {py:class}`~micm_nlp.group.RunContext`: the group and run names, the index and the entry as written, unknown CLI flags as `extras`, and resolved `test_config` when the entry declared a `separate_test`.  
 - The return value is the trainer's {py:class}`~micm_nlp.training.run_output.RunOutput` — the trainer is what writes the results into the run directory.
 
-:::{note}
-For the test phase, a second `TRAINER` built from `ctx.test_config` writes its `separate_`-prefixed files into the same directory.
-:::
+> **Note:** For the test phase, a second `TRAINER` built from `ctx.test_config` writes its `separate_`-prefixed files into the same directory.
 

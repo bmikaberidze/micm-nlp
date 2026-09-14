@@ -8,11 +8,9 @@ pip install micm-nlp
 
 Requires **Python 3.10 or newer** — on an older interpreter `pip` reports `No matching distribution found for micm-nlp`, which does not say why.  
 
-:::{note}
-Training targets NVIDIA GPUs; CPU works for small-scale debugging, and there is no support for other accelerators.
-:::
+> **Note:** Training targets NVIDIA GPUs; CPU works for small-scale debugging, and there is no support for other accelerators.
 
-Installing pulls the full training stack — `torch`, `transformers`, `peft`, `datasets`, `spacy` and others.  
+Installing pulls the full training stack — `torch`, `transformers`, `peft`, `datasets`, `spacy` and others.
 Two are tightly constrained (`peft==0.14.0`, `transformers>=4.48,<4.50`) and will pin whatever environment they land in, so give it one of its own:
 
 ```bash

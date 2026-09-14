@@ -12,14 +12,17 @@
 The chain, unwrapped — this is what run() does. Copy it and change the stage you need: swap a dataset, concatenate languages, reuse one tokenizer.
 
 ```python
-from micm_nlp import CONFIG
+from micm_nlp import CONFIG, init, example
 from micm_nlp.tokenizers.tokenizer import load as load_tokenizer
 from micm_nlp.datasets.dataset import DATASET
 from micm_nlp.models.model import MODEL
 from micm_nlp.training.runner import TRAINER
 
+# Workspace
+init('/path/to/your/workspace')
+
 # Config
-config = CONFIG.from_yaml('path/to/config.yml')
+config = CONFIG.from_yaml(example('xsc_finetune.yml'))
 
 # Tokenizer
 tokenizer = load_tokenizer(config)
