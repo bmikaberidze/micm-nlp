@@ -31,6 +31,11 @@ pip install -e .
 
 Add the `dev` extra — `pip install -e ".[dev]"` — to work *on* the package rather than with it; it pulls `pytest` and `ruff`.
 
+> [!NOTE]
+> An editable install links the clone into the active environment and edits apply immediately.
+> So you can keep `micm-nlp/` beside your project and work on both together.
+> What counts is the environment you install into, not the directory you run `pip install -e path/to/micm-nlp` from.
+
 ## Docker
 
 Recommended for reproducibility on GPU machines. The image is built from the repository, so clone first:
