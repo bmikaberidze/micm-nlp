@@ -52,6 +52,19 @@ from micm_nlp.training.run_output import RunOutput
 from micm_nlp.training.trainers import custom_trainer_class_factory
 
 
+def trainer_kwargs(framework: dict, user) -> dict:
+    """The trainer constructor's keyword arguments: the framework's, plus ``trainer.args``.
+
+    ``trainer.args`` may add arguments a custom trainer takes, never replace one the
+    framework supplies.
+    """
+    extra = dict(user) if user is not None else {}
+    clash = sorted(set(extra) & (set(framework) | {'custom_args'}))
+    if clash:
+        raise ValueError(f'trainer.args may not set {clash}: the framework supplies them')
+    return {**framework, **extra}
+
+
 class TRAINER:
     """Builds the HuggingFace ``Trainer`` from the config, and runs it.
 
@@ -304,9 +317,10 @@ class TRAINER:
             trainer_init_args['preprocess_logits_for_metrics'] = self.preprocess_logits_for_metrics
 
         CustomTrainer = custom_trainer_class_factory(TrainerCls)
+        user_args = self._config.trainer.args if self._config.trainer else None
         self.trainer = CustomTrainer(
             custom_args=self._config.custom_training_args,
-            **trainer_init_args,
+            **trainer_kwargs(trainer_init_args, user_args),
         )
         self._output.resolved(seed=self.trainer.args.seed,
                               metric_for_best_model=self.training_args.metric_for_best_model,

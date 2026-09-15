@@ -195,3 +195,20 @@ def test_a_group_run_resolves_a_plugin(ws, monkeypatch):
     SEEN.clear()
     assert cli.main(['run-group', '--group-config', str(group), '--runner', 'tests.test_plugins:plugin_runner']) == 0
     assert SEEN == ['GroupTrainer']
+
+
+def test_trainer_args_are_merged_into_the_constructor_kwargs():
+    from micm_nlp.config import _Flex
+    from micm_nlp.training.runner import trainer_kwargs
+
+    merged = trainer_kwargs({'model': 'm', 'args': 'a'}, _Flex(alpha=0.5))
+    assert merged == {'model': 'm', 'args': 'a', 'alpha': 0.5}
+    assert trainer_kwargs({'model': 'm'}, None) == {'model': 'm'}
+
+
+def test_trainer_args_may_not_override_framework_kwargs():
+    from micm_nlp.config import _Flex
+    from micm_nlp.training.runner import trainer_kwargs
+
+    with pytest.raises(ValueError, match=r"\['custom_args', 'model'\]"):
+        trainer_kwargs({'model': 'm'}, _Flex(model='x', custom_args=1))
