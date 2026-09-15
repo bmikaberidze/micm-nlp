@@ -66,9 +66,9 @@ class TRAINER:
     """
 
     # Modules searched (in order) when resolving class names from YAML.
-    DATA_COLLATOR_SOURCE_MODULES: ClassVar[list[str]] = ['transformers', 'micm_nlp.training.data_collators']
+    DATA_COLLATOR_SOURCE_MODULES: ClassVar[list[str]] = ['micm_nlp.training.data_collators', 'transformers']
     TRAINING_ARGS_SOURCE_MODULES: ClassVar[list[str]] = ['transformers']
-    TRAINER_SOURCE_MODULES: ClassVar[list[str]] = ['transformers', 'micm_nlp.training.trainers']
+    TRAINER_SOURCE_MODULES: ClassVar[list[str]] = ['micm_nlp.training.trainers', 'transformers']
 
     def __init__(self, model, dataset, tokenizer=None):
         """Assemble the ``Trainer`` and print what was built.

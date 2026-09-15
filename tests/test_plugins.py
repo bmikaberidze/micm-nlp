@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from micm_nlp import plugins
+from micm_nlp import cli, plugins, utils
+from micm_nlp import path as nlpka_path
 
 
 @pytest.fixture(autouse=True)
@@ -151,3 +152,46 @@ def test_find_without_a_workspace_root_does_not_scan(monkeypatch):
     monkeypatch.setattr(path, '_workspace', None)
     assert plugins.find('Anything') is None
     assert plugins._discovered is False
+
+
+def test_resolve_cls_finds_a_plugin_in_the_workspace(ws, monkeypatch):
+    _write(ws, 'pkg_e/trainers.py', PLUGIN.format(name='ETrainer'))
+    monkeypatch.setattr(nlpka_path, '_workspace', ws)
+    assert utils.resolve_cls('ETrainer', ['collections']).__module__ == 'pkg_e.trainers'
+
+
+def test_a_plugin_shadowing_a_built_in_wins_and_says_so(ws, monkeypatch, capsys):
+    _write(ws, 'pkg_f/od.py', PLUGIN.format(name='OrderedDict'))
+    monkeypatch.setattr(nlpka_path, '_workspace', ws)
+    assert utils.resolve_cls('OrderedDict', ['collections'], 'trainer.cls').__module__ == 'pkg_f.od'
+    assert "using plugin pkg_f.od.OrderedDict, not collections.OrderedDict" in capsys.readouterr().out
+
+
+def test_built_in_names_resolve_as_before_without_init(monkeypatch):
+    monkeypatch.setattr(nlpka_path, '_workspace', None)
+    import collections
+
+    assert utils.resolve_cls('OrderedDict', ['collections']) is collections.OrderedDict
+    with pytest.raises(ValueError, match='Not a @micm_plugin'):
+        utils.resolve_cls('NoSuchThing', ['collections'])
+
+
+SEEN = []
+
+
+def plugin_runner(config, ctx):
+    SEEN.append(utils.resolve_cls('GroupTrainer', ['collections']).__name__)
+
+
+def test_a_group_run_resolves_a_plugin(ws, monkeypatch):
+    import yaml
+
+    monkeypatch.delenv('SLURM_ARRAY_TASK_ID', raising=False)
+    monkeypatch.setattr(cli, '_init_workspace', lambda root_path=None: nlpka_path.set_root(ws))
+    _write(ws, 'pkg_g/trainers.py', PLUGIN.format(name='GroupTrainer'))
+    _write(ws, 'configs/unit.yml', yaml.safe_dump({'mode': 'preprocess'}))
+    group = _write(ws, 'configs/plug.yml', yaml.safe_dump(
+        {'configs': {'u': './unit.yml'}, 'runs': [{'config': 'u', 'name': 'one'}]}))
+    SEEN.clear()
+    assert cli.main(['run-group', '--group-config', str(group), '--runner', 'tests.test_plugins:plugin_runner']) == 0
+    assert SEEN == ['GroupTrainer']

@@ -31,17 +31,28 @@ import yaml
 from rich import print as rprint
 from tqdm import tqdm
 
+from micm_nlp import plugins
+
 
 # Class resolution ---------------------------------------------------------------------------------------------------------------------
 def resolve_cls(cls_name, modules, yaml_path=None):
-    """Resolve a bare class name by importing it from one of `modules` (str or
-    list, tried in order). Used to load HF / custom classes named in YAML
-    without maintaining a registry. Raises ValueError on missing/unknown name.
+    """Resolve a name from a config: a ``@micm_plugin`` first, then `modules` in order.
+
+    `modules` is a str or list of module names, tried in order. A plugin named like a
+    class in one of them replaces it, with a one-line notice. Raises ValueError on a
+    missing or unknown name.
     """
     label = yaml_path or 'cls'
     if not cls_name:
         raise ValueError(f'{label} is required.')
     mods = [modules] if isinstance(modules, str) else list(modules)
+    plugin = plugins.find(cls_name)
+    if plugin is not None:
+        shadowed = next((m for m in mods if _module_has(m, cls_name)), None)
+        if shadowed:
+            print(f'[micm_nlp] {label} {cls_name!r}: using plugin {plugin.__module__}.{cls_name}, '
+                  f'not {shadowed}.{cls_name}')
+        return plugin
     tried = []
     for mod_name in mods:
         try:
@@ -52,7 +63,14 @@ def resolve_cls(cls_name, modules, yaml_path=None):
         if cls is not None:
             return cls
         tried.append(mod_name)
-    raise ValueError(f'Unknown {label}={cls_name!r}. Not found in modules: {tried}.')
+    raise ValueError(f'Unknown {label}={cls_name!r}. Not a @micm_plugin, and not found in modules: {tried}.')
+
+
+def _module_has(mod_name, name):
+    try:
+        return hasattr(importlib.import_module(mod_name), name)
+    except ImportError:
+        return False
 
 
 # Module info / debug ------------------------------------------------------------------------------------------------------------------
