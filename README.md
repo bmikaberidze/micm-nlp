@@ -90,7 +90,7 @@ tokenizer:            {source, name, args, ...}
 ds:                   {category, dirs, name, type, splits, preproc_rules, ...}
 model:                {architecture, pretrained: {cls, args, ...}}
 peft:                 {peft_type, task_type, ...}
-trainer:              {cls}
+trainer:              {cls, args}
 training_args:        {cls, args}
 custom_training_args: {...}
 data_collator:        {cls, args}
@@ -102,9 +102,9 @@ env:                  {...}
 ```
 
 - `model`, `tokenizer` and `ds` each can take the HuggingFace Hub slug, or be loaded from local disk.  
-- `cls` keys are class names, resolved at runtime from your `@micm_plugin` classes, then this package, then `transformers` — so a new backbone or head needs no code.  
+- `cls` keys are class names, resolved at runtime from `transformers` and this package — a new backbone or head needs no code.  
+`cls` can also name your own class, once decorated with `@micm_plugin` — see [your own classes](https://micm-nlp.readthedocs.io/en/latest/config.html#your-own-classes).  
 - `args` keys pass any extra keyword arguments verbatim to the `cls` constructor.  
-- Your own class or function becomes selectable by name with `@micm_plugin` — see [your own classes](https://micm-nlp.readthedocs.io/en/latest/config.html#your-own-classes).  
 
 ```bash
 python -m micm_nlp run \

@@ -56,28 +56,29 @@ Every section accepts extra keys.
 
 ### Your own classes
 
-Decorate a class or function anywhere in your workspace, and name it in `cls`:
+Decorate a class anywhere in your workspace with ***`@micm_plugin`***, and name it in `cls`.
 
 ```python
 from micm_nlp import micm_plugin
-from transformers import Trainer
+from transformers import Trainer, DataCollatorWithPadding
 
 @micm_plugin
 class MyTrainer(Trainer): ...
+
+@micm_plugin
+class MyCollator(DataCollatorWithPadding): ...
 ```
 
 ```yaml
-trainer: {cls: MyTrainer, args: {alpha: 0.5}}
+trainer:       {cls: MyTrainer, args: {alpha: 0.5}}
+data_collator: {cls: MyCollator, args: {pad_to_multiple_of: 8}}
 ```
 
-| Rule | Detail |
-|---|---|
-| Lookup order | your plugins → micm-nlp → `transformers`; a plugin named like a built-in replaces it, with a notice |
-| What is imported | discovery runs on the first `cls` lookup after `init()` sets the workspace; nothing before `init()`. Only `.py` files with a line starting `@micm_plugin` are imported |
-| Skipped | dirs `artefacts`, `tests`, `test`, `__pycache__`, `node_modules`, `build`, `dist`, dot-folders, virtualenvs (hold `pyvenv.cfg`), the installed `micm_nlp` package; files `test_*.py`, `*_test.py`, `conftest.py` |
-| Names | one name per plugin; two different ones under the same name raise |
-| Top-level code | runs when a plugin file is imported — keep a script's work under `if __name__ == '__main__':` |
-| Import errors | a plugin file that fails to import stops the lookup, with an error naming the file |
+- Works for every `cls` key: `trainer`, `data_collator`, `training_args`, `model.pretrained`, `model.init`, `model.init.config`.  
+- Every `.py` file in your workspace that contains `@micm_plugin` is imported automatically — nothing to install, nothing to import.  
+- A plugin file's top-level code runs on that import — keep a script's work under `if __name__ == '__main__':`.  
+- Names resolve from your plugins first, then micm-nlp, then `transformers` — a plugin named like a built-in replaces it, with a notice.  
+- Not scanned: `artefacts/`, `tests/`, `test/`, `__pycache__/`, `node_modules/`, `build/`, `dist/`, dot-folders, virtualenvs, and `test_*.py`, `*_test.py`, `conftest.py`.  
 
 ### `task.preproc_rules`
 
