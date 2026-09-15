@@ -70,11 +70,11 @@ class MyTrainer(Trainer): ...
 trainer: {cls: MyTrainer, args: {alpha: 0.5}}
 ```
 
-| Rule | |
+| Rule | Detail |
 |---|---|
 | Lookup order | your plugins → micm-nlp → `transformers`; a plugin named like a built-in replaces it, with a notice |
-| What is imported | only `.py` files with a line starting `@micm_plugin`, found on the first `cls` lookup |
-| Skipped | `artefacts/`, `tests/`, `test/`, dot-folders, virtualenvs, `test_*.py`, `*_test.py`, `conftest.py` |
+| What is imported | discovery runs on the first `cls` lookup after `init()` sets the workspace; nothing before `init()`. Only `.py` files with a line starting `@micm_plugin` are imported |
+| Skipped | dirs `artefacts`, `tests`, `test`, `__pycache__`, `node_modules`, `build`, `dist`, dot-folders, virtualenvs (hold `pyvenv.cfg`), the installed `micm_nlp` package; files `test_*.py`, `*_test.py`, `conftest.py` |
 | Names | one name per plugin; two different ones under the same name raise |
 
 ### `task.preproc_rules`
