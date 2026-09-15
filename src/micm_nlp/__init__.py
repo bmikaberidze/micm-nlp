@@ -5,7 +5,9 @@ HuggingFace stack and adds a layer of features of its own.
 
 Re-exports the names a script needs: ``env`` (settings loaded from ``.env``),
 ``init()`` (sets the workspace root and, optionally, Rich output), :class:`CONFIG`,
-:func:`run`, and :func:`example` (the path of a config shipped in the package).
+:func:`run`, :func:`example` (the path of a config shipped in the package), and
+:func:`micm_plugin` (makes your own class or function selectable by name in a
+config).
 ``init()`` is **not** triggered on import — call it once before any pipeline call
 so ``artefacts/`` lands in the right place.
 
@@ -22,6 +24,7 @@ from micm_nlp.bootstrap import env as env
 from micm_nlp.bootstrap import init as init
 from micm_nlp.config import CONFIG as CONFIG
 from micm_nlp.path import example as example
+from micm_nlp.plugins import micm_plugin as micm_plugin
 
 if TYPE_CHECKING:
     # Never executed. It is here so the name is *visible in the source text*: type
@@ -29,7 +32,7 @@ if TYPE_CHECKING:
     # statically and would otherwise not know ``run`` is exported at all.
     from micm_nlp.pipeline import run as run
 
-__all__ = ['CONFIG', 'env', 'example', 'init', 'run']
+__all__ = ['CONFIG', 'env', 'example', 'init', 'micm_plugin', 'run']
 
 
 def __getattr__(name: str):
