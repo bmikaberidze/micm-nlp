@@ -54,6 +54,29 @@ Every section accepts extra keys.
 > PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
 > `micm_nlp.config` extends its float resolver at import, so `learning_rate: 5e-5` is a float everywhere.
 
+### Your own classes
+
+Decorate a class or function anywhere in your workspace, and name it in `cls`:
+
+```python
+from micm_nlp import micm_plugin
+from transformers import Trainer
+
+@micm_plugin
+class MyTrainer(Trainer): ...
+```
+
+```yaml
+trainer: {cls: MyTrainer, args: {alpha: 0.5}}
+```
+
+| Rule | |
+|---|---|
+| Lookup order | your plugins → micm-nlp → `transformers`; a plugin named like a built-in replaces it, with a notice |
+| What is imported | only `.py` files with a line starting `@micm_plugin`, found on the first `cls` lookup |
+| Skipped | `artefacts/`, `tests/`, `test/`, dot-folders, virtualenvs, `test_*.py`, `*_test.py`, `conftest.py` |
+| Names | one name per plugin; two different ones under the same name raise |
+
 ### `task.preproc_rules`
 
 Post-processing applied to predictions before metrics.
