@@ -256,6 +256,34 @@ def test_trainer_args_are_merged_into_the_constructor_kwargs():
     assert trainer_kwargs({'model': 'm'}, None) == {'model': 'm'}
 
 
+def test_trainer_args_reach_the_trainer_constructor():
+    from micm_nlp.config import _Flex
+    from micm_nlp.training.runner import trainer_kwargs
+    from micm_nlp.training.trainers import custom_trainer_class_factory
+
+    class BaseTrainer:   # stands in for a `trainer.cls` that takes its own setting
+        def __init__(self, model=None, alpha=None):
+            self.model, self.alpha = model, alpha
+
+    trainer = custom_trainer_class_factory(BaseTrainer)(
+        custom_args=None, **trainer_kwargs({'model': 'm'}, _Flex(alpha=0.5)))
+    assert (trainer.model, trainer.alpha) == ('m', 0.5)
+
+
+def test_a_trainer_arg_the_constructor_does_not_accept_raises():
+    from micm_nlp.config import _Flex
+    from micm_nlp.training.runner import trainer_kwargs
+    from micm_nlp.training.trainers import custom_trainer_class_factory
+
+    class BaseTrainer:   # no `alpha`, like an unmodified `transformers` Trainer
+        def __init__(self, model=None):
+            self.model = model
+
+    CustomTrainer = custom_trainer_class_factory(BaseTrainer)
+    with pytest.raises(TypeError, match='alpha'):
+        CustomTrainer(custom_args=None, **trainer_kwargs({'model': 'm'}, _Flex(alpha=0.5)))
+
+
 def test_trainer_args_may_not_override_framework_kwargs():
     from micm_nlp.config import _Flex
     from micm_nlp.training.runner import trainer_kwargs

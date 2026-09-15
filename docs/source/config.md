@@ -63,7 +63,10 @@ from micm_nlp import micm_plugin
 from transformers import Trainer, DataCollatorWithPadding
 
 @micm_plugin
-class MyTrainer(Trainer): ...
+class MyTrainer(Trainer):
+    def __init__(self, *args, alpha=0.5, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.alpha = alpha
 
 @micm_plugin
 class MyCollator(DataCollatorWithPadding): ...
@@ -75,6 +78,7 @@ data_collator: {cls: MyCollator, args: {pad_to_multiple_of: 8}}
 ```
 
 - Works for every `cls` key: `trainer`, `data_collator`, `training_args`, `model.pretrained`, `model.init`, `model.init.config`.  
+- `args` reach the constructor as keyword arguments, so the class has to accept them — `alpha` above is why `MyTrainer` declares its own `__init__`.  
 - Every `.py` file in your workspace that contains `@micm_plugin` is imported automatically — nothing to install, nothing to import.  
 - A plugin file's top-level code runs on that import — keep a script's work under `if __name__ == '__main__':`.  
 - Names resolve from your plugins first, then micm-nlp, then `transformers` — a plugin named like a built-in replaces it, with a notice.  
