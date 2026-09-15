@@ -76,6 +76,8 @@ trainer: {cls: MyTrainer, args: {alpha: 0.5}}
 | What is imported | discovery runs on the first `cls` lookup after `init()` sets the workspace; nothing before `init()`. Only `.py` files with a line starting `@micm_plugin` are imported |
 | Skipped | dirs `artefacts`, `tests`, `test`, `__pycache__`, `node_modules`, `build`, `dist`, dot-folders, virtualenvs (hold `pyvenv.cfg`), the installed `micm_nlp` package; files `test_*.py`, `*_test.py`, `conftest.py` |
 | Names | one name per plugin; two different ones under the same name raise |
+| Top-level code | runs when a plugin file is imported — keep a script's work under `if __name__ == '__main__':` |
+| Import errors | a plugin file that fails to import stops the lookup, with an error naming the file |
 
 ### `task.preproc_rules`
 

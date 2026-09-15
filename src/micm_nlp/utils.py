@@ -40,7 +40,7 @@ def resolve_cls(cls_name, modules, yaml_path=None):
 
     `modules` is a str or list of module names, tried in order. A plugin named like a
     class in one of them replaces it, with a one-line notice. Raises ValueError on a
-    missing or unknown name.
+    missing or unknown name, and TypeError on a plugin that is a function, not a class.
     """
     label = yaml_path or 'cls'
     if not cls_name:
@@ -48,10 +48,13 @@ def resolve_cls(cls_name, modules, yaml_path=None):
     mods = [modules] if isinstance(modules, str) else list(modules)
     plugin = plugins.find(cls_name)
     if plugin is not None:
-        shadowed = next((m for m in mods if _module_has(m, cls_name)), None)
-        if shadowed:
-            print(f'[micm_nlp] {label} {cls_name!r}: using plugin {plugin.__module__}.{cls_name}, '
-                  f'not {shadowed}.{cls_name}')
+        if not isinstance(plugin, type):
+            raise TypeError(f'{label}={cls_name!r} is a @micm_plugin function, not a class')
+        shadowed = next((obj for obj in (_module_attr(m, cls_name) for m in mods) if obj is not None), None)
+        if shadowed is not None:
+            # The object's own origin: `micm_nlp.training.trainers` merely re-exports `Trainer`.
+            origin = f"{getattr(shadowed, '__module__', '?')}.{getattr(shadowed, '__qualname__', cls_name)}"
+            print(f'[micm_nlp] {label} {cls_name!r}: using plugin {plugin.__module__}.{cls_name}, not {origin}')
         return plugin
     tried = []
     for mod_name in mods:
@@ -66,11 +69,12 @@ def resolve_cls(cls_name, modules, yaml_path=None):
     raise ValueError(f'Unknown {label}={cls_name!r}. Not a @micm_plugin, and not found in modules: {tried}.')
 
 
-def _module_has(mod_name, name):
+def _module_attr(mod_name, name):
+    """``mod_name.name``, or None when the module or the name is missing."""
     try:
-        return hasattr(importlib.import_module(mod_name), name)
+        return getattr(importlib.import_module(mod_name), name, None)
     except ImportError:
-        return False
+        return None
 
 
 # Module info / debug ------------------------------------------------------------------------------------------------------------------

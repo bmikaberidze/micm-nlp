@@ -36,15 +36,30 @@ def _qualified(obj) -> str:
     return f'{obj.__module__}.{obj.__qualname__}'
 
 
+def _defining_file(obj) -> Path | None:
+    """The resolved ``__file__`` of the module that defines ``obj``, if it has one."""
+    file = getattr(sys.modules.get(obj.__module__), '__file__', None)
+    return Path(file).resolve() if isinstance(file, str) else None
+
+
+def _same_plugin(a, b) -> bool:
+    """One definition, even when its file was imported under two module names
+    (``src.my_proj.trainers`` and ``my_proj.trainers``)."""
+    if _qualified(a) == _qualified(b):
+        return True
+    file = _defining_file(a)
+    return a.__qualname__ == b.__qualname__ and file is not None and file == _defining_file(b)
+
+
 def micm_plugin(obj):
     """Register a class or function under its ``__name__``; return it unchanged.
 
-    The same object, or a re-import of the same module, registers again silently.
-    A different object under a name already taken raises.
+    The same object, or a re-import of the same file (under any module name),
+    registers again silently. A different object under a name already taken raises.
     """
     name = obj.__name__
     taken = _PLUGINS.get(name)
-    if taken is not None and _qualified(taken) != _qualified(obj):
+    if taken is not None and not _same_plugin(taken, obj):
         raise ValueError(f'@micm_plugin name {name!r} is taken: {_qualified(taken)} and {_qualified(obj)}')
     _PLUGINS[name] = obj
     return obj
@@ -52,12 +67,13 @@ def micm_plugin(obj):
 
 SKIP_DIRS = frozenset({'artefacts', 'tests', 'test', '__pycache__', 'node_modules', 'build', 'dist'})
 _DECLARES = re.compile(r'^\s*@(?:[A-Za-z_]\w*\.)*micm_plugin\b', re.MULTILINE)
+_PACKAGE_DIR = path.PACKAGE_DIR.resolve()   # once, not per scanned directory
 
 
 def _skip_dir(directory: Path) -> bool:
     name = directory.name
     return (name in SKIP_DIRS or name.startswith('.') or (directory / 'pyvenv.cfg').is_file()
-            or directory.resolve() == path.PACKAGE_DIR.resolve())
+            or directory.resolve() == _PACKAGE_DIR)
 
 
 def _skip_file(name: str) -> bool:
@@ -83,11 +99,28 @@ def plugin_files(root: Path) -> list[Path]:
     return found
 
 
+def _loaded_module(file: Path) -> ModuleType | None:
+    """An already-imported module whose ``__file__`` is ``file`` — e.g. ``__main__`` when
+    the running script declares a plugin. Its decorators already ran; importing the
+    file again would re-run the script."""
+    target = file.resolve()
+    for module in list(sys.modules.values()):
+        try:
+            loc = getattr(module, '__file__', None)
+        except Exception:   # a lazy module can raise on attribute access
+            continue
+        if isinstance(loc, str) and os.path.basename(loc) == file.name and Path(loc).resolve() == target:
+            return module
+    return None
+
+
 def import_plugin_file(root: Path, file: Path) -> ModuleType:
     """Import one plugin file so its decorators run.
 
-    By dotted path from ``root`` (on ``sys.path``), so the file's own absolute imports
-    work and a later normal import is the same module. Loaded from the file instead,
+    A file some loaded module (``__main__`` included) already came from is not
+    imported again. A package's ``__init__.py`` is imported as the package itself.
+    Otherwise by dotted path from ``root`` (on ``sys.path``), so the file's own absolute
+    imports work and a later normal import is the same module. Loaded from the file instead,
     with a warning, when the path is not a valid dotted name, or when that top-level
     name already belongs to another module — checked with ``find_spec`` *before*
     importing, so a workspace ``scripts/trainers.py`` shadowed by an installed
@@ -96,8 +129,13 @@ def import_plugin_file(root: Path, file: Path) -> ModuleType:
     ``__file__`` check after the dotted import is a second guard, kept for the case
     ``find_spec`` says the name is ours but the import still resolves elsewhere.
     """
+    loaded = _loaded_module(file)
+    if loaded is not None:
+        return loaded
     rel = file.relative_to(root)
     parts = rel.with_suffix('').parts
+    if len(parts) > 1 and parts[-1] == '__init__':
+        parts = parts[:-1]   # `pkg.__init__` would run the file a second time, after `pkg`
     try:
         if all(part.isidentifier() for part in parts):
             if str(root) not in sys.path:

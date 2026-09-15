@@ -1,7 +1,9 @@
 """@micm_plugin: registry, discovery, and resolution through resolve_cls."""
 
+import re
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -51,6 +53,23 @@ def test_different_class_under_a_taken_name_raises():
     plugins.micm_plugin(first)
     with pytest.raises(ValueError, match="'Thing' is taken"):
         plugins.micm_plugin(second)
+
+
+def _class_in_fake_module(monkeypatch, module_name, file):
+    """A class ``Thing`` defined by a module ``module_name`` whose ``__file__`` is ``file``."""
+    module = ModuleType(module_name)
+    module.__file__ = str(file)
+    monkeypatch.setitem(sys.modules, module_name, module)
+    return type('Thing', (), {'__module__': module_name})
+
+
+def test_the_same_file_under_two_module_names_is_one_plugin(tmp_path, monkeypatch):
+    file = tmp_path / 'trainers.py'
+    plugins.micm_plugin(_class_in_fake_module(monkeypatch, 'fake_src.fake_proj.trainers', file))
+    plugins.micm_plugin(_class_in_fake_module(monkeypatch, 'fake_proj.trainers', file))
+    other = _class_in_fake_module(monkeypatch, 'fake_other.trainers', tmp_path / 'other.py')
+    with pytest.raises(ValueError, match="'Thing' is taken"):
+        plugins.micm_plugin(other)
 
 
 def test_exported_from_the_package():
@@ -124,8 +143,28 @@ def test_a_name_already_taken_by_another_module_loads_by_path(ws, capsys):
 
 def test_a_plugin_file_that_fails_to_import_raises_naming_it(ws):
     _write(ws, 'pkg_c/broken.py', PLUGIN.format(name='BrokenTrainer') + 'import no_such_module_xyz\n')
-    with pytest.raises(ImportError, match='pkg_c/broken.py'):
+    with pytest.raises(ImportError, match=re.escape('pkg_c/broken.py')):
         plugins.discover(ws)
+
+
+def test_a_plugin_in_a_package_init_registers_once_as_the_package(ws):
+    _write(ws, 'pkg_h/__init__.py', PLUGIN.format(name='InitTrainer'))
+    plugins.discover(ws)
+    assert plugins._PLUGINS['InitTrainer'].__module__ == 'pkg_h'
+    assert 'pkg_h.__init__' not in sys.modules
+
+
+def test_a_file_already_loaded_as_the_running_script_is_not_imported_again(ws, monkeypatch):
+    # `python train.py`: the script is `__main__`, its decorators already ran.
+    file = _write(ws, 'pkg_i/train.py', PLUGIN.format(name='MainTrainer')
+                  + "if __name__ != 'fake_main':\n    raise RuntimeError('script re-executed')\n")
+    main = ModuleType('fake_main')
+    main.__file__ = str(file)
+    monkeypatch.setitem(sys.modules, 'fake_main', main)
+    exec(compile(file.read_text(), str(file), 'exec'), main.__dict__)
+    plugins.discover(ws)
+    assert plugins._PLUGINS['MainTrainer'].__module__ == 'fake_main'
+    assert 'pkg_i.train' not in sys.modules
 
 
 def test_a_shadowed_stdlib_name_loads_by_path_without_hard_failing(ws, capsys):
@@ -176,6 +215,16 @@ def test_built_in_names_resolve_as_before_without_init(monkeypatch):
         utils.resolve_cls('NoSuchThing', ['collections'])
 
 
+def test_resolve_cls_rejects_a_plugin_function(monkeypatch):
+    def ws_fn():
+        return None
+
+    monkeypatch.setattr(plugins, '_discovered', True)   # no scan: the plugin is registered here
+    plugins.micm_plugin(ws_fn)
+    with pytest.raises(TypeError, match=re.escape("trainer.cls='ws_fn' is a @micm_plugin function, not a class")):
+        utils.resolve_cls('ws_fn', ['collections'], 'trainer.cls')
+
+
 SEEN = []
 
 
@@ -186,6 +235,7 @@ def plugin_runner(config, ctx):
 def test_a_group_run_resolves_a_plugin(ws, monkeypatch):
     import yaml
 
+    monkeypatch.setattr(nlpka_path, '_workspace', None)   # restored after, undoing set_root(ws)
     monkeypatch.delenv('SLURM_ARRAY_TASK_ID', raising=False)
     monkeypatch.setattr(cli, '_init_workspace', lambda root_path=None: nlpka_path.set_root(ws))
     _write(ws, 'pkg_g/trainers.py', PLUGIN.format(name='GroupTrainer'))
