@@ -122,9 +122,19 @@ def test_a_name_already_taken_by_another_module_loads_by_path(ws, capsys):
 
 
 def test_a_plugin_file_that_fails_to_import_raises_naming_it(ws):
-    _write(ws, 'pkg_c/broken.py', 'from micm_nlp import micm_plugin\nimport no_such_module_xyz\n')
+    _write(ws, 'pkg_c/broken.py', PLUGIN.format(name='BrokenTrainer') + 'import no_such_module_xyz\n')
     with pytest.raises(ImportError, match='pkg_c/broken.py'):
         plugins.discover(ws)
+
+
+def test_a_shadowed_stdlib_name_loads_by_path_without_hard_failing(ws, capsys):
+    # A workspace `email/` package: `import email.trainers` must not import the
+    # stdlib `email` package's own top-level code, nor hard-fail discovery when
+    # `email.trainers` does not exist there.
+    _write(ws, 'email/trainers.py', PLUGIN.format(name='EmailTrainer'))
+    plugins.discover(ws)
+    assert 'EmailTrainer' in plugins._PLUGINS
+    assert 'already names another module' in capsys.readouterr().out
 
 
 def test_discovery_runs_once(ws):

@@ -88,9 +88,13 @@ def import_plugin_file(root: Path, file: Path) -> ModuleType:
 
     By dotted path from ``root`` (on ``sys.path``), so the file's own absolute imports
     work and a later normal import is the same module. Loaded from the file instead,
-    with a warning, when the path is not a valid dotted name, or when that name
-    already belongs to another module (a workspace ``utils.py`` would otherwise
-    silently resolve to someone else's ``utils``).
+    with a warning, when the path is not a valid dotted name, or when that top-level
+    name already belongs to another module — checked with ``find_spec`` *before*
+    importing, so a workspace ``scripts/trainers.py`` shadowed by an installed
+    ``scripts`` package (or a workspace ``email/`` shadowed by the stdlib) neither
+    hard-fails discovery nor runs a stranger's top-level package first. The
+    ``__file__`` check after the dotted import is a second guard, kept for the case
+    ``find_spec`` says the name is ours but the import still resolves elsewhere.
     """
     rel = file.relative_to(root)
     parts = rel.with_suffix('').parts
@@ -99,9 +103,19 @@ def import_plugin_file(root: Path, file: Path) -> ModuleType:
             if str(root) not in sys.path:
                 sys.path.append(str(root))   # last: never shadow an installed package
             dotted = '.'.join(parts)
-            module = importlib.import_module(dotted)
-            if Path(getattr(module, '__file__', '') or '').resolve() == file.resolve():
-                return module
+            resolved_root = root.resolve()
+            try:
+                owner_spec = importlib.util.find_spec(parts[0])
+            except (ImportError, ValueError):
+                owner_spec = None
+            locations = list(owner_spec.submodule_search_locations or []) if owner_spec else []
+            if owner_spec is not None and owner_spec.origin:
+                locations.append(owner_spec.origin)
+            owns_it = any(Path(loc).resolve().is_relative_to(resolved_root) for loc in locations)
+            if owns_it:
+                module = importlib.import_module(dotted)
+                if Path(getattr(module, '__file__', '') or '').resolve() == file.resolve():
+                    return module
             reason = f'{dotted!r} already names another module'
         else:
             reason = 'not a valid Python module path'
@@ -126,7 +140,10 @@ def discover(root: Path | None = None) -> None:
     """Import every plugin file in the workspace, once per process.
 
     Without ``root`` it uses the workspace ``init()`` set; before ``init()`` it does
-    nothing and stays undone, so a later call after ``init()`` still scans.
+    nothing and stays undone, so a later call after ``init()`` still scans. If a
+    plugin file fails to import, ``_discovered`` is reset to ``False`` before the
+    exception propagates, so a later call retries (and re-raises the real error)
+    instead of silently reporting no plugins.
     """
     global _discovered
     if _discovered:
@@ -138,8 +155,12 @@ def discover(root: Path | None = None) -> None:
             return
     _discovered = True
     root = Path(root)
-    for file in plugin_files(root):
-        import_plugin_file(root, file)
+    try:
+        for file in plugin_files(root):
+            import_plugin_file(root, file)
+    except Exception:
+        _discovered = False
+        raise
 
 
 def find(name: str):
