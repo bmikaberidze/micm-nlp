@@ -31,17 +31,31 @@ import yaml
 from rich import print as rprint
 from tqdm import tqdm
 
+from micm_nlp import plugins
+
 
 # Class resolution ---------------------------------------------------------------------------------------------------------------------
 def resolve_cls(cls_name, modules, yaml_path=None):
-    """Resolve a bare class name by importing it from one of `modules` (str or
-    list, tried in order). Used to load HF / custom classes named in YAML
-    without maintaining a registry. Raises ValueError on missing/unknown name.
+    """Resolve a name from a config: a ``@micm_plugin`` first, then `modules` in order.
+
+    `modules` is a str or list of module names, tried in order. A plugin named like a
+    class in one of them replaces it, with a one-line notice. Raises ValueError on a
+    missing or unknown name, and TypeError on a plugin that is a function, not a class.
     """
     label = yaml_path or 'cls'
     if not cls_name:
         raise ValueError(f'{label} is required.')
     mods = [modules] if isinstance(modules, str) else list(modules)
+    plugin = plugins.find(cls_name)
+    if plugin is not None:
+        if not isinstance(plugin, type):
+            raise TypeError(f'{label}={cls_name!r} is a @micm_plugin function, not a class')
+        shadowed = next((obj for obj in (_module_attr(m, cls_name) for m in mods) if obj is not None), None)
+        if shadowed is not None:
+            # The object's own origin: `micm_nlp.training.trainers` merely re-exports `Trainer`.
+            origin = f"{getattr(shadowed, '__module__', '?')}.{getattr(shadowed, '__qualname__', cls_name)}"
+            print(f'[micm_nlp] {label} {cls_name!r}: using plugin {plugin.__module__}.{cls_name}, not {origin}')
+        return plugin
     tried = []
     for mod_name in mods:
         try:
@@ -52,7 +66,15 @@ def resolve_cls(cls_name, modules, yaml_path=None):
         if cls is not None:
             return cls
         tried.append(mod_name)
-    raise ValueError(f'Unknown {label}={cls_name!r}. Not found in modules: {tried}.')
+    raise ValueError(f'Unknown {label}={cls_name!r}. Not a @micm_plugin, and not found in modules: {tried}.')
+
+
+def _module_attr(mod_name, name):
+    """``mod_name.name``, or None when the module or the name is missing."""
+    try:
+        return getattr(importlib.import_module(mod_name), name, None)
+    except ImportError:
+        return None
 
 
 # Module info / debug ------------------------------------------------------------------------------------------------------------------

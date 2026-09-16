@@ -54,6 +54,69 @@ Every section accepts extra keys.
 > PyYAML follows YAML 1.1, where `5e-5` (no decimal point) is a string.  
 > `micm_nlp.config` extends its float resolver at import, so `learning_rate: 5e-5` is a float everywhere.
 
+### Your own classes
+
+Decorate a class anywhere in your workspace with ***`@micm_plugin`***, and name it in `cls`.
+
+```python
+from micm_nlp import micm_plugin
+from dataclasses import dataclass
+from transformers import DataCollatorWithPadding
+
+@micm_plugin
+@dataclass
+class MyCollator(DataCollatorWithPadding):
+    alpha: float = 0.5
+```
+
+```yaml
+data_collator: {
+    cls: MyCollator, 
+    args: {
+        alpha: 0.7,             # for MyCollator
+        pad_to_multiple_of: 8   # for DataCollatorWithPadding
+    }
+}
+```
+
+- Works for every `cls` key: `trainer`, `data_collator`, `training_args`, `model.pretrained`, `model.init`, `model.init.config`.  
+- `args` reach the constructor as keyword arguments, so the class has to declare them.  
+- Names resolve from your plugins first, then micm-nlp, then `transformers` — a plugin named like a built-in replaces it, with a notice.
+- Every `.py` file in your workspace that decorates something with `@micm_plugin` is imported automatically — nothing to install, nothing to import.  
+
+> [!WARNING]
+> - A plugin file's top-level code runs on that import — keep a script's work under `if __name__ == '__main__':`.
+> - `@micm_plugin` is not autoloaded from `artefacts/`, `tests/`, `test/`, `__pycache__/`, `node_modules/`, `build/`, `dist/`, dot-folders and virtualenvs, nor from `test_*.py`, `*_test.py`, `conftest.py`.  
+
+#### Your own trainer
+
+A trainer takes no `args` of its own — HuggingFace gives a trainer its settings in `TrainingArguments`, so yours go in a subclass of it and reach the trainer as `self.args.alpha`.
+
+```python
+from micm_nlp import micm_plugin
+from dataclasses import dataclass
+from transformers import Trainer, TrainingArguments
+
+@micm_plugin
+class MyTrainer(Trainer): ...
+
+@micm_plugin
+@dataclass
+class MyTrainingArguments(TrainingArguments):
+    alpha: float = 0.5
+```
+
+```yaml
+trainer:       {cls: MyTrainer}
+training_args: {
+    cls: MyTrainingArguments, 
+    args: {
+        alpha: 0.5,             # for MyTrainingArguments
+        learning_rate: 5e-5     # for TrainingArguments
+    }
+}
+```
+
 ### `task.preproc_rules`
 
 Post-processing applied to predictions before metrics.

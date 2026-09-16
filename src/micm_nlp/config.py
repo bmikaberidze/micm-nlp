@@ -511,9 +511,10 @@ class TestConfig(_Flex):
 
 
 class TrainerConfig(_Flex):
-    """Thin shell. `cls` selects which HF Trainer subclass to instantiate
-    (Trainer, Seq2SeqTrainer, …). `args` is reserved for future extra kwargs
-    splatted into the trainer ctor (runtime wiring currently fills the rest).
+    """Thin shell. `cls` selects the trainer class -- a ``@micm_plugin``, one of this
+    package's, or a HuggingFace one (Trainer, Seq2SeqTrainer, …). `args` is reserved for
+    future extra kwargs splatted into the trainer ctor (runtime wiring currently fills
+    the rest).
     """
 
     cls: str | None = None

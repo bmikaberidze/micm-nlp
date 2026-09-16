@@ -102,7 +102,8 @@ env:                  {...}
 ```
 
 - `model`, `tokenizer` and `ds` each can take the HuggingFace Hub slug, or be loaded from local disk.  
-- `cls` keys are class names, resolved at runtime from `transformers` — and, for trainers and collators, from this package too — so a new backbone or head needs no code.  
+- `cls` keys are class names, resolved at runtime from `transformers` and this package — a new backbone or head needs no code.  
+`cls` can also name your own class, once decorated with `@micm_plugin` — see [your own classes](https://micm-nlp.readthedocs.io/en/latest/config.html#your-own-classes).  
 - `args` keys pass any extra keyword arguments verbatim to the `cls` constructor.  
 
 ```bash
