@@ -37,7 +37,8 @@
 pip install micm-nlp
 ```
 
-[Install](install.md) covers installing from source, with Docker, and the `.env` file; [Quickstart](quickstart.md) runs the first config.
+[Install](install.md) covers installing from source, with Docker, and the `.env` file;  
+[Quickstart](quickstart.md) runs the first config.
 
 ## Links
 
