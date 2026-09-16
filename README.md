@@ -90,7 +90,7 @@ tokenizer:            {source, name, args, ...}
 ds:                   {category, dirs, name, type, splits, preproc_rules, ...}
 model:                {architecture, pretrained: {cls, args, ...}}
 peft:                 {peft_type, task_type, ...}
-trainer:              {cls, args}
+trainer:              {cls}
 training_args:        {cls, args}
 custom_training_args: {...}
 data_collator:        {cls, args}

@@ -18,6 +18,7 @@ stays clear of torch.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import importlib.util
 import os
@@ -80,6 +81,26 @@ def _skip_file(name: str) -> bool:
     return name == 'conftest.py' or name.startswith('test_') or name.endswith('_test.py')
 
 
+def _decorates(text: str) -> bool:
+    """Whether ``@micm_plugin`` is a real decorator in ``text``, not a mention in a
+    docstring. The regex above is only a prefilter: it reads raw text, where an example
+    snippet inside a docstring looks exactly like a decorator. Parsing answers it for
+    certain and still runs nothing. Unparsable source counts as declaring: the file is
+    then imported, and the import error names it."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return True
+    for node in ast.walk(tree):
+        for dec in getattr(node, 'decorator_list', []):
+            dec = dec.func if isinstance(dec, ast.Call) else dec
+            # `@micm_plugin`, or `@micm_nlp.micm_plugin` however deeply qualified.
+            name = dec.attr if isinstance(dec, ast.Attribute) else getattr(dec, 'id', None)
+            if name == 'micm_plugin':
+                return True
+    return False
+
+
 def plugin_files(root: Path) -> list[Path]:
     """Every ``.py`` under ``root`` that declares a ``@micm_plugin``, in path order."""
     found = []
@@ -94,7 +115,7 @@ def plugin_files(root: Path) -> list[Path]:
                 text = file.read_text(encoding='utf-8', errors='ignore')
             except OSError:
                 continue
-            if _DECLARES.search(text):
+            if _DECLARES.search(text) and _decorates(text):
                 found.append(file)
     return found
 

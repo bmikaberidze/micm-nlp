@@ -121,6 +121,22 @@ def test_only_files_that_declare_a_plugin_are_imported(ws):
     assert plugins._PLUGINS['WsTrainer'].__module__ == 'pkg_a.trainers'
 
 
+def test_a_decorator_only_shown_in_a_docstring_is_not_imported(ws):
+    # An example snippet in a docstring declares no plugin; importing the file would
+    # run its top-level code for nothing.
+    _write(ws, 'pkg_j/doc.py', 'def helper():\n    """Example:\n\n    @micm_plugin\n    class MyTrainer: ...\n    """\n'
+           + BOMB)
+    assert plugins.plugin_files(ws) == []
+    plugins.discover(ws)   # BOMB would raise if the file were imported
+
+
+def test_unparsable_source_is_left_to_the_import_to_report(ws):
+    _write(ws, 'pkg_k/broken_syntax.py', PLUGIN.format(name='SyntaxTrainer') + 'def (:\n')
+    assert plugins.plugin_files(ws) == [ws / 'pkg_k' / 'broken_syntax.py']
+    with pytest.raises(ImportError, match=re.escape('pkg_k/broken_syntax.py')):
+        plugins.discover(ws)
+
+
 def test_qualified_decorator_counts(ws):
     _write(ws, 'pkg_b/m.py', 'import micm_nlp\n\n@micm_nlp.micm_plugin\ndef ws_metric(p, l):\n    return 0\n')
     assert plugins.plugin_files(ws) == [ws / 'pkg_b' / 'm.py']
@@ -247,46 +263,12 @@ def test_a_group_run_resolves_a_plugin(ws, monkeypatch):
     assert SEEN == ['GroupTrainer']
 
 
-def test_trainer_args_are_merged_into_the_constructor_kwargs():
-    from micm_nlp.config import _Flex
-    from micm_nlp.training.runner import trainer_kwargs
-
-    merged = trainer_kwargs({'model': 'm', 'args': 'a'}, _Flex(alpha=0.5))
-    assert merged == {'model': 'm', 'args': 'a', 'alpha': 0.5}
-    assert trainer_kwargs({'model': 'm'}, None) == {'model': 'm'}
-
-
-def test_trainer_args_reach_the_trainer_constructor():
-    from micm_nlp.config import _Flex
-    from micm_nlp.training.runner import trainer_kwargs
-    from micm_nlp.training.trainers import custom_trainer_class_factory
-
-    class BaseTrainer:   # stands in for a `trainer.cls` that takes its own setting
-        def __init__(self, model=None, alpha=None):
-            self.model, self.alpha = model, alpha
-
-    trainer = custom_trainer_class_factory(BaseTrainer)(
-        custom_args=None, **trainer_kwargs({'model': 'm'}, _Flex(alpha=0.5)))
-    assert (trainer.model, trainer.alpha) == ('m', 0.5)
-
-
-def test_a_trainer_arg_the_constructor_does_not_accept_raises():
-    from micm_nlp.config import _Flex
-    from micm_nlp.training.runner import trainer_kwargs
-    from micm_nlp.training.trainers import custom_trainer_class_factory
-
-    class BaseTrainer:   # no `alpha`, like an unmodified `transformers` Trainer
-        def __init__(self, model=None):
-            self.model = model
-
-    CustomTrainer = custom_trainer_class_factory(BaseTrainer)
-    with pytest.raises(TypeError, match='alpha'):
-        CustomTrainer(custom_args=None, **trainer_kwargs({'model': 'm'}, _Flex(alpha=0.5)))
-
-
-def test_trainer_args_may_not_override_framework_kwargs():
-    from micm_nlp.config import _Flex
-    from micm_nlp.training.runner import trainer_kwargs
-
-    with pytest.raises(ValueError, match=r"\['custom_args', 'model'\]"):
-        trainer_kwargs({'model': 'm'}, _Flex(model='x', custom_args=1))
+def test_a_plugin_training_arguments_subclass_resolves(ws, monkeypatch):
+    # A setting of your own belongs in a TrainingArguments subclass: it reaches the
+    # trainer as `self.args.alpha`, and is saved and logged with the run.
+    _write(ws, 'pkg_l/targs.py',
+           'from dataclasses import dataclass\n\nfrom micm_nlp import micm_plugin\n\n'
+           '@micm_plugin\n@dataclass\nclass MyTrainingArguments:\n    alpha: float = 0.5\n')
+    monkeypatch.setattr(nlpka_path, '_workspace', ws)
+    TArgs = utils.resolve_cls('MyTrainingArguments', ['transformers'], 'training_args.cls')
+    assert TArgs(alpha=0.7).alpha == 0.7

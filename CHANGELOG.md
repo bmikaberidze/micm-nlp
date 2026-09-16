@@ -8,9 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ### Added
 - `@micm_plugin` makes a class in your workspace selectable by name in a
   config's `cls`. On the first lookup the workspace is scanned and only files that
-  declare a plugin are imported; lookup order is plugins → micm-nlp → `transformers`.
-- `trainer.args` is passed to the trainer constructor, so a custom trainer takes its own
-  settings; it may not replace an argument the framework supplies.
+  declare a plugin are imported; resolve order is plugins → micm-nlp → `transformers`.
 
 ### Changed
 - Trainer and data-collator names resolve in micm-nlp before `transformers`.
