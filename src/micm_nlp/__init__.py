@@ -1,6 +1,6 @@
 """micm-nlp — a research framework for NLP.
 
-The whole pipeline in a single YAML, run alone or in groups. Builds on the
+The whole pipeline in a single YAML, run alone or in a group. Builds on the
 HuggingFace stack and adds a layer of features of its own.
 
 Re-exports the names a script needs: ``env`` (settings loaded from ``.env``),

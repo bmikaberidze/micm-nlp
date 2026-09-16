@@ -5,8 +5,14 @@
 :end-before: <!-- end:tagline -->
 ```
 
-```bash
-pip install micm-nlp
+```{image} _static/cover-light.svg
+    :alt: micm-nlp: one YAML, whole pipeline, run alone or in a group
+    :class: only-light
+```
+
+```{image} _static/cover-dark.svg
+    :alt: micm-nlp: one YAML, whole pipeline, run alone or in a group
+    :class: only-dark
 ```
 
 ```{include} ../../README.md
@@ -20,6 +26,14 @@ pip install micm-nlp
 :start-after: <!-- start:contributions -->
 :end-before: <!-- end:contributions -->
 ```
+
+## Get started
+
+```bash
+pip install micm-nlp
+```
+
+[Install](install.md) covers installing from source, with Docker, and the `.env` file; [Quickstart](quickstart.md) runs the first config.
 
 ## Links
 
