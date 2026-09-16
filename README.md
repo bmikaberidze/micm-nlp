@@ -16,6 +16,8 @@ Builds on the HuggingFace stack and adds a layer of features of its own.
 <!-- The docs page renders the SVG covers from docs/source/_static and switches them
      with the Furo theme. Here the PNGs are used behind a <picture>: GitHub serves a raw
      .svg as text/plain, so it would not render, and PyPI keeps only the <img>. -->
+<br>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bmikaberidze/micm-nlp/main/docs/source/_static/cover-dark@2x.png">
   <img alt="micm-nlp: one YAML, whole pipeline, run alone or in a group" src="https://raw.githubusercontent.com/bmikaberidze/micm-nlp/main/docs/source/_static/cover-light@2x.png">
