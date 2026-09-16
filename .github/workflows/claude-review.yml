@@ -79,9 +79,12 @@ jobs:
               settings wholesale. Flag new unsafe loading of downloaded files:
               `pickle.load`, `torch.load` without `weights_only=True`, `yaml.load` instead
               of `safe_load`, `trust_remote_code=True` as a default. YAML `cls` names
-              resolve only against the `*_SOURCE_MODULES` lists — they must not reach
-              arbitrary imports. (`--runner` taking any module or script path is
-              deliberate: it comes from the command line, not from a config.)
+              resolve only against registered `@micm_plugin`s and the
+              `*_SOURCE_MODULES` lists — never a dotted import path. Plugin discovery
+              importing every workspace file that decorates something with
+              `@micm_plugin` is deliberate and settled; flag only a widening of what it
+              imports or skips, not the design. (`--runner` taking any module or script
+              path is deliberate too: it comes from the command line, not from a config.)
             - **Docs** — the README is the single source for anything the docs site also
               shows (pulled in with `{include}` between `<!-- start:… -->` markers); a
               second copy of the same prose, or a renamed or moved marker without updating
