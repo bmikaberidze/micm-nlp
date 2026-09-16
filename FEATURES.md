@@ -6,39 +6,6 @@
 
 Every entry says what HuggingFace does on its own, and links to the module that implements it.
 
-## Data
-
-- **One `DATASET` class over every source** — local CSV / TXT / JSON, the Hub, and
-  `save_to_disk` directories behind a single config block, instead of a different
-  loader call per source.
-  → [`datasets.dataset`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
-- **Concatenation across directories** — `get_concatenated_dataset` assembles one
-  training set from a per-language (or per-domain) path template. This is the
-  mechanism behind multilingual source groups; `datasets` gives you `concatenate_datasets`
-  but no path-template layer above it.
-  → [`DATASET.get_concatenated_dataset`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
-- **Tokenization in three configurable stages** — `tokenize.pre_rules` (sentence
-  splitting, EOS appending, text-to-text reframing), `tokenize.rules` (handed to the
-  tokenizer verbatim), and `tokenize.post_rules` (EOS-aware truncation, sample
-  concatenation, length sorting). HuggingFace gives you the tokenizer call in the
-  middle; everything on either side of it is normally yours to write.
-  → [`DATASET.preprocess`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
-- **Subsetting and splitting as configuration** — use a fixed fraction of a corpus
-  (`preproc_rules.subset`), carve train / validation / test by ratio
-  (`preproc_rules.split`), or separate a split by token length
-  (`preproc_rules.split_by_tokens_len`) — all seeded, so the same config gives the same
-  partition.
-- **Column standardisation** — `ds.input.standardize_key` renames a corpus's own
-  column names onto the canonical `inputs` / `labels` / `task_ids`, so downstream code
-  never learns any corpus's vocabulary.
-- **Splits for datasets that have none** — `ds.splits` handles corpora that
-  ship splits under non-standard names, or ship none at all.
-- **Length statistics** — `analyze_lengths` reports the real token-length distribution
-  of a split, so `max_length` is chosen from evidence rather than guessed. Truncating
-  33 of 205 languages because 164 looked like a safe default is the kind of thing this
-  catches.
-  → [`DATASET.analyze_lengths`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
-
 ## PEFT, including a method of our own
 
 - **The Cross-Prompt Encoder (XPE)** — the method from *Cross-Prompt Encoder for
@@ -106,6 +73,39 @@ Every entry says what HuggingFace does on its own, and links to the module that 
 - **Per-task metric grouping**, so one run scores several tasks separately and together.
 - **Confusion matrices** written per evaluation.
   → [`evals.plot`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/evals/plot/index.html)
+
+## Data
+
+- **One `DATASET` class over every source** — local CSV / TXT / JSON, the Hub, and
+  `save_to_disk` directories behind a single config block, instead of a different
+  loader call per source.
+  → [`datasets.dataset`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
+- **Concatenation across directories** — `get_concatenated_dataset` assembles one
+  training set from a per-language (or per-domain) path template. This is the
+  mechanism behind multilingual source groups; `datasets` gives you `concatenate_datasets`
+  but no path-template layer above it.
+  → [`DATASET.get_concatenated_dataset`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
+- **Tokenization in three configurable stages** — `tokenize.pre_rules` (sentence
+  splitting, EOS appending, text-to-text reframing), `tokenize.rules` (handed to the
+  tokenizer verbatim), and `tokenize.post_rules` (EOS-aware truncation, sample
+  concatenation, length sorting). HuggingFace gives you the tokenizer call in the
+  middle; everything on either side of it is normally yours to write.
+  → [`DATASET.preprocess`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
+- **Subsetting and splitting as configuration** — use a fixed fraction of a corpus
+  (`preproc_rules.subset`), carve train / validation / test by ratio
+  (`preproc_rules.split`), or separate a split by token length
+  (`preproc_rules.split_by_tokens_len`) — all seeded, so the same config gives the same
+  partition.
+- **Column standardisation** — `ds.input.standardize_key` renames a corpus's own
+  column names onto the canonical `inputs` / `labels` / `task_ids`, so downstream code
+  never learns any corpus's vocabulary.
+- **Splits for datasets that have none** — `ds.splits` handles corpora that
+  ship splits under non-standard names, or ship none at all.
+- **Length statistics** — `analyze_lengths` reports the real token-length distribution
+  of a split, so `max_length` is chosen from evidence rather than guessed. Truncating
+  33 of 205 languages because 164 looked like a safe default is the kind of thing this
+  catches.
+  → [`DATASET.analyze_lengths`](https://micm-nlp.readthedocs.io/en/latest/autoapi/micm_nlp/datasets/dataset/index.html)
 
 ## Tokenizers
 

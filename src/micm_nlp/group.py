@@ -249,7 +249,7 @@ def resolve_entry(group: dict[str, Any], index: int, cli_seed: int | None = None
     ``started``, the output dir and the environment, so a run that dies before
     the trainer exists still says where and when it ran; then ``separate_test``
     the same way (no seed), with its own ``output`` block. The output dir is
-    ``runs/{architecture}/{group}/{time_id}_{name}``; if it already exists
+    ``runs/groups/{group}/{time_id}_{name}``; if it already exists
     (the same entry dispatched twice within one second) this raises rather
     than merging two runs into one directory.
     """

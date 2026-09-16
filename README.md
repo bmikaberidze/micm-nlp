@@ -176,7 +176,7 @@ Thirty ***features*** on top of the HuggingFace stack, grouped by the area of th
 
 | Area | Some of what is there |
 |---|---|
-| **PEFT** | the Cross-Prompt Encoder — a published method, not a wrapper; soft prompts, the encoder, or any mix of the two, set by one ratio; save and load for adapters stock PEFT cannot serialise |
+| **PEFT** | the Cross-Prompt Encoder — a published method, not a wrapper; soft prompts, prompt encoder, or any mix of the two, set by one ratio; save and load for adapters stock PEFT cannot serialise |
 | **Training** | token-budget batching with an `'auto'` GPU probe; early stopping decoupled from model selection; per-parameter-group optimizer settings from YAML; collators HuggingFace lacks; closed-set generation |
 | **Evaluation** | label-restricted likelihood; length-normalised log-likelihood accuracy; a declarative post-processing chain |
 | **Data** | length statistics for choosing `max_length` from evidence; a declarative pre-processing chain; splitting, subsetting or concatenation based on config |
