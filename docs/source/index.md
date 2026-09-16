@@ -1,6 +1,7 @@
 # micm-nlp
 
 [![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
+[![GitHub](https://img.shields.io/badge/GitHub-source-181717?logo=github)](https://github.com/bmikaberidze/micm-nlp)
 [![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
