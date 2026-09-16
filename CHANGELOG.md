@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-16
+
 ### Added
 - `@micm_plugin` makes a class in your workspace selectable by name in a
   config's `cls`. On the first lookup the workspace is scanned and only files that

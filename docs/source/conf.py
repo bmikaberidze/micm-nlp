@@ -117,7 +117,7 @@ pygments_dark_style = 'code_style.OneDarkProDarker'
 # Read the Docs exports READTHEDOCS_CANONICAL_URL during its own builds, already
 # pointing at the version being built, so a build of ``stable`` does not claim to
 # be ``latest``. The fallback is for local builds, which have no such variable.
-html_baseurl = os.environ.get('READTHEDOCS_CANONICAL_URL', 'https://micm-nlp.readthedocs.io/en/latest/')
+html_baseurl = os.environ.get('READTHEDOCS_CANONICAL_URL', 'https://nlp.micm.edu.ge/en/latest/')
 # The full release (0.2.1), not the short version (0.2) — a patch-level fix is
 # exactly the thing a reader needs to know they are looking at.
 html_title = f'micm-nlp {release}'

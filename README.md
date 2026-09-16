@@ -1,7 +1,7 @@
 # micm-nlp
 
 [![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
-[![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://micm-nlp.readthedocs.io/en/latest/)
+[![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://nlp.micm.edu.ge/en/latest/)
 [![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -11,7 +11,7 @@ A research framework for NLP — the whole pipeline in a single YAML, run alone 
 Builds on the HuggingFace stack and adds a layer of features of its own.
 <!-- end:tagline -->
 
-[micm-nlp.readthedocs.io](https://micm-nlp.readthedocs.io/) — full documentation 📚
+[nlp.micm.edu.ge](https://nlp.micm.edu.ge/) — full documentation 📚
 
 <!--
 The blocks between the start/end markers below are pulled into the documentation
@@ -47,9 +47,9 @@ Beso Mikaberidze, Teimuraz Saghinadze, Guram Mikaberidze, Raphael Kalandadze, Ko
 
 | Contribution | In short | Answers |
 |---|---|---|
-| [Pipeline Unification](https://micm-nlp.readthedocs.io/en/latest/config.html) | unit&nbsp;config&nbsp;→&nbsp;unit&nbsp;run | *How do I describe a whole run in one place, and make it reproducible?* |
-| [Experiment Orchestration](https://micm-nlp.readthedocs.io/en/latest/groups.html) | group&nbsp;config&nbsp;→&nbsp;many&nbsp;unit&nbsp;runs | *How do I run many variations, and collect their results together?* |
-| [Features](https://micm-nlp.readthedocs.io/en/latest/features.html)  | ready-made&nbsp;functionality | *What can I do here that the HuggingFace stack does not already do?* |
+| [Pipeline Unification](https://nlp.micm.edu.ge/en/latest/config.html) | unit&nbsp;config&nbsp;→&nbsp;unit&nbsp;run | *How do I describe a whole run in one place, and make it reproducible?* |
+| [Experiment Orchestration](https://nlp.micm.edu.ge/en/latest/groups.html) | group&nbsp;config&nbsp;→&nbsp;many&nbsp;unit&nbsp;runs | *How do I run many variations, and collect their results together?* |
+| [Features](https://nlp.micm.edu.ge/en/latest/features.html)  | ready-made&nbsp;functionality | *What can I do here that the HuggingFace stack does not already do?* |
 
 <!-- end:contributions -->
 
@@ -60,7 +60,7 @@ pip install micm-nlp
 ```
 
 Requires **Python 3.10 or newer**. For installing from source, with Docker, or setting up
-the `.env` file see the [install docs](https://micm-nlp.readthedocs.io/en/latest/install.html).
+the `.env` file see the [install docs](https://nlp.micm.edu.ge/en/latest/install.html).
 
 ## Quickstart
 
@@ -103,7 +103,7 @@ env:                  {...}
 
 - `model`, `tokenizer` and `ds` each can take the HuggingFace Hub slug, or be loaded from local disk.  
 - `cls` keys are class names, resolved at runtime from `transformers` and this package — a new backbone or head needs no code.  
-`cls` can also name your own class, once decorated with `@micm_plugin` — see [your own classes](https://micm-nlp.readthedocs.io/en/latest/config.html#your-own-classes).  
+`cls` can also name your own class, once decorated with `@micm_plugin` — see [your own classes](https://nlp.micm.edu.ge/en/latest/config.html#your-own-classes).  
 - `args` keys pass any extra keyword arguments verbatim to the `cls` constructor.  
 
 ```bash
@@ -131,7 +131,7 @@ artefacts/runs/units/{model.name}/
 Console output is kept only by an online wandb run, in `wandb/files/output.log`; an offline run writes no such file.
 <!-- end:run-dir -->
 
-[The unit run](https://micm-nlp.readthedocs.io/en/latest/config.html) is the full reference; [the stage-by-stage form](https://micm-nlp.readthedocs.io/en/latest/quickstart.html) is the same chain unwrapped.
+[The unit run](https://nlp.micm.edu.ge/en/latest/config.html) is the full reference; [the stage-by-stage form](https://nlp.micm.edu.ge/en/latest/quickstart.html) is the same chain unwrapped.
 
 ## Experiment orchestration
 
@@ -168,7 +168,7 @@ Under a SLURM array each task picks its own run by `SLURM_ARRAY_TASK_ID`.
 
 <!-- end:groups -->
 
-[The group run](https://micm-nlp.readthedocs.io/en/latest/groups.html) is the full reference: every reserved key, what each run writes, and how to supply a runner.
+[The group run](https://nlp.micm.edu.ge/en/latest/groups.html) is the full reference: every reserved key, what each run writes, and how to supply a runner.
 
 ## Features
 
@@ -266,7 +266,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
   title         = {micm-nlp: a research framework for {NLP} built on {HuggingFace}},
   organization  = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url           = {https://github.com/bmikaberidze/micm-nlp},
-  version       = {0.4.0},
+  version       = {0.4.1},
   year          = {2026},
 }
 
