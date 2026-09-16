@@ -1,5 +1,8 @@
 # micm-nlp
 
+[![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ```{include} ../../README.md
 :start-after: <!-- start:tagline -->
 :end-before: <!-- end:tagline -->

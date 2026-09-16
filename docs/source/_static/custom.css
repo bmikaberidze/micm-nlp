@@ -272,3 +272,10 @@ article p.admonition-title {
   padding-top: 0;
   padding-bottom: 0;
 }
+
+/* The home-page cover: breathing room above and below, so it does not touch the
+   tagline above it or the paragraph under it. */
+article img.only-light,
+article img.only-dark {
+  margin-block: 1.75rem;
+}
