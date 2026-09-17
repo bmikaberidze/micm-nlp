@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg?label=PyPI)](https://pypi.org/project/micm-nlp/)
 [![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg?label=Python)](https://pypi.org/project/micm-nlp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/badge/GitHub-source-6e5494)](https://github.com/bmikaberidze/micm-nlp)
+[![GitHub](https://img.shields.io/badge/GitHub-Source-6e5494)](https://github.com/bmikaberidze/micm-nlp)
 
 ```{include} ../../README.md
 :start-after: <!-- start:tagline -->
