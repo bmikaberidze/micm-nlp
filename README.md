@@ -1,9 +1,9 @@
 # micm-nlp
 
-[![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
-[![Docs](https://readthedocs.org/projects/micm-nlp/badge/?version=latest)](https://nlp.micm.edu.ge/en/latest/)
-[![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg)](https://pypi.org/project/micm-nlp/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI](https://img.shields.io/pypi/v/micm-nlp.svg?label=PyPI)](https://pypi.org/project/micm-nlp/)
+[![Docs](https://img.shields.io/readthedocs/micm-nlp?label=Docs)](https://nlp.micm.edu.ge/en/latest/)
+[![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg?label=Python)](https://pypi.org/project/micm-nlp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
 <!-- start:tagline -->
