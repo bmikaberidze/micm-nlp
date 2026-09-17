@@ -44,7 +44,7 @@ second copy of the documentation.
 It has backed two peer-reviewed publications:
 1. **Cross-Prompt Encoder for Low-Performing Languages**  
 *Findings of IJCNLP–AACL 2025*; [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/)  
-Beso Mikaberidze, Temo Saghinadze, Simon Ostermann, Philipp Müller  
+Beso Mikaberidze, Teimuraz Saghinadze, Simon Ostermann, Philipp Müller  
 
 2. **A Comparison of Different Tokenization Methods for the Georgian Language**  
 *ICNLSP 2024*; [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/)  
@@ -260,7 +260,7 @@ micm_nlp/
 ## Acknowledgements
 
 <!-- start:acknowledgements -->
-`micm-nlp` was developed at the Muskhelishvili Institute of Computational Mathematics (MICM, Georgian Technical University), in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
+`micm-nlp` is developed at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University, in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
 
 This work was partially supported by the European Union under Horizon Europe project "GAIN" (GA #101078950) and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
 <!-- end:acknowledgements -->
