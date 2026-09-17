@@ -262,7 +262,7 @@ micm_nlp/
 <!-- start:acknowledgements -->
 `micm-nlp` is developed at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University, in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
 
-This work was partially supported by the European Union under Horizon Europe project "GAIN" (GA #101078950) and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
+This work was partially supported by the European Union under the HORIZON-WIDERA-2024-TALENTS-03 programme, project "FORGE-AI" (GA #01216703), under Horizon Europe project "GAIN" (GA #101078950), and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
 <!-- end:acknowledgements -->
 
 ## Citation
