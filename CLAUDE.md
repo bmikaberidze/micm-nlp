@@ -257,3 +257,19 @@ Two rules that follow:
 - GPU training only (CPU works for small-scale debugging); no non-NVIDIA GPU support.
 - `peft` is pinned to `0.14.0` in `pyproject.toml` — XPE subclasses stock PEFT
   internals, so bumping it is a breaking-change review, not a routine upgrade.
+
+## Release notes: a one-line summary at the top (idea, not built yet)
+
+Each released CHANGELOG version should open with a counted summary line, the way a
+package manager reports an upgrade:
+
+```
+Updated to latest. Got 4 features, 36 bugfixes, and 24 other changes.
+```
+
+Counted from that version's own entries — `### Added` → features, `### Fixed` →
+bugfixes, everything else → other changes — so it cannot drift from the list beneath
+it. The same line is what the GitHub release page and any "what changed" prompt
+should lead with. Not implemented; decide at the next release whether the line is
+written by hand or generated from the section counts (a test could pin it, the way
+`test_tagline_consistency` pins the tagline).
