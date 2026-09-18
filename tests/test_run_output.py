@@ -5,6 +5,7 @@ model is a stub; no trainer, no GPU."""
 
 import json
 import os
+import subprocess
 from types import SimpleNamespace
 
 from micm_nlp import path as nlpka_path
@@ -127,6 +128,33 @@ def test_environment_info_globs_slurm(monkeypatch):
     info = environment_info()
     assert info['slurm'] == {'SLURMD_NODENAME': 'serv-1', 'SLURM_JOB_ID': '1'} and info['cuda_visible_devices'] == '0,1'
     assert info['host'] and info['python'].startswith('3.') and info['versions']['micm_nlp'] and info['versions']['torch']
+
+
+def test_environment_info_records_the_packages_own_commit(tmp_path, monkeypatch):
+    """An editable install tracks a working tree that moves between releases, so the
+    version string alone does not identify the code that ran."""
+    from micm_nlp.training import run_output
+
+    monkeypatch.setattr(run_output, 'package_commit', lambda: 'abc1234')
+    assert environment_info()['versions']['micm_nlp_commit'] == 'abc1234'
+
+
+def test_package_commit_is_none_outside_a_checkout(tmp_path, monkeypatch):
+    from micm_nlp.training import run_output
+
+    monkeypatch.setattr(run_output, '_PACKAGE_DIR', tmp_path)   # no .git above it
+    assert run_output.package_commit() is None
+
+
+def test_package_commit_marks_a_dirty_tree(tmp_path, monkeypatch):
+    from micm_nlp.training import run_output
+
+    def fake_git(args, **kwargs):
+        out = 'abc1234\n' if 'rev-parse' in args else ' M src/micm_nlp/pipeline.py\n'
+        return subprocess.CompletedProcess(args, 0, stdout=out, stderr='')
+
+    monkeypatch.setattr(run_output.subprocess, 'run', fake_git)
+    assert run_output.package_commit() == 'abc1234-dirty'
 
 
 def test_wandb_info_survives_url_error():

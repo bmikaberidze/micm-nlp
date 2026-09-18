@@ -20,6 +20,7 @@ import importlib.metadata
 import json
 import os
 import platform
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,31 @@ RUN_INFO_FILE = 'info.json'
 # (distribution name, key in info.json). The packages that decide numerics.
 _VERSIONED = (('micm-nlp', 'micm_nlp'), ('torch', 'torch'), ('transformers', 'transformers'),
               ('peft', 'peft'), ('datasets', 'datasets'))
+
+_PACKAGE_DIR = Path(__file__).resolve().parent
+
+
+def _git(*args) -> str | None:
+    """``git`` in the package's own directory; ``None`` when it fails or is absent."""
+    try:
+        done = subprocess.run(['git', '-C', str(_PACKAGE_DIR), *args],
+                              capture_output=True, text=True, timeout=5, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+def package_commit() -> str | None:
+    """This package's own commit, ``-dirty`` when its tree has uncommitted changes;
+    ``None`` when it is an installed copy rather than a checkout.
+
+    The version alone does not identify the code: an editable install follows a working
+    tree that moves between releases, which is how a result stops being reproducible.
+    """
+    commit = _git('rev-parse', '--short', 'HEAD')
+    if not commit:
+        return None
+    return f'{commit}-dirty' if _git('status', '--porcelain') else commit
 
 
 def environment_info() -> dict[str, Any]:
@@ -48,6 +74,7 @@ def environment_info() -> dict[str, Any]:
             versions[key] = importlib.metadata.version(dist)
         except importlib.metadata.PackageNotFoundError:
             versions[key] = None
+    versions['micm_nlp_commit'] = package_commit()
     return {
         'slurm': {k: v for k, v in sorted(os.environ.items()) if k.startswith('SLURM')},
         'host': platform.node(),

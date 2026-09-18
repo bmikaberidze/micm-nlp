@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Added
+- `info.json` records `versions.micm_nlp_commit`: the commit of the package's own
+  checkout, suffixed `-dirty` when its tree has uncommitted changes, and `None` for an
+  installed copy. An editable install follows a working tree that moves between
+  releases, so the version string alone does not identify the code a run used.
+
 ## [0.4.1] - 2026-09-16
 
 ### Added

@@ -30,7 +30,7 @@ CORE_PHRASE = 'a research framework for NLP'
 # while ``pyproject.toml`` keeps it on one -- a rewrap is not a drift.
 TAGLINE = (
     'A research framework for NLP — the whole pipeline in a single YAML, run alone '
-    'or in groups. Builds on the HuggingFace stack and adds a layer of features of its own.'
+    'or in a group. Builds on the HuggingFace stack and adds a layer of features of its own.'
 )
 
 
