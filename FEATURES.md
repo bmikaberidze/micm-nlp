@@ -19,9 +19,10 @@ Every entry says what HuggingFace does on its own, and links to the module that 
 - **Three reparameterisation heads** — MLP, bidirectional LSTM, and a lightweight
   self-attention head.
   → [`models.xpe.heads`](https://nlp.micm.edu.ge/en/latest/autoapi/micm_nlp/models/xpe/heads/index.html)
-- **XPE-aware state-dict save/load** — stock `get_peft_model_state_dict` reaches for
-  `prompt_encoder.embedding.weight` unconditionally, which does not exist for pure XPE,
-  so saving a pure-XPE adapter with upstream PEFT raises.
+- **XPE-aware state-dict save/load** — stock PEFT saves a prompt encoder as its single
+  `embedding.weight`, which does not exist for pure XPE, and since peft 0.17 it never
+  wraps a CAUSAL_LM encoder's parts for saving. The encoder's weights are read and
+  written directly, under the same keys since peft 0.14, so older adapters still load.
   → [`models.xpe.save_load`](https://nlp.micm.edu.ge/en/latest/autoapi/micm_nlp/models/xpe/save_load/index.html)
 - **One dispatch point** — the `peft` config block routes to stock PEFT (LoRA, prefix
   tuning, P-tuning) or the XPE path without changing anything else.

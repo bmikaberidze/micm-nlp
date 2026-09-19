@@ -1,0 +1,288 @@
+# Environment record — the versions this project's current results are produced on.
+# Era micm-nlp-0.5: transformers 5.17 / peft 0.21 / torch 2.14 (nvidia_pytorch_26.08).
+# The frozen era's record is requirements-lock.pre-micm-nlp-0.4.txt.
+#
+# This is NOT a `pip install -r` recipe, and it is deliberately not wired into the
+# packaging:
+#
+#   1. 15 of the 261 entries below are `@ file://` wheels baked into the NGC image --
+#      torch, torchvision and torch_tensorrt among them. They do not exist on PyPI,
+#      so this file cannot recreate the environment; the container image can.
+#   2. This is the whole packages mount, including packages micm-nlp never imports.
+#      PyYAML comes from the image's system python (/usr/lib/python3/dist-packages),
+#      so it is not listed.
+#   3. micm-nlp itself is omitted. `pip freeze` renders an editable install as its
+#      git URL, and a remote that carries credentials would commit a token. Never
+#      paste `pip freeze` output in unread.
+#
+# What it is for: saying precisely what ran, when a number in a paper needs an
+# environment attached to it. `pyproject.toml` says what *can* work; this says what
+# *was* run.
+#
+# Captured from the era's packages mount (/fscratch/bmikaberidze/site-packages.micm-nlp-0.5,
+# image /netscratch/bmikaberidze/micm-nlp-0.5.nvcr.io_nvidia_pytorch_26.08-py3.sqsh)
+# on 2026-09-19. Regenerate with (and read it before committing):
+#
+#   python -m pip freeze --path /fscratch/bmikaberidze/site-packages.micm-nlp-0.5 | grep -viE 'micm[-_]nlp'
+#
+absl-py==2.5.0
+accelerate==1.15.0
+aenum==3.1.17
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.3
+aiosignal==1.4.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+antlr4-python3-runtime==4.9.3
+anyio==4.14.2
+apache-tvm-ffi==0.1.13.post3
+apex @ file:///opt/pytorch/apex/dist/apex-0.1-cp312-cp312-linux_x86_64.whl#sha256=24dd15246fa7c301ced92f6744648d1ff787ec92b398c0272e45cdc05241482c
+argon2-cffi==25.1.0
+argon2-cffi-bindings==26.1.0
+arrow==1.4.0
+asttokens==3.0.2
+astunparse==1.6.3
+async-lru==2.3.0
+attrs==26.1.0
+babel==2.18.0
+beautifulsoup4==4.15.0
+black==26.5.1
+bleach==6.4.0
+blis==1.3.3
+catalogue==2.0.10
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.1
+click==8.4.2
+cloudpathlib==0.25.0
+cloudpickle==3.1.2
+cmake==3.31.6
+comm==0.2.3
+confection==1.3.3
+contourpy==1.3.3
+cuda-bindings==13.3.1
+cuda-core==1.0.1
+cuda-pathfinder==1.6.1
+cuda-python==13.3.1
+cuda-tile==1.5.0
+cycler==0.12.1
+cymem==2.0.13
+Cython==3.2.9
+datasets==5.0.1
+debugpy==1.8.21
+defusedxml==0.7.1
+dill==0.4.1
+dllist==2.0.0
+docstring_parser==0.18.0
+einops==0.8.2
+evaluate==0.4.6
+executing==2.2.1
+fastjsonschema==2.22.2
+filelock==3.32.3
+flash_attn @ file:///opt/transfer/flash_attn-2.7.4.post1%2Bgit5231d95fe1.54157505-cp312-cp312-linux_x86_64.whl#sha256=b54ac6f8ec11911b7a11573dfe9dda536ace52240b676aac8073a76fbde4ceb3
+fonttools==4.63.0
+fqdn==1.5.1
+frozenlist==1.8.0
+fsspec==2026.6.0
+gast==0.7.0
+grpcio==1.83.0
+grpcio-tools==1.81.1
+h11==0.16.0
+hf-xet==1.6.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface_hub==1.28.0
+idna==3.19
+importlib_metadata==9.0.0
+iniconfig==2.3.0
+intel-openmp==2021.4.0
+ipykernel==7.3.0
+ipython==9.16.1
+ipython_pygments_lexers==1.1.1
+isoduration==20.11.0
+isort==8.0.1
+jedi==0.20.0
+Jinja2==3.1.6
+joblib==1.6.0
+json5==0.15.0
+jsonpointer==3.1.1
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+jupyter-events==0.12.1
+jupyter-lsp==2.3.1
+jupyter_builder==1.2.2
+jupyter_client==8.9.1
+jupyter_core==5.9.1
+jupyter_server==2.20.0
+jupyter_server_terminals==0.5.4
+jupyterlab==4.6.3
+jupyterlab_code_formatter==3.1.0
+jupyterlab_pygments==0.3.0
+jupyterlab_server==2.28.0
+jupyterlab_tensorboard_pro @ file:///builder/jupyterlab_tensorboard_pro-4.0.0-py2.py3-none-any.whl#sha256=2214e56793507e423d1c0a483c6dbb6225b914e3972d1adcded112a69b52050f
+jupytext==1.19.5
+kiwisolver==1.5.0
+lark==1.3.1
+libcst==1.9.0
+llvmlite==0.46.0
+makefun==1.16.0
+Markdown==3.10.3
+markdown-it-py==4.2.0
+MarkupSafe==3.0.3
+matplotlib==3.11.1
+matplotlib-inline==0.2.2
+mdit-py-plugins==0.6.1
+mdurl==0.1.2
+mistune==3.3.4
+mkl==2021.1.1
+mkl-devel==2021.1.1
+mkl-include==2021.1.1
+ml_dtypes==0.6.0
+mpmath==1.3.0
+multidict==6.7.1
+multiprocess==0.70.19
+murmurhash==1.0.15
+mypy_extensions==1.1.0
+narwhals==2.26.0
+nbclient==0.11.0
+nbconvert==7.17.1
+nbformat==5.11.1
+nest-asyncio2==1.7.2
+networkx==3.6.1
+ninja==1.13.0
+nltk==3.10.3
+notebook==7.6.2
+notebook_shim==0.2.4
+numba==0.64.0
+numpy==2.1.0
+nvdlfw_inspect==0.2.2
+nvidia-cuda-nvdisasm==13.3.73
+nvidia-cudnn-frontend @ git+https://github.com/NVIDIA/cudnn-frontend@35fd7b0d0e1d4952b904c79341c5e84e3af0a328
+nvidia-cutlass-dsl==4.6.2
+nvidia-cutlass-dsl-libs-base==4.6.2
+nvidia-cutlass-dsl-libs-core==4.6.2
+nvidia-cutlass-dsl-libs-cu12==4.6.2
+nvidia-cutlass-dsl-libs-cu13==4.6.2
+nvidia-dali-cuda130==2.2.0
+nvidia-libnvcomp-cu13==5.2.0.13
+nvidia-ml-py==13.610.43
+nvidia-modelopt @ file:///tmp/modelopt/nvidia_modelopt-0.45.0-py3-none-any.whl#sha256=04e1d787898e44e7281022f4772ee57bf59d1224cbcdd10d9487c2a110687a30
+nvidia-nvimgcodec-cu13==0.8.0.1422
+nvidia-nvjpeg==13.2.1.68
+nvidia-nvjpeg2k-cu13==0.11.0.51
+nvidia-nvtiff-cu13==0.8.0.82
+nvidia-resiliency-ext @ file:///tmp/nvrx/nvidia_resiliency_ext-0.6.0-cp312-cp312-manylinux_2_39_x86_64.whl#sha256=7d5ac6567841aef0173af3bcc0c2044971d2b225918028b99af6e4eb7e6e2f5d
+nvtx==0.2.16
+omegaconf==2.3.1
+onnx @ file:///opt/pytorch/pytorch/third_party/onnx
+onnx-ir==1.0.0
+onnxscript==0.7.1
+opentelemetry-api==1.44.0
+optree==0.20.0
+packaging==26.2
+pandas==3.0.5
+pandocfilters==1.5.1
+parso==0.8.7
+pathspec==1.1.1
+peft==0.21.0
+pexpect==4.9.0
+pillow==12.3.0
+platformdirs==4.11.3
+pluggy==1.6.0
+polygraphy==0.53.3
+preshed==3.0.13
+prometheus_client==0.26.0
+prompt_toolkit==3.0.53
+propcache==0.5.2
+protobuf==6.33.6
+psutil==7.2.2
+ptyprocess==0.7.0
+PuLP==3.3.2
+pure_eval==0.2.3
+pyarrow==25.0.1
+pybind11==3.1.0
+pycocotools @ git+https://github.com/nvidia/cocoapi.git@08350a157b41f0755a536441b5abec89ab934c5b#subdirectory=PythonAPI
+pycparser==3.0
+pydantic==2.13.4
+pydantic-settings==2.15.0
+pydantic_core==2.46.4
+pyparsing==3.3.2
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.3
+python-json-logger==4.2.0
+python_hostlist==2.3.0
+pytokens==0.4.1
+pyzmq==27.2.0
+referencing==0.37.0
+regex==2026.7.19
+requests==2.34.2
+rfc3339-validator==0.1.4
+rfc3986-validator==0.1.1
+rfc3987-syntax==1.1.0
+rich==15.0.0
+rpds-py==2026.6.3
+ruff==0.16.8
+safetensors==0.8.0
+scikit-learn==1.9.1
+scipy==1.18.0
+Send2Trash==2.1.0
+sentencepiece==0.2.2
+sentry-sdk==2.68.0
+seqeval==1.2.2
+setuptools==81.0.0
+shellingham==1.5.4
+six==1.16.0
+smart_open==8.0.1
+soupsieve==2.9.2
+spacy==3.8.16
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+spmd_types==0.2.1
+srsly==2.5.3
+stack-data==0.6.3
+sympy==1.14.0
+tabulate==0.10.0
+tbb==2021.13.1
+tensorboard==2.20.0
+tensorboard-data-server==0.7.2
+tensorrt @ file:///workspace/TensorRT-11.2.1.2/python/tensorrt-11.2.1.2-cp312-none-linux_x86_64.whl#sha256=89a8e473e3c0dcc3efac2df39cce948f07308d28e95869dd5725581db4c93cfa
+terminado==0.18.1
+thinc==8.3.13
+threadpoolctl==3.7.0
+tinycss2==1.5.1
+tokenizers==0.23.1
+torch @ file:///opt/transfer/torch-2.14.0a0%2B4fdf77b940.nv26.8.63802676-cp312-cp312-linux_x86_64.whl#sha256=9834e9c19ab88b39ee577fabf54f98615f60658e93c42bc84ceabc54090ad3db
+torch_tensorrt @ file:///opt/pytorch/torch_tensorrt/dist/torch_tensorrt-2.14.0a0-cp312-cp312-linux_x86_64.whl#sha256=0eba686eac491f89f0dddfada093323e31d2e5bd8a0c0916485dd4ae21e0bdfc
+torchao @ file:///opt/pytorch/ao
+torchdata==0.11.0
+torchtitan @ file:///opt/pytorch/torchtitan
+torchvision @ file:///opt/transfer/torchvision-0.29.0a0%2B0bc41e67.nv26.8.63802676-cp312-cp312-manylinux_2_34_x86_64.whl#sha256=c6cd0d014081aee317699d49631c1a5d0494ed3ab930c469ae524a73f09bde72
+tornado==6.5.8
+tqdm==4.70.0
+traitlets==5.16.1
+transformer_engine @ file:///workspace/TransformerEngine
+transformers==5.17.0
+triton @ file:///tmp/dist/triton-3.8.0%2Bgit4c7e62b7.nv26.8-cp312-cp312-linux_x86_64.whl#sha256=d27672c0570e5155f498a53bf501a47728832ebcf95a8cfda5734897190a9592
+triton_kernels @ file:///tmp/dist/triton_kernels-1.0.0%2Bgit4c7e62b7.nv26.8-py3-none-any.whl#sha256=ebb8e95d6421fb7631a1c0a597285079bc96e4d620358d43b75e30d73588d07b
+typeguard==4.6.0
+typer==0.27.2
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+tyro==1.0.15
+tzdata==2026.3
+uri-template==1.3.0
+urllib3==2.7.0
+wandb==0.28.2
+wasabi==1.1.3
+wcwidth==0.8.2
+weasel==1.0.0
+webcolors==25.10.0
+webencodings==0.6.1
+websocket-client==1.9.0
+Werkzeug==3.1.8
+wheel==0.48.0
+wrapt==2.4.1
+xxhash==4.0.1
+yarl==1.24.5
+zipp==4.1.0

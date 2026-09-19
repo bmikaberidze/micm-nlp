@@ -42,6 +42,7 @@ model:
     pretrained:
         cls: AutoModelForCausalLM
         args:
+            dtype: float32  # transformers 5 would otherwise load the checkpoint's own (fp16)
         name: bigscience/bloom-560m
         source: huggingface
         checkpoint: null

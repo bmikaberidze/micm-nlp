@@ -1,3 +1,6 @@
+# Era pre-micm-nlp-0.4 (frozen): transformers 4.49 / peft 0.14, image nvidia_pytorch_24.08.
+# Kept for the results produced on it; the current era's record is requirements-lock.txt.
+#
 # Environment record — the versions this project's published results were produced on.
 #
 # This is NOT a `pip install -r` recipe, and it is deliberately not wired into the

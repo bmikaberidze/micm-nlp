@@ -12,7 +12,7 @@ Requires **Python 3.10 or newer** — on an older interpreter `pip` reports `No 
 > Training targets NVIDIA GPUs; CPU works for small-scale debugging, and there is no support for other accelerators.
 
 Installing pulls the full training stack — `torch`, `transformers`, `peft`, `datasets`, `spacy` and others.
-Two are tightly constrained (`peft==0.14.0`, `transformers>=4.48,<4.50`) and will pin whatever environment they land in, so give it one of its own:
+Two are tightly constrained (`peft==0.21.0`, `transformers>=5.5,<6`) and will pin whatever environment they land in, so give it one of its own:
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate

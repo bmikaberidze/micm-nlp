@@ -1,16 +1,20 @@
 """XPE-aware save/load helpers.
 
-These are drop-in replacements for ``peft.utils.save_and_load.get_peft_model_state_dict``
-and ``peft.utils.save_and_load.set_peft_model_state_dict``. They:
+These replace ``peft.utils.save_and_load.get_peft_model_state_dict`` and
+``set_peft_model_state_dict`` while an XPE model saves or loads (the PeftModel
+subclasses swap them in). Their bodies started as copies of peft 0.14's; the XPE
+differences:
 
-- Skip the ``is_prompt_learning`` fallback that collapses the prompt encoder to
-  a single ``prompt_embeddings`` tensor (destructive for XPE, which stores
-  multi-component state via ``modules_to_save``).
-- Preserve the full upstream ``save_embedding_layers`` handling, the
-  ``PEFT_TYPE_TO_PREFIX_MAPPING`` branch (safe no-op for XPE), and the MPT
-  post-load branch.
-
-See ``refactor.xpe.md`` TP5/TP6 for the delta vs upstream peft 0.14.0.
+- The prompt encoder's weights are read from and written to the encoder itself, as
+  ``prompt_encoder.<param>``. Stock PEFT reduces a prompt encoder to one
+  ``prompt_embeddings`` tensor, and since peft 0.17 a CAUSAL_LM encoder's parts are
+  never wrapped by ``modules_to_save`` either. The keys are the ones peft 0.14-era
+  adapters were saved under, so those still load; a missing encoder weight raises.
+- The ``PEFT_TYPE_TO_PREFIX_MAPPING`` branch is skipped for prompt learning: since
+  peft 0.15 XPE is in that mapping as ``xpe_``, and inserting the adapter name after
+  that prefix would corrupt the ``xpe_embedding`` / ``xpe_head`` keys.
+- Everything else -- ``save_embedding_layers``, ``modules_to_save`` for the rest of the
+  model (a SEQ_CLS classifier) -- follows upstream.
 """
 
 import os

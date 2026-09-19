@@ -255,8 +255,11 @@ Two rules that follow:
 - Experiments are tracked via **WandB** (`WANDB_API_KEY` in `.env`); gated
   models/datasets need `HF_TOKEN`.
 - GPU training only (CPU works for small-scale debugging); no non-NVIDIA GPU support.
-- `peft` is pinned to `0.14.0` in `pyproject.toml` — XPE subclasses stock PEFT
-  internals, so bumping it is a breaking-change review, not a routine upgrade.
+- `peft` is pinned to `0.21.0` (with `transformers>=5.5,<6`) in `pyproject.toml` — XPE
+  subclasses stock PEFT internals, so bumping it is a breaking-change review, not a
+  routine upgrade. The 0.14 → 0.21 port (0.5.0) is the worked example: registration via
+  `register_peft_method`, and `xpe/save_load.py` reading the encoder's weights directly,
+  because since peft 0.17 a CAUSAL_LM prompt encoder is never wrapped by `modules_to_save`.
 
 ## Release notes: a one-line summary at the top (idea, not built yet)
 
