@@ -85,10 +85,13 @@ BOMB = 'raise RuntimeError("this file must never be imported")\n'
 
 def _from(module, root: Path) -> bool:
     """Whether a module was loaded from under ``root`` (a file, or a namespace package)."""
-    path = getattr(module, '__path__', None)
-    # torch.classes answers any attribute with a (non-iterable) _ClassNamespace, __path__ included
+    # Read the module's own __dict__, never getattr: transformers' lazy modules import a
+    # submodule on attribute access (pulling in e.g. torchvision for an image processor),
+    # and torch.classes answers any attribute -- __path__ included -- with a _ClassNamespace.
+    attrs = getattr(module, '__dict__', {})
+    path = attrs.get('__path__')
     path = list(path) if isinstance(path, Iterable) else []
-    locations = [getattr(module, '__file__', None) or '', *path]
+    locations = [attrs.get('__file__') or '', *path]
     return any(str(loc).startswith(str(root)) for loc in locations)
 
 
