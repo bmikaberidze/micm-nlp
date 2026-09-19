@@ -370,6 +370,8 @@ def compute_metrics_by_metric_groups(predictions, labels, config):
         if metric_args:
             metrics = evaluate.combine(metric_group.metrics)
             group_results = metrics.compute(**metric_args)
+            # how many predictions the group was scored on, so results can be pooled by weight
+            group_results['n'] = len(metric_args[getattr(metric_group, 'predictions_key', predictions_k)])
             if eval_per_task:
                 group_results = add_prefix_to_metrics(group_results, f'{metric_group.task.name}/')
             results.update(group_results)
