@@ -5,11 +5,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-19
+
+Runs on transformers 5 and peft 0.21 (was 4.49 / 0.14). Adapters saved by 0.4.x load
+unchanged; replaying a 0.4-era Aya adapter reproduces its stored per-language test
+accuracies to within one item in 300 on a few languages (bf16 numerics).
+
+### Changed
+- Requires `transformers>=5.5,<6` and `peft==0.21.0`.
+- Configs must use the transformers 5 `TrainingArguments`: `warmup_ratio` →
+  `warmup_steps` (a value below 1 is a ratio of total steps, computed the same way),
+  `group_by_length: true` → `train_sampling_strategy: group_by_length`, and no
+  `save_safetensors`, `overwrite_output_dir` or `logging_dir`. In
+  `model.pretrained.args`, `torch_dtype` is now `dtype`.
+- transformers 5 loads a checkpoint in its own dtype (`"auto"`, e.g. bf16 for Aya) and
+  defaults `optim` to `adamw_torch_fused`; transformers 4 loaded float32 and used
+  `adamw_torch`. To keep earlier numbers, set `model.pretrained.args.dtype` and
+  `training_args.args.optim` explicitly.
+- XPE registers through `register_peft_method`, which peft now needs for its config,
+  tuner and prefix mappings.
+- Tokenized datasets are saved as `tokenized--{org}--{model}`, not `tokenized|…|…`:
+  datasets ≥ 4 reads a cache path as a regex, where `|` is alternation.
+- `requirements-lock.txt` records the transformers 5 environment; the previous record
+  is `requirements-lock.pre-micm-nlp-0.4.txt`.
+
 ### Added
 - `info.json` records `versions.micm_nlp_commit`: the commit of the package's own
   checkout, suffixed `-dirty` when its tree has uncommitted changes, and `None` for an
   installed copy. An editable install follows a working tree that moves between
   releases, so the version string alone does not identify the code a run used.
+- Every metric group records `n`, the number of predictions it was scored on, so
+  per-group results can be pooled by weight.
+
+### Fixed
+- XPE adapters for `CAUSAL_LM` saved no prompt-encoder weights under peft ≥ 0.17,
+  which stopped wrapping a prompt encoder's parts in `modules_to_save`; the encoder's
+  weights are now read and written directly. Loading raises if one is missing.
+- A model with no length limit in its config (Bloom) crashed the collator setup;
+  transformers 5 no longer backs `max_length` with the generation default of 20.
+- `dataloader_num_workers > 0` crashed: transformers 5 gave `seed_worker` two more
+  arguments.
 
 ## [0.4.1] - 2026-09-16
 

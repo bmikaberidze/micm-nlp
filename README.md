@@ -276,7 +276,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
   title         = {micm-nlp: a research framework for {NLP} built on {HuggingFace}},
   organization  = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url           = {https://github.com/bmikaberidze/micm-nlp},
-  version       = {0.4.1},
+  version       = {0.5.0},
   year          = {2026},
 }
 
