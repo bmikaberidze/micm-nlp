@@ -2,6 +2,7 @@
 
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 from types import ModuleType
 
@@ -84,7 +85,10 @@ BOMB = 'raise RuntimeError("this file must never be imported")\n'
 
 def _from(module, root: Path) -> bool:
     """Whether a module was loaded from under ``root`` (a file, or a namespace package)."""
-    locations = [getattr(module, '__file__', None) or '', *list(getattr(module, '__path__', []) or [])]
+    path = getattr(module, '__path__', None)
+    # torch.classes answers any attribute with a (non-iterable) _ClassNamespace, __path__ included
+    path = list(path) if isinstance(path, Iterable) else []
+    locations = [getattr(module, '__file__', None) or '', *path]
     return any(str(loc).startswith(str(root)) for loc in locations)
 
 
