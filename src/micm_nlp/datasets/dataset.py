@@ -525,8 +525,9 @@ class DATASET:
                             self.test_folds[idx] = self._run_tokenization_rules(DsSplitSE.TEST, fold)
 
             if tokenize.save_as:
-                tokenizer_name = self._tokenizer.name_or_path.replace('/', '|')
-                self.save(tokenize.save_as, f'{DsStateSE.TOKENIZED}|{tokenizer_name}')
+                # '--', not '|': datasets >= 4 reads cache paths as regexes, where '|' is alternation
+                tokenizer_name = self._tokenizer.name_or_path.replace('/', '--')
+                self.save(tokenize.save_as, f'{DsStateSE.TOKENIZED}--{tokenizer_name}')
 
             def prin(dataset, num=10):
                 """
