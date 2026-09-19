@@ -212,7 +212,7 @@ class MODEL:
 
     def _pretrained_args(self):
         """Extra kwargs from `model.pretrained.args`, splatted into from_pretrained.
-        Use this for knobs like torch_dtype, device_map, or config overrides
+        Use this for knobs like dtype, device_map, or config overrides
         (e.g. use_mems_eval: false for XLNet).
         """
         args = getattr(self._config.model.pretrained, 'args', None)

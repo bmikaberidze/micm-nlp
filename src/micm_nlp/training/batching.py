@@ -13,7 +13,7 @@ Two pieces:
 
 Designed for eval/test only: variable batch size affects optimizer
 dynamics in training but is semantically invisible for forward-only
-inference. ``training_args.group_by_length`` is ignored on this path —
+inference. ``training_args.train_sampling_strategy`` is ignored on this path —
 the sampler always length-sorts internally.
 """
 from __future__ import annotations

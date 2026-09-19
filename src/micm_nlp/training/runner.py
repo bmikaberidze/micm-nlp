@@ -342,10 +342,11 @@ class TRAINER:
                 args.shift_labels_by = total_virt_tokens
 
         if 'max_length' in accepted:
-            args.max_length = min(
-                getattr(args, 'max_length', None) or self._model.max_length,
-                self._model.max_length,
-            )
+            # A model with no length limit in its config (Bloom: ALiBi, no position
+            # table) has max_length None -- transformers 5 no longer backs it with
+            # the generation default of 20 -- so only the limits that exist count.
+            limits = [n for n in (getattr(args, 'max_length', None), self._model.max_length) if n is not None]
+            args.max_length = min(limits) if limits else None
 
         collator_kwargs = {k: v for k, v in dict(args).items() if v is not None}
         self.data_collator = DataCollator(
@@ -555,7 +556,6 @@ class TRAINER:
         self.training_args = TArgs(
             run_name=self._model.name,
             output_dir=output_dir,
-            logging_dir=str(self._output.dir / 'logs'),
             **targs_kwargs,
         )
 

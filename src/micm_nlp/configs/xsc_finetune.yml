@@ -163,8 +163,6 @@ training_args:
         save_strategy: epoch
         save_steps: null
         save_total_limit: 1
-        save_safetensors: true
-        overwrite_output_dir: true
         push_to_hub: false
         load_best_model_at_end: true
         metric_for_best_model: accuracy
@@ -173,10 +171,10 @@ training_args:
         lr_scheduler_type: cosine_with_restarts
         lr_scheduler_kwargs:
             num_cycles: 2
-        warmup_ratio: 0.05
+        warmup_steps: 0.05  # < 1 is a ratio of total steps
         weight_decay: 0.01
         max_grad_norm: 1.0
-        group_by_length: true
+        train_sampling_strategy: group_by_length
         length_column_name: length
         full_determinism: false
         bf16: true

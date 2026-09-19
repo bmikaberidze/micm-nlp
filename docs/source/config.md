@@ -205,7 +205,7 @@ Token-budget batching: batches are built to a token count, keeping memory steady
 |---|---|
 | Excludes the matching `*_force_sequential` | Token budgets need length-sorted batches; a sequential sampler overrides that |
 | Booleans rejected, integers must be positive | — |
-| `training_args.group_by_length` is ignored, not rejected | The token-budget sampler length-sorts anyway |
+| `training_args.train_sampling_strategy` is ignored, not rejected | The token-budget sampler length-sorts anyway |
 
 > [!WARNING]
 > Samples come out length-sorted, not in dataset order.  
