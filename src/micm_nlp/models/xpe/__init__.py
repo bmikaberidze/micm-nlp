@@ -16,8 +16,9 @@ This module performs two side-effects at import time:
 
 1. Registers ``PeftType.XPE`` on the stdlib-backed ``peft.PeftType`` enum via
    ``aenum.extend_enum`` (idempotent — safe on reload).
-2. Registers ``PEFT_TYPE_TO_CONFIG_MAPPING[PeftType.XPE] = CrossPromptEncoderConfig``
-   so ``PeftConfig.from_pretrained`` can resolve XPE checkpoints generically.
+2. Registers XPE with ``peft.utils.register_peft_method``, which fills the config,
+   tuner and prefix mappings together (peft >= 0.15 reads all of them), so
+   ``PeftConfig.from_pretrained`` can resolve XPE checkpoints generically.
 
 Both must run before any ``CrossPromptEncoderConfig`` is instantiated, which
 is why they happen at module-import time.
@@ -26,6 +27,7 @@ is why they happen at module-import time.
 from aenum import extend_enum as _extend_enum
 from peft import PEFT_TYPE_TO_CONFIG_MAPPING as _PEFT_TYPE_TO_CONFIG_MAPPING
 from peft import PeftType as _PeftType
+from peft.utils import register_peft_method as _register_peft_method
 
 if not hasattr(_PeftType, 'XPE'):
     _extend_enum(_PeftType, 'XPE', 'XPE')
@@ -52,4 +54,5 @@ from micm_nlp.models.xpe.save_load import (  # noqa: F401
     xpe_set_peft_model_state_dict,
 )
 
-_PEFT_TYPE_TO_CONFIG_MAPPING[_PeftType.XPE] = CrossPromptEncoderConfig
+if _PeftType.XPE not in _PEFT_TYPE_TO_CONFIG_MAPPING:
+    _register_peft_method(name='xpe', config_cls=CrossPromptEncoderConfig, model_cls=CrossPromptEncoder)

@@ -18,7 +18,7 @@ import warnings
 
 import torch
 from peft import PeftType
-from peft.utils.constants import PEFT_TYPE_TO_PREFIX_MAPPING
+from peft.mapping import PEFT_TYPE_TO_PREFIX_MAPPING
 from peft.utils.other import EMBEDDING_LAYER_NAMES, check_file_exists_on_hf_hub
 from peft.utils.save_and_load import (
     _find_mismatched_keys,
@@ -26,6 +26,36 @@ from peft.utils.save_and_load import (
     get_embedding_layer_name,
     has_valid_embedding_base_layer,
 )
+
+
+def _encoder_key_to_saved_key(key, adapter_name):
+    """Map a prompt-encoder state-dict key to the key adapters store it under, or
+    ``None`` for PEFT's frozen ``original_module`` copy, which is never saved.
+
+    ``embedding.modules_to_save.default.weight`` and ``embedding.weight`` both map to
+    ``prompt_encoder.embedding.weight`` -- the on-disk layout is the same whether or
+    not PEFT wrapped the sub-module.
+    """
+    if 'original_module.' in key:
+        return None
+    return 'prompt_encoder.' + key.replace(f'modules_to_save.{adapter_name}.', '')
+
+
+def _prompt_encoder_state_dict(model, adapter_name):
+    """The prompt encoder's own weights, read from the encoder itself.
+
+    Not through ``modules_to_save``: since peft 0.17 a prompt-learning adapter wraps
+    ``modules_to_save`` inside the base model only, so on CAUSAL_LM the encoder's
+    sub-modules are never wrapped and a wrapper-based save writes none of them.
+    SEQ_CLS still wraps them (its ``__init__`` wraps the whole PeftModel), which is
+    why the mapping above strips the wrapper segment.
+    """
+    to_return = {}
+    for key, value in model.prompt_encoder[adapter_name].state_dict().items():
+        saved_key = _encoder_key_to_saved_key(key, adapter_name)
+        if saved_key is not None:
+            to_return[saved_key] = value
+    return to_return
 
 
 def xpe_get_peft_model_state_dict(
@@ -41,9 +71,11 @@ def xpe_get_peft_model_state_dict(
 
     to_return = {}
 
-    # MODULES TO SAVE
+    # MODULES TO SAVE -- the prompt encoder's own are taken from the encoder below
     if getattr(model, 'modules_to_save', None) is not None:
         for key, value in state_dict.items():
+            if key.startswith('prompt_encoder.'):
+                continue
             if any(f'{module_name}.modules_to_save.{adapter_name}' in key for module_name in model.modules_to_save):
                 to_return[key.replace('modules_to_save.', '')] = value
 
@@ -102,6 +134,7 @@ def xpe_get_peft_model_state_dict(
 
     # REMOVE ADAPTER NAME
     to_return = {k.replace(f'.{adapter_name}', ''): v for k, v in to_return.items()}
+    to_return.update(_prompt_encoder_state_dict(model, adapter_name))
     return to_return
 
 
@@ -117,6 +150,7 @@ def xpe_set_peft_model_state_dict(
     ``prompt_encoder.load_state_dict`` so XPE's multi-component state loads.
     """
     config = model.peft_config[adapter_name]
+    saved_state_dict = peft_model_state_dict
     state_dict = {}
     if getattr(model, 'modules_to_save', None) is not None:
         for key, value in peft_model_state_dict.items():
@@ -129,7 +163,10 @@ def xpe_set_peft_model_state_dict(
     else:
         state_dict = peft_model_state_dict
 
-    if config.peft_type in PEFT_TYPE_TO_PREFIX_MAPPING:
+    # Since peft 0.15 prompt-learning methods are in the prefix mapping too (XPE as
+    # 'xpe_'), and inserting the adapter name after 'xpe_' would corrupt the
+    # xpe_embedding / xpe_head keys -- so prompt learning must skip this branch.
+    if config.peft_type in PEFT_TYPE_TO_PREFIX_MAPPING and not config.is_prompt_learning:
         peft_model_state_dict = {}
         parameter_prefix = PEFT_TYPE_TO_PREFIX_MAPPING[config.peft_type]
         if config.peft_type == PeftType.VBLORA and config.save_only_topk_weights:
@@ -210,11 +247,22 @@ def xpe_set_peft_model_state_dict(
 
     # XPE delta: the upstream `is_prompt_learning` branch collapses the prompt
     # encoder to a single `prompt_embeddings` tensor, which crashes for XPE
-    # (which has embedding / xpe_embedding / xpe_head.*). Instead, strip the
-    # `prompt_encoder.` prefix and do a non-strict load so every present key
-    # is routed to the right sub-module.
-    peft_model_state_dict = {k.replace('prompt_encoder.', ''): v for k, v in peft_model_state_dict.items()}
-    model.prompt_encoder[adapter_name].load_state_dict(peft_model_state_dict, strict=False)
+    # (which has embedding / xpe_embedding / xpe_head.*). Instead each of the
+    # encoder's own keys is looked up under its saved name, so the load works
+    # whether or not PEFT wrapped the sub-modules (see _prompt_encoder_state_dict).
+    prompt_encoder = model.prompt_encoder[adapter_name]
+    encoder_state_dict, missing = {}, []
+    for key in prompt_encoder.state_dict():
+        saved_key = _encoder_key_to_saved_key(key, adapter_name)
+        if saved_key is None:
+            continue
+        if saved_key in saved_state_dict:
+            encoder_state_dict[key] = saved_state_dict[saved_key]
+        else:
+            missing.append(saved_key)
+    if missing:
+        raise KeyError(f'XPE adapter is missing prompt-encoder weights: {missing}')
+    prompt_encoder.load_state_dict(encoder_state_dict, strict=False)
 
     if mismatched_keys:
         mismatched_warning = '\n'.join(

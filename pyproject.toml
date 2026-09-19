@@ -39,8 +39,10 @@ dependencies = [
     "torch>=2.2,<3",
     "nltk",
     "aenum",
-    # XPE subclasses stock PEFT internals; bumping is a breaking-change review.
-    "peft==0.14.0",
+    # XPE subclasses stock PEFT internals (BaseTuner, _prepare_prompt_learning_config,
+    # save_and_load, PEFT_TYPE_TO_PREFIX_MAPPING), so the version is exact and each
+    # bump is a review of `models/xpe/`. 0.14 -> 0.21 came with transformers 5.
+    "peft==0.21.0",
     "rich",
     "wandb",
     "numpy<3",
@@ -55,7 +57,9 @@ dependencies = [
     "datasets<6",
     "evaluate",
     "matplotlib",
-    "transformers>=4.48,<4.50",
+    # Floor is 5.5, the first release carrying `models/gemma4`; 5.x is a major
+    # release, so the ceiling stays one major wide.
+    "transformers>=5.5,<6",
     "scikit-learn",
     "python-dotenv",
     "sentencepiece",
