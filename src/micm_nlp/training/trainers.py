@@ -23,6 +23,7 @@ What the mixin changes:
 """
 
 import random
+from functools import partial
 from typing import Any
 
 # PyTorch
@@ -317,7 +318,9 @@ class CustomTrainerMixin:
             # print(f"Class distribution: {class_counts}")
 
             dataloader_params['drop_last'] = self.args.dataloader_drop_last
-            dataloader_params['worker_init_fn'] = seed_worker
+            dataloader_params['worker_init_fn'] = partial(
+                seed_worker, num_workers=self.args.dataloader_num_workers, rank=self.args.process_index
+            )
             dataloader_params['prefetch_factor'] = self.args.dataloader_prefetch_factor
 
         return self.accelerator.prepare(DataLoader(train_dataset, **dataloader_params))
