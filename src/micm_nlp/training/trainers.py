@@ -525,11 +525,24 @@ class CustomTrainerMixin:
         ignore_keys: list[str] | None = None,
         **gen_kwargs,
     ) -> tuple[float | None, torch.Tensor | None, torch.Tensor | None]:
-        """Run one prediction step, applying the generation whitelist if configured.
+        """Run one prediction step: ignore the KV cache, and apply the generation
+        whitelist if one is configured.
 
         When ``custom_training_args.generation_whitelist`` is set, a
         :class:`~micm_nlp.training.logits_processors.ConstrainedPrefixLogitsProcessor`
         is injected for this step, restricting generation to the allowed strings.
+        That path is **Seq2Seq-only**: ``gen_kwargs`` reaches the base class through
+        ``Seq2SeqTrainer.prediction_step``, while plain ``Trainer.prediction_step``
+        accepts no such argument and would raise ``TypeError``. Scoring tasks that
+        pick a label from the logits (``label_restricted_likelihood``) do not use
+        the whitelist at all.
+
+        ``past_key_values`` is always ignored. Without ``ignore_keys`` the Trainer
+        falls back to ``config.keys_to_ignore_at_inference``, which most text configs
+        set to ``['past_key_values']`` but composite (multimodal) configs leave empty
+        -- so the cache reaches accelerate, which raises ``TypeError: Unsupported
+        types (DynamicCache) passed to _pad_across_processes``. A Cache can never be
+        padded or concatenated across processes, and metrics never need it.
         """
 
         # Inject custom logits processor
@@ -537,6 +550,11 @@ class CustomTrainerMixin:
         if generation_whitelist is not None:
             processor = ConstrainedPrefixLogitsProcessor(self.processing_class, generation_whitelist)
             gen_kwargs['logits_processor'] = LogitsProcessorList([processor])
+
+        if ignore_keys is None:
+            ignore_keys = list(getattr(model.config, 'keys_to_ignore_at_inference', None) or [])
+        if 'past_key_values' not in ignore_keys:
+            ignore_keys = [*ignore_keys, 'past_key_values']
 
         return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys, **gen_kwargs)
 
