@@ -260,9 +260,9 @@ micm_nlp/
 ## Acknowledgements
 
 <!-- start:acknowledgements -->
-`micm-nlp` is developed at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University, in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
+`micm-nlp` is developed by Beso Mikaberidze at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University, in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
 
-This work (or the author) was supported by the European Union HORIZON-WIDERA-2024-TALENTS-03 grant project FORGE-AI (GA #01216703), by the European Union under Horizon Europe project "GAIN" (GA #101078950), and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
+This work was supported by the European Union Horizon Europe projects FORGE-AI (GA #01216703) and “GAIN” (GA #101078950), and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
 <!-- end:acknowledgements -->
 
 ## Citation
@@ -282,7 +282,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 
 @inproceedings{mikaberidze-etal-2025-cross,
   title        = {Cross-Prompt Encoder for Low-Performing Languages},
-  author       = {Mikaberidze, Beso and Saghinadze, Temo and Ostermann, Simon and M{\"u}ller, Philipp},
+  author       = {Mikaberidze, Beso and Saghinadze, Teimuraz and Ostermann, Simon and M{\"u}ller, Philipp},
   booktitle    = {Proceedings of the 14th International Joint Conference on Natural Language Processing and the 4th Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics},
   month        = dec,
   year         = {2025},
