@@ -260,7 +260,7 @@ micm_nlp/
 ## Acknowledgements
 
 <!-- start:acknowledgements -->
-`micm-nlp` is developed by Beso Mikaberidze at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University, in close research collaboration with Teimuraz Saghinadze (MICM), Simon Ostermann (DFKI / CERTAIN), and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
+`micm-nlp` is developed by Beso Mikaberidze and Teimuraz Saghinadze at the Muskhelishvili Institute of Computational Mathematics (MICM), Georgian Technical University, in close research collaboration with Simon Ostermann (DFKI / CERTAIN) and Philipp Müller (Max Planck Institute for Intelligent Systems), whose joint work on the Cross-Prompt Encoder (XPE) drove much of the framework's design and validation.
 
 This work was supported by the European Union Horizon Europe projects FORGE-AI (GA #01216703) and “GAIN” (GA #101078950), and by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the project TRAILS (01IW24005).
 <!-- end:acknowledgements -->
@@ -272,7 +272,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 
 ```bibtex
 @software{micm_nlp,
-  author        = {Mikaberidze, Beso},
+  author        = {Mikaberidze, Beso and Saghinadze, Teimuraz},
   title         = {micm-nlp: a research framework for {NLP} built on {HuggingFace}},
   organization  = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url           = {https://github.com/bmikaberidze/micm-nlp},
