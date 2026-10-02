@@ -32,3 +32,33 @@ def test_falls_back_to_prompt_learning_config():
     model = SimpleNamespace(prompt_encoder=torch.nn.ModuleDict({'default': torch.nn.Embedding(10, 4)}),
                             active_peft_config=config)
     assert _virtual_tokens_per_row(model) == 10
+
+
+class _Wrapper(torch.nn.Module):
+    """Stands in for DDP / DataParallel: the real model sits at ``.module``."""
+
+    def __init__(self, module):
+        super().__init__()
+        self.module = module
+
+
+class _PromptModel(torch.nn.Module):
+    def __init__(self, total):
+        super().__init__()
+        self.prompt_encoder = torch.nn.ModuleDict({'default': _Encoder(total)})
+
+
+def test_unwraps_ddp_style_wrappers():
+    assert _virtual_tokens_per_row(_Wrapper(_Wrapper(_PromptModel(20)))) == 20
+
+
+def test_fallback_with_a_real_peft_prompt_tuning_config():
+    from peft import PromptTuningConfig
+    config = PromptTuningConfig(task_type='CAUSAL_LM', num_virtual_tokens=12)
+    assert config.is_prompt_learning
+    model = SimpleNamespace(prompt_encoder=torch.nn.ModuleDict({'default': torch.nn.Embedding(12, 4)}),
+                            active_peft_config=config)
+    # num_transformer_submodules is None until peft builds the model -> counts once
+    assert _virtual_tokens_per_row(model) == 12
+    config.num_transformer_submodules = 1
+    assert _virtual_tokens_per_row(model) == 12

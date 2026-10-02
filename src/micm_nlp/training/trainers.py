@@ -68,7 +68,12 @@ def _virtual_tokens_per_row(model) -> int:
     ``PEFT.get_total_virtual_tokens``, which takes the MODEL wrapper rather than
     the bare module the Trainer holds; falls back to the PEFT config for prompt
     learners without ``total_virtual_tokens``.
+
+    DDP / DataParallel wrappers are unwrapped first (``.module``): a wrapped model
+    has no ``prompt_encoder`` attribute, and a silent 0 would bring the OOM back.
     """
+    while isinstance(getattr(model, 'module', None), torch.nn.Module):
+        model = model.module
     encoder = getattr(model, 'prompt_encoder', None)
     if isinstance(encoder, torch.nn.ModuleDict):
         encoder = next(iter(encoder.values()), None)
@@ -76,7 +81,8 @@ def _virtual_tokens_per_row(model) -> int:
     if total is None:
         config = getattr(model, 'active_peft_config', None)
         if config is not None and getattr(config, 'is_prompt_learning', False):
-            total = config.num_virtual_tokens * getattr(config, 'num_transformer_submodules', 1)
+            # peft fills num_transformer_submodules when it builds the model; None before that
+            total = config.num_virtual_tokens * (getattr(config, 'num_transformer_submodules', None) or 1)
     return int(total or 0)
 
 
