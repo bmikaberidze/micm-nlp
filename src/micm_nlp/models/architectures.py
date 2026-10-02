@@ -1,3 +1,7 @@
+# Portions of this file are derived from HuggingFace Transformers v4.39.1, src/transformers/models/t5/modeling_t5.py,
+# Copyright 2018 Mesh TensorFlow authors, T5 Authors and HuggingFace Inc. team.
+# Licensed under the Apache License, Version 2.0 (see LICENSE-APACHE at the
+# repository root); modified by the micm-nlp authors. See NOTICE.
 """Model classes that HuggingFace does not ship.
 
 ``CustomT5ForConditionalGeneration`` subclasses ``T5ForConditionalGeneration`` to add

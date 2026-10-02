@@ -1,3 +1,7 @@
+# Portions of this file are derived from HuggingFace Transformers, src/transformers/data/data_collator.py,
+# Copyright 2020 The HuggingFace Team. All rights reserved.
+# Licensed under the Apache License, Version 2.0 (see LICENSE-APACHE at the
+# repository root); modified by the micm-nlp authors. See NOTICE.
 """Data collators beyond the HuggingFace defaults.
 
 A collator is selected by name from ``data_collator.cls``, resolved against

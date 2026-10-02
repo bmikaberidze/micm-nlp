@@ -1,3 +1,7 @@
+# Portions of this file are derived from HuggingFace PEFT v0.14.0, src/peft/utils/save_and_load.py,
+# Copyright 2023-present the HuggingFace Inc. team.
+# Licensed under the Apache License, Version 2.0 (see LICENSE-APACHE at the
+# repository root); modified by the micm-nlp authors. See NOTICE.
 """XPE-aware save/load helpers.
 
 These replace ``peft.utils.save_and_load.get_peft_model_state_dict`` and

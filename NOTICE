@@ -1,0 +1,23 @@
+micm-nlp
+Copyright (c) 2026 Muskhelishvili Institute of Computational Mathematics,
+Georgian Technical University
+
+micm-nlp is distributed under the MIT License (see LICENSE).
+
+Portions of the following files are derived from third-party software licensed
+under the Apache License, Version 2.0 (see LICENSE-APACHE). They were modified
+by the micm-nlp authors; each file says so in its header.
+
+HuggingFace Transformers -- https://github.com/huggingface/transformers
+  src/micm_nlp/models/architectures.py     from models/t5/modeling_t5.py (v4.39.1)
+      Copyright 2018 Mesh TensorFlow authors, T5 Authors and HuggingFace Inc. team.
+  src/micm_nlp/training/data_collators.py  from data/data_collator.py
+      Copyright 2020 The HuggingFace Team. All rights reserved.
+  src/micm_nlp/training/trainers.py        from trainer.py (v4.39.1)
+      Copyright 2020-present the HuggingFace Inc. team.
+
+HuggingFace PEFT -- https://github.com/huggingface/peft
+  src/micm_nlp/models/xpe/save_load.py     from utils/save_and_load.py (v0.14.0)
+      Copyright 2023-present the HuggingFace Inc. team.
+  src/micm_nlp/models/xpe/peft_models.py   from peft_model.py (v0.14.0)
+      Copyright 2023-present the HuggingFace Inc. team.

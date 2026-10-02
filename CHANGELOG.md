@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Added
+- `NOTICE` and `LICENSE-APACHE`: attribution for the code derived from HuggingFace
+  Transformers and PEFT (Apache 2.0) in `models/architectures.py`,
+  `training/data_collators.py`, `training/trainers.py`, `models/xpe/save_load.py` and
+  `models/xpe/peft_models.py`, each of which now names its source in a header.
+
 ## [0.5.1] - 2026-10-02
 
 ### Fixed
