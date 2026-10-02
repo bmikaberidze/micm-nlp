@@ -122,3 +122,24 @@ def test_rejects_pad_multiple_below_one():
         TokenBudgetBatchSampler(lengths=[100], token_budget=1024, pad_multiple=0)
     with pytest.raises(ValueError, match='pad_multiple'):
         TokenBudgetBatchSampler(lengths=[100], token_budget=1024, pad_multiple=-2)
+
+
+def test_extra_tokens_per_sample_counted_per_row():
+    # 10 rows of length 100 (pad 8 -> 104) + 20 virtual tokens = 124 per row.
+    # Budget 1024 -> 8 rows (8*124=992 <= 1024, 9*124=1116 > 1024); without the
+    # extra it would be 9 (9*104=936), i.e. 1116 real tokens -- over the budget.
+    sampler = TokenBudgetBatchSampler(lengths=[100] * 10, token_budget=1024, pad_multiple=8,
+                                      extra_tokens_per_sample=20)
+    batches = list(sampler)
+    assert [len(b) for b in batches] == [8, 2]
+
+
+def test_no_batch_exceeds_budget_with_extra_tokens():
+    rng = random.Random(0)
+    lengths = [rng.randint(20, 400) for _ in range(500)]
+    budget, extra, pm = 4096, 20, 4
+    sampler = TokenBudgetBatchSampler(lengths=lengths, token_budget=budget, pad_multiple=pm,
+                                      extra_tokens_per_sample=extra)
+    for batch in sampler:
+        widest = max(((lengths[i] + pm - 1) // pm) * pm for i in batch)
+        assert len(batch) == 1 or len(batch) * (widest + extra) <= budget

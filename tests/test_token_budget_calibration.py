@@ -158,3 +158,13 @@ def test_real_calibration_on_tiny_gpt2():
     lengths = [32, 64, 128, 64, 32, 96, 128, 48]
     budget = calibrate_token_budget(model=model, lengths=lengths, pad_multiple=8)
     assert budget > 0
+
+
+def test_extra_tokens_per_sample_in_budget_not_in_probe():
+    """The model adds its own virtual tokens, so the probe shape is unchanged; the
+    budget counts them, matching the sampler's per-row cost."""
+    model = _OOMAbove(threshold=10**9)
+    budget = calibrate_token_budget(model=model, lengths=[100], pad_multiple=8, floor=1,
+                                    extra_tokens_per_sample=20)
+    assert budget == int(1 * (104 + 20) * _HEADROOM)
+    assert all(L == 104 for _, L in model.calls)

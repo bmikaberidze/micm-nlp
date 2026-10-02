@@ -60,12 +60,33 @@ def _get_lengths(dataset, length_column_name: str) -> list[int]:
     return [len(f['input_ids']) for f in dataset]
 
 
+def _virtual_tokens_per_row(model) -> int:
+    """Tokens a prompt-learning model prepends to every row on its own, else 0.
+
+    The token budget must count them: they are not in the dataset's length column,
+    yet every row of a batch carries them through the forward pass. Mirrors
+    ``PEFT.get_total_virtual_tokens``, which takes the MODEL wrapper rather than
+    the bare module the Trainer holds; falls back to the PEFT config for prompt
+    learners without ``total_virtual_tokens``.
+    """
+    encoder = getattr(model, 'prompt_encoder', None)
+    if isinstance(encoder, torch.nn.ModuleDict):
+        encoder = next(iter(encoder.values()), None)
+    total = getattr(encoder, 'total_virtual_tokens', None)
+    if total is None:
+        config = getattr(model, 'active_peft_config', None)
+        if config is not None and getattr(config, 'is_prompt_learning', False):
+            total = config.num_virtual_tokens * getattr(config, 'num_transformer_submodules', 1)
+    return int(total or 0)
+
+
 def build_inference_dataloader_kwargs(
     *,
     dataset,
     args,                 # HF TrainingArguments-like
     data_collator,        # the collator instance, used both for collate_fn and (token-budget path) pad_to_multiple_of
     token_budget: int | None,
+    extra_tokens_per_sample: int = 0,
 ) -> dict:
     """Construct DataLoader kwargs for eval/test.
 
@@ -96,6 +117,7 @@ def build_inference_dataloader_kwargs(
         lengths=lengths,
         token_budget=token_budget,
         pad_multiple=pad_multiple,
+        extra_tokens_per_sample=extra_tokens_per_sample,
     )
     return base
 
@@ -348,6 +370,7 @@ class CustomTrainerMixin:
                 model=self.model,
                 lengths=lengths,
                 pad_multiple=pad_multiple,
+                extra_tokens_per_sample=_virtual_tokens_per_row(self.model),
             )
             setattr(self, cache_attr, budget)
             print(f'[trainer] {stage} token budget calibrated: {budget}')
@@ -385,6 +408,7 @@ class CustomTrainerMixin:
             args=self.args,
             data_collator=data_collator,
             token_budget=budget,
+            extra_tokens_per_sample=_virtual_tokens_per_row(self.model),
         )
 
         if budget is None and not isinstance(eval_dataset, torch.utils.data.IterableDataset):
@@ -428,6 +452,7 @@ class CustomTrainerMixin:
             args=self.args,
             data_collator=data_collator,
             token_budget=budget,
+            extra_tokens_per_sample=_virtual_tokens_per_row(self.model),
         )
 
         if budget is None and not isinstance(test_dataset, torch.utils.data.IterableDataset):
