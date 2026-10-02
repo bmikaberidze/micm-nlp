@@ -298,4 +298,5 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
 
 ## Contact
 
-Beso Mikaberidze · `beso.mikaberidze@gmail.com`
+Beso Mikaberidze · `beso.mikaberidze@gmail.com`  
+Teimuraz Saghinadze · `saghinadze.teimuraz@gtu.ge`

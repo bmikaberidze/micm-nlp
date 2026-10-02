@@ -53,7 +53,7 @@ pip install micm-nlp
 | **XPE paper** | [ACL Anthology](https://aclanthology.org/2025.findings-ijcnlp.144/) · [arXiv:2508.10352](https://arxiv.org/abs/2508.10352) |
 | **Tokenization paper** | [ACL Anthology](https://aclanthology.org/2024.icnlsp-1.22/) |
 | **MICM** | [micm.edu.ge](https://micm.edu.ge/) |
-| **Contact** | beso.mikaberidze@gmail.com |
+| **Contact** | beso.mikaberidze@gmail.com · saghinadze.teimuraz@gtu.ge |
 
 ## Acknowledgements
 
