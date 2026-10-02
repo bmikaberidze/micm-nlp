@@ -60,32 +60,6 @@ def _get_lengths(dataset, length_column_name: str) -> list[int]:
     return [len(f['input_ids']) for f in dataset]
 
 
-def _virtual_tokens_per_row(model) -> int:
-    """Tokens a prompt-learning model prepends to every row on its own, else 0.
-
-    The token budget must count them: they are not in the dataset's length column,
-    yet every row of a batch carries them through the forward pass. Mirrors
-    ``PEFT.get_total_virtual_tokens``, which takes the MODEL wrapper rather than
-    the bare module the Trainer holds; falls back to the PEFT config for prompt
-    learners without ``total_virtual_tokens``.
-
-    DDP / DataParallel wrappers are unwrapped first (``.module``): a wrapped model
-    has no ``prompt_encoder`` attribute, and a silent 0 would bring the OOM back.
-    """
-    while isinstance(getattr(model, 'module', None), torch.nn.Module):
-        model = model.module
-    encoder = getattr(model, 'prompt_encoder', None)
-    if isinstance(encoder, torch.nn.ModuleDict):
-        encoder = next(iter(encoder.values()), None)
-    total = getattr(encoder, 'total_virtual_tokens', None)
-    if total is None:
-        config = getattr(model, 'active_peft_config', None)
-        if config is not None and getattr(config, 'is_prompt_learning', False):
-            # peft fills num_transformer_submodules when it builds the model; None before that
-            total = config.num_virtual_tokens * (getattr(config, 'num_transformer_submodules', None) or 1)
-    return int(total or 0)
-
-
 def build_inference_dataloader_kwargs(
     *,
     dataset,
@@ -137,12 +111,13 @@ def custom_trainer_class_factory(BaseTrainer: Trainer | Seq2SeqTrainer):
     sit in front of it in the MRO either way.
 
     :param BaseTrainer: the HuggingFace trainer class to extend.
-    :returns: a new class accepting the usual arguments plus ``custom_args``.
+    :returns: a new class accepting the usual arguments plus ``custom_args`` and
+        ``virtual_tokens_per_row``.
     """
     class CustomTrainer(CustomTrainerMixin, BaseTrainer):
-        def __init__(self, *args, custom_args=None, **kwargs):
+        def __init__(self, *args, custom_args=None, virtual_tokens_per_row=0, **kwargs):
             super().__init__(*args, **kwargs)
-            self.__init_custom_trainer__(custom_args)
+            self.__init_custom_trainer__(custom_args, virtual_tokens_per_row)
 
     return CustomTrainer
 
@@ -153,8 +128,12 @@ class CustomTrainerMixin:
     I think this is copied from transformers 4.39.1
     """
 
-    def __init_custom_trainer__(self, custom_args):
+    def __init_custom_trainer__(self, custom_args, virtual_tokens_per_row=0):
         self.custom_args = custom_args
+        # Tokens a prompt learner prepends to every row (virtual tokens): absent from the
+        # length column, so the eval/test token budget adds them per row. From the
+        # runner (PEFT.get_total_virtual_tokens), the one source of that count.
+        self.virtual_tokens_per_row = virtual_tokens_per_row
         self._inspected_optimizer = False  # So we only log once
 
     def _print_param_names(self, param_set):
@@ -376,7 +355,7 @@ class CustomTrainerMixin:
                 model=self.model,
                 lengths=lengths,
                 pad_multiple=pad_multiple,
-                extra_tokens_per_sample=_virtual_tokens_per_row(self.model),
+                extra_tokens_per_sample=self.virtual_tokens_per_row,
             )
             setattr(self, cache_attr, budget)
             print(f'[trainer] {stage} token budget calibrated: {budget}')
@@ -414,7 +393,7 @@ class CustomTrainerMixin:
             args=self.args,
             data_collator=data_collator,
             token_budget=budget,
-            extra_tokens_per_sample=_virtual_tokens_per_row(self.model),
+            extra_tokens_per_sample=self.virtual_tokens_per_row,
         )
 
         if budget is None and not isinstance(eval_dataset, torch.utils.data.IterableDataset):
@@ -458,7 +437,7 @@ class CustomTrainerMixin:
             args=self.args,
             data_collator=data_collator,
             token_budget=budget,
-            extra_tokens_per_sample=_virtual_tokens_per_row(self.model),
+            extra_tokens_per_sample=self.virtual_tokens_per_row,
         )
 
         if budget is None and not isinstance(test_dataset, torch.utils.data.IterableDataset):

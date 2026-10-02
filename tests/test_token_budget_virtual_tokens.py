@@ -1,10 +1,20 @@
-"""_virtual_tokens_per_row: the per-row token count a prompt learner adds, which the
-eval/test token budget must count (they are absent from the length column)."""
+"""The per-row virtual-token count reaches the trainer from one source.
+
+The runner computes it with PEFT.get_total_virtual_tokens and passes it to the
+trainer, which adds it per row to the eval/test token budget (the length column
+does not contain the virtual tokens a prompt learner prepends).
+"""
 from types import SimpleNamespace
 
 import torch
 
-from micm_nlp.training.trainers import _virtual_tokens_per_row
+from micm_nlp.models.peft import PEFT
+from micm_nlp.training.trainers import custom_trainer_class_factory
+
+
+class _Base:
+    def __init__(self, *args, **kwargs):
+        pass
 
 
 class _Encoder(torch.nn.Module):
@@ -13,52 +23,25 @@ class _Encoder(torch.nn.Module):
         self.total_virtual_tokens = total
 
 
-def test_plain_model_has_none():
-    assert _virtual_tokens_per_row(torch.nn.Linear(2, 2)) == 0
+def test_trainer_stores_the_count():
+    Trainer = custom_trainer_class_factory(_Base)
+    assert Trainer(custom_args=None, virtual_tokens_per_row=20).virtual_tokens_per_row == 20
 
 
-def test_reads_encoder_total_virtual_tokens():
-    model = SimpleNamespace(prompt_encoder=_Encoder(20))
-    assert _virtual_tokens_per_row(model) == 20
+def test_trainer_defaults_to_zero():
+    assert custom_trainer_class_factory(_Base)(custom_args=None).virtual_tokens_per_row == 0
 
 
-def test_unwraps_peft_module_dict():
-    model = SimpleNamespace(prompt_encoder=torch.nn.ModuleDict({'default': _Encoder(30)}))
-    assert _virtual_tokens_per_row(model) == 30
+def test_peft_count_reads_the_encoder():
+    base = SimpleNamespace(_model=SimpleNamespace(prompt_encoder=_Encoder(20)))
+    assert PEFT.get_total_virtual_tokens(base) == 20
 
 
-def test_falls_back_to_prompt_learning_config():
-    config = SimpleNamespace(is_prompt_learning=True, num_virtual_tokens=10, num_transformer_submodules=1)
-    model = SimpleNamespace(prompt_encoder=torch.nn.ModuleDict({'default': torch.nn.Embedding(10, 4)}),
-                            active_peft_config=config)
-    assert _virtual_tokens_per_row(model) == 10
+def test_peft_count_unwraps_the_module_dict():
+    encoders = torch.nn.ModuleDict({PEFT.prompt_encoder_key: _Encoder(30)})
+    base = SimpleNamespace(_model=SimpleNamespace(prompt_encoder=encoders))
+    assert PEFT.get_total_virtual_tokens(base) == 30
 
 
-class _Wrapper(torch.nn.Module):
-    """Stands in for DDP / DataParallel: the real model sits at ``.module``."""
-
-    def __init__(self, module):
-        super().__init__()
-        self.module = module
-
-
-class _PromptModel(torch.nn.Module):
-    def __init__(self, total):
-        super().__init__()
-        self.prompt_encoder = torch.nn.ModuleDict({'default': _Encoder(total)})
-
-
-def test_unwraps_ddp_style_wrappers():
-    assert _virtual_tokens_per_row(_Wrapper(_Wrapper(_PromptModel(20)))) == 20
-
-
-def test_fallback_with_a_real_peft_prompt_tuning_config():
-    from peft import PromptTuningConfig
-    config = PromptTuningConfig(task_type='CAUSAL_LM', num_virtual_tokens=12)
-    assert config.is_prompt_learning
-    model = SimpleNamespace(prompt_encoder=torch.nn.ModuleDict({'default': torch.nn.Embedding(12, 4)}),
-                            active_peft_config=config)
-    # num_transformer_submodules is None until peft builds the model -> counts once
-    assert _virtual_tokens_per_row(model) == 12
-    config.num_transformer_submodules = 1
-    assert _virtual_tokens_per_row(model) == 12
+def test_peft_count_is_none_without_a_prompt_encoder():
+    assert PEFT.get_total_virtual_tokens(SimpleNamespace(_model=torch.nn.Linear(2, 2))) is None

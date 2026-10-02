@@ -306,6 +306,7 @@ class TRAINER:
         CustomTrainer = custom_trainer_class_factory(TrainerCls)
         self.trainer = CustomTrainer(
             custom_args=self._config.custom_training_args,
+            virtual_tokens_per_row=PEFT.get_total_virtual_tokens(self._model) or 0,
             **trainer_init_args,
         )
         self._output.resolved(seed=self.trainer.args.seed,
