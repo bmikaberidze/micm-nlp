@@ -4,6 +4,7 @@
 [![Docs](https://img.shields.io/readthedocs/micm-nlp?label=Docs)](https://nlp.micm.edu.ge/en/latest/)
 [![Python](https://img.shields.io/pypi/pyversions/micm-nlp.svg?label=Python)](https://pypi.org/project/micm-nlp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23099408.svg)](https://doi.org/10.5281/zenodo.23099408)
 
 
 <!-- start:tagline -->
@@ -277,6 +278,7 @@ If you use `micm-nlp` in your research, please cite the package and (if relevant
   organization  = {Muskhelishvili Institute of Computational Mathematics, Georgian Technical University},
   url           = {https://github.com/bmikaberidze/micm-nlp},
   version       = {0.5.1},
+  doi           = {10.5281/zenodo.23099408},
   year          = {2026},
 }
 
