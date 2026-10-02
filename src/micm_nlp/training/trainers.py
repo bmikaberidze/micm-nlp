@@ -66,6 +66,7 @@ def build_inference_dataloader_kwargs(
     args,                 # HF TrainingArguments-like
     data_collator,        # the collator instance, used both for collate_fn and (token-budget path) pad_to_multiple_of
     token_budget: int | None,
+    extra_tokens_per_sample: int = 0,
 ) -> dict:
     """Construct DataLoader kwargs for eval/test.
 
@@ -96,6 +97,7 @@ def build_inference_dataloader_kwargs(
         lengths=lengths,
         token_budget=token_budget,
         pad_multiple=pad_multiple,
+        extra_tokens_per_sample=extra_tokens_per_sample,
     )
     return base
 
@@ -109,12 +111,13 @@ def custom_trainer_class_factory(BaseTrainer: Trainer | Seq2SeqTrainer):
     sit in front of it in the MRO either way.
 
     :param BaseTrainer: the HuggingFace trainer class to extend.
-    :returns: a new class accepting the usual arguments plus ``custom_args``.
+    :returns: a new class accepting the usual arguments plus ``custom_args`` and
+        ``virtual_tokens_per_row``.
     """
     class CustomTrainer(CustomTrainerMixin, BaseTrainer):
-        def __init__(self, *args, custom_args=None, **kwargs):
+        def __init__(self, *args, custom_args=None, virtual_tokens_per_row=0, **kwargs):
             super().__init__(*args, **kwargs)
-            self.__init_custom_trainer__(custom_args)
+            self.__init_custom_trainer__(custom_args, virtual_tokens_per_row)
 
     return CustomTrainer
 
@@ -125,8 +128,12 @@ class CustomTrainerMixin:
     I think this is copied from transformers 4.39.1
     """
 
-    def __init_custom_trainer__(self, custom_args):
+    def __init_custom_trainer__(self, custom_args, virtual_tokens_per_row=0):
         self.custom_args = custom_args
+        # Tokens a prompt learner prepends to every row (virtual tokens): absent from the
+        # length column, so the eval/test token budget adds them per row. From the
+        # runner (PEFT.get_total_virtual_tokens), the one source of that count.
+        self.virtual_tokens_per_row = virtual_tokens_per_row
         self._inspected_optimizer = False  # So we only log once
 
     def _print_param_names(self, param_set):
@@ -348,6 +355,7 @@ class CustomTrainerMixin:
                 model=self.model,
                 lengths=lengths,
                 pad_multiple=pad_multiple,
+                extra_tokens_per_sample=self.virtual_tokens_per_row,
             )
             setattr(self, cache_attr, budget)
             print(f'[trainer] {stage} token budget calibrated: {budget}')
@@ -385,6 +393,7 @@ class CustomTrainerMixin:
             args=self.args,
             data_collator=data_collator,
             token_budget=budget,
+            extra_tokens_per_sample=self.virtual_tokens_per_row,
         )
 
         if budget is None and not isinstance(eval_dataset, torch.utils.data.IterableDataset):
@@ -428,6 +437,7 @@ class CustomTrainerMixin:
             args=self.args,
             data_collator=data_collator,
             token_budget=budget,
+            extra_tokens_per_sample=self.virtual_tokens_per_row,
         )
 
         if budget is None and not isinstance(test_dataset, torch.utils.data.IterableDataset):
@@ -530,6 +540,13 @@ class CustomTrainerMixin:
         When ``custom_training_args.generation_whitelist`` is set, a
         :class:`~micm_nlp.training.logits_processors.ConstrainedPrefixLogitsProcessor`
         is injected for this step, restricting generation to the allowed strings.
+
+        ``past_key_values`` is always ignored. Without ``ignore_keys`` the Trainer
+        falls back to ``config.keys_to_ignore_at_inference``, which most text configs
+        set to ``['past_key_values']`` but composite (multimodal) configs leave empty
+        -- so the cache reaches accelerate, which raises ``TypeError: Unsupported
+        types (DynamicCache) passed to _pad_across_processes``. A Cache can never be
+        padded or concatenated across processes, and metrics never need it.
         """
 
         # Inject custom logits processor
@@ -537,6 +554,11 @@ class CustomTrainerMixin:
         if generation_whitelist is not None:
             processor = ConstrainedPrefixLogitsProcessor(self.processing_class, generation_whitelist)
             gen_kwargs['logits_processor'] = LogitsProcessorList([processor])
+
+        if ignore_keys is None:
+            ignore_keys = list(getattr(model.config, 'keys_to_ignore_at_inference', None) or [])
+        if 'past_key_values' not in ignore_keys:
+            ignore_keys = [*ignore_keys, 'past_key_values']
 
         return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys, **gen_kwargs)
 

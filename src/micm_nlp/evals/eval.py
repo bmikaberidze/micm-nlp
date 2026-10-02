@@ -323,7 +323,7 @@ def _compute_metrics(predictions, labels, config, ds_split):
     first_metric = config.task.metric_groups[0].metrics[0]
     if first_metric == 'multirc':
         results = compute_multirc(predictions, labels, ds_split)
-    if first_metric == 'log_likelihood_accuracy':
+    elif first_metric == 'log_likelihood_accuracy':
         results = compute_log_likelihood_accurac(predictions, labels, config, ds_split)
     else:
         results = compute_metrics_by_metric_groups(predictions, labels, config)

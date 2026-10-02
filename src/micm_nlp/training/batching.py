@@ -32,6 +32,7 @@ def calibrate_token_budget(
     model,
     lengths: Sequence[int],
     pad_multiple: int = 1,
+    extra_tokens_per_sample: int = 0,
     floor: int = 256,
     tolerance: int | None = None,
 ) -> int:
@@ -55,13 +56,18 @@ def calibrate_token_budget(
         model: callable model on its target device.
         lengths: per-sample sequence lengths (the dataset's length column).
         pad_multiple: collator's pad_to_multiple_of (1 = no rounding).
+        extra_tokens_per_sample: tokens the model adds to every row on its own
+            (a prompt encoder's virtual tokens). The probe shape is unchanged --
+            the model adds them itself -- but the returned budget counts them, so
+            it is in the same units as ``TokenBudgetBatchSampler`` with the same
+            ``extra_tokens_per_sample``.
         floor: raise if no fitting shape produces a budget at or above this.
         tolerance: deprecated and ignored. The search now always runs to
             convergence (exact largest fitting k). Kept for call-site
             compatibility.
 
     Returns:
-        int: token budget = (largest fitting k) × padded(L_k) × _HEADROOM.
+        int: token budget = (largest fitting k) × (padded(L_k) + extra) × _HEADROOM.
 
     Raises:
         ValueError: empty lengths.
@@ -125,7 +131,7 @@ def calibrate_token_budget(
         else:
             hi = mid - 1
 
-    budget_raw = lo * _padded(sorted_lens[lo - 1])
+    budget_raw = lo * (_padded(sorted_lens[lo - 1]) + extra_tokens_per_sample)
     if budget_raw < floor:
         raise RuntimeError(
             f'largest fitting budget {budget_raw} is below floor {floor}'
@@ -141,6 +147,8 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
         token_budget: max (batch_size * padded_max_length) per batch.
         pad_multiple: alignment for padded length (matches data_collator's
             ``pad_to_multiple_of``); 1 disables rounding.
+        extra_tokens_per_sample: tokens added to every row after collation (a
+            prompt encoder's virtual tokens); counted per row against the budget.
 
     Notes:
         * A sample longer than ``token_budget`` is still yielded — as a
@@ -154,10 +162,13 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
         lengths: Sequence[int],
         token_budget: int,
         pad_multiple: int = 1,
+        extra_tokens_per_sample: int = 0,
     ) -> None:
         """:param lengths: per-sample sequence lengths, one per dataset row.
         :param token_budget: cap on ``batch_size * padded_max_length`` per batch.
         :param pad_multiple: alignment for the padded length; 1 disables rounding.
+        :param extra_tokens_per_sample: tokens added to every row after collation
+            (virtual prompt tokens), counted per row against the budget.
         :raises ValueError: if ``token_budget`` is not positive or ``pad_multiple``
             is below 1.
         """
@@ -168,6 +179,7 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
         self._lengths = list(lengths)
         self._token_budget = token_budget
         self._pad_multiple = pad_multiple
+        self._extra = extra_tokens_per_sample
         self._order = sorted(range(len(self._lengths)), key=lambda i: self._lengths[i])
         self._cached_len: int | None = None
 
@@ -193,7 +205,7 @@ class TokenBudgetBatchSampler(Sampler[list[int]]):
             L = self._padded(self._lengths[idx])
             new_max = max(batch_max, L)
             new_size = len(batch) + 1
-            if batch and new_size * new_max > self._token_budget:
+            if batch and new_size * (new_max + self._extra) > self._token_budget:
                 yield batch
                 batch = [idx]
                 batch_max = L
