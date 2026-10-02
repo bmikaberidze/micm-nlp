@@ -199,7 +199,9 @@ Token-budget batching: batches are built to a token count, keeping memory steady
 |---|---|
 | `null` | Fixed `per_device_*_batch_size` (the default) |
 | `'auto'` | Probe the GPU at runtime for the largest budget that does not run out of memory |
-| an integer | Skip the probe and use this budget exactly |
+| an integer | Skip the probe and use this budget |
+
+A budget counts the tokens in the forward pass: each row's padded length plus, for a prompt learner (SPT, XPE, DUAL), its virtual tokens, which the length column does not include.
 
 | Rule, checked at config load | Why |
 |---|---|
