@@ -6,10 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ## [Unreleased]
 
 ### Fixed
-- The eval/test token budget (`*_max_tokens_per_batch: auto`) now counts a prompt
-  learner's virtual tokens. They are not in the dataset's length column but every row
-  carries them, so batches of short rows could exceed the budget by up to ~20% and run
-  out of GPU memory (seen with Aya's 256k-vocab fp32 logits on 141 GB GPUs). Batching
+- The eval/test token budget (`*_max_tokens_per_batch`) now counts a prompt learner's
+  virtual tokens. They are not in the dataset's length column but every row carries
+  them, so batches of short rows could exceed the budget by up to ~20% and run out of
+  GPU memory (seen with Aya's 256k-vocab fp32 logits on 141 GB GPUs). This applies to
+  an explicit integer budget as well as to `auto`: the budget now means tokens in the
+  forward pass, so prompt-learner runs with a fixed budget get smaller batches. Batching
   only: predictions and metrics are unchanged.
 - `prediction_step` always ignores `past_key_values`. Composite (multimodal) configs
   such as Gemma 4 leave `keys_to_ignore_at_inference` empty, so the cache reached
